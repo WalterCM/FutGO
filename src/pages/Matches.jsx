@@ -129,14 +129,14 @@ export default function Matches({ profile, onMatchClick }) {
     return (
         <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Próximos Partidos</h2>
+                <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Días de Pichanga</h2>
                 {profile?.is_admin && !showForm && (
                     <button
                         className="btn-primary"
                         onClick={() => setShowForm(true)}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
-                        <Plus size={20} /> Nuevo Partido
+                        <Plus size={20} /> Programar Encuentro
                     </button>
                 )}
             </div>
@@ -207,7 +207,7 @@ export default function Matches({ profile, onMatchClick }) {
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
                             <button type="button" onClick={() => setShowForm(false)} className="btn-primary" style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)' }}>Cancelar</button>
-                            <button type="submit" className="btn-primary" style={{ flex: 2 }}>Crear Partido</button>
+                            <button type="submit" className="btn-primary" style={{ flex: 2 }}>Programar Encuentro</button>
                         </div>
                     </form>
                 </div>
@@ -218,8 +218,8 @@ export default function Matches({ profile, onMatchClick }) {
                     <p>Cargando partidos...</p>
                 ) : matches.length === 0 ? (
                     <div className="premium-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
-                        <p style={{ color: 'var(--text-dim)', marginBottom: '1rem' }}>No hay partidos programados aún.</p>
-                        {profile?.is_admin && <p style={{ fontSize: '0.9rem' }}>¡Crea el primer partido del grupo! ⚽</p>}
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1rem' }}>No hay encuentros programados aún.</p>
+                        {profile?.is_admin && <p style={{ fontSize: '0.9rem' }}>¡Programa el primer evento del grupo! ⚽</p>}
                     </div>
                 ) : (
                     matches.map(match => {

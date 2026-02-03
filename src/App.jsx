@@ -115,9 +115,11 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
       </section>
 
       <section className="premium-card">
-        <h3>Pendientes</h3>
-        <p style={{ color: 'var(--danger)' }}>No tienes deudas pendientes</p>
-        <button className="btn-primary" style={{ marginTop: '1rem', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', opacity: 0.5 }} disabled>Ver Deuda (S/)</button>
+        <h3>Mi Estado</h3>
+        <p style={{ color: 'var(--text-dim)', margin: '1rem 0' }}>No tienes partidos por confirmar.</p>
+        <div style={{ fontSize: '0.9rem', color: 'var(--primary)', opacity: 0.8 }}>
+          ¡Todo al día! Asegura tu cupo pagando por Yape/Plin.
+        </div>
       </section>
     </main>
   )
