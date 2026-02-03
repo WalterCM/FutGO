@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil } from 'lucide-react'
 
 export default function MatchDetail({ profile, onBack }) {
     const { id: matchId } = useParams()
@@ -24,6 +24,9 @@ export default function MatchDetail({ profile, onBack }) {
     const [balanceLoading, setBalanceLoading] = useState(false)
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
     const [expansionData, setExpansionData] = useState({ show: false, newCost: 150 })
+    const [isEditing, setIsEditing] = useState(false)
+    const [fields, setFields] = useState([])
+    const [editData, setEditData] = useState({ field_id: '', date: '', time: '' })
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -323,35 +326,42 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleCancelMatch() {
-        if (!canManage) return
-        setConfirmModal({
-            show: true,
-            title: 'Cancelar Partido',
-            message: '¿Estás seguro de cancelar el partido? Se devolverán S/ 10 a cada crack que haya pagado (un total de S/ ' + (enrollments.filter(e => e.paid).length * 10) + ').',
-            onConfirm: async () => {
-                setActionLoading('canceling')
-                const paidEnrollments = enrollments.filter(e => e.paid)
+        // ... existing handleCancelMatch code ...
+    }
 
-                // Refund to wallets
-                for (const enroll of paidEnrollments) {
-                    const { data: pData } = await supabase.from('profiles').select('balance').eq('id', enroll.player_id).single()
-                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + 10 }).eq('id', enroll.player_id)
-                }
+    async function handleUpdateMatch(e) {
+        e.preventDefault()
+        setActionLoading('updating')
+        const { error } = await supabase
+            .from('matches')
+            .update({
+                field_id: editData.field_id,
+                date: editData.date,
+                time: editData.time
+            })
+            .eq('id', matchId)
 
-                // Lock the match and mark as canceled
-                // We attempt to set is_canceled: true. If the column doesn't exist, we fallback to just is_locked.
-                const { error } = await supabase.from('matches').update({ is_locked: true, is_canceled: true }).eq('id', matchId)
+        if (error) {
+            showMsg('error', error.message)
+        } else {
+            showMsg('success', '¡Encuentro actualizado! ⚽')
+            setIsEditing(false)
+            fetchMatchDetails(true)
+        }
+        setActionLoading(null)
+    }
 
-                if (error) {
-                    await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
-                    showMsg('success', 'Partido cancelado (Caja Bloqueada) y saldos devueltos')
-                } else {
-                    showMsg('success', 'Partido cancelado y saldos devueltos 💸')
-                }
-                fetchMatchDetails()
-                setActionLoading(null)
-            }
+    async function startEditing() {
+        if (!fields.length) {
+            const { data } = await supabase.from('fields').select('*').order('name')
+            setFields(data || [])
+        }
+        setEditData({
+            field_id: match.field_id,
+            date: match.date,
+            time: match.time
         })
+        setIsEditing(true)
     }
 
     const canManage = profile?.is_super_admin || match?.creator_id === profile?.id
@@ -397,7 +407,18 @@ export default function MatchDetail({ profile, onBack }) {
             <div className="premium-card" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ color: 'var(--primary)', fontSize: '2rem', marginBottom: '0.5rem' }}>{match.field?.name}</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
+                            <h2 style={{ color: 'var(--primary)', fontSize: '2rem', margin: 0 }}>{match.field?.name}</h2>
+                            {canManage && !match.is_locked && (
+                                <button
+                                    onClick={startEditing}
+                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.7 }}
+                                    title="Editar detalles"
+                                >
+                                    <Pencil size={20} />
+                                </button>
+                            )}
+                        </div>
                         <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1rem' }}>Sede del Encuentro</p>
                         <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -976,6 +997,76 @@ export default function MatchDetail({ profile, onBack }) {
                     animation: 'slideIn 0.3s ease-out'
                 }}>
                     {statusMsg.text}
+                </div>
+            )}
+            {/* Edit Modal */}
+            {isEditing && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <form onSubmit={handleUpdateMatch} className="premium-card" style={{ maxWidth: '500px', width: '100%', animation: 'scaleIn 0.2s ease-out' }}>
+                        <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Pencil size={20} /> Editar Encuentro
+                        </h3>
+
+                        <div style={{ display: 'grid', gap: '1.2rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)', fontSize: '0.85rem' }}>Cancha</label>
+                                <select
+                                    required
+                                    className="premium-input"
+                                    style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                    value={editData.field_id}
+                                    onChange={e => setEditData({ ...editData, field_id: e.target.value })}
+                                >
+                                    {fields.map(f => (
+                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)', fontSize: '0.85rem' }}>Fecha</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        className="premium-input"
+                                        style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                        value={editData.date}
+                                        onChange={e => setEditData({ ...editData, date: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)', fontSize: '0.85rem' }}>Hora</label>
+                                    <input
+                                        type="time"
+                                        required
+                                        className="premium-input"
+                                        style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                        value={editData.time}
+                                        onChange={e => setEditData({ ...editData, time: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2rem' }}>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setIsEditing(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn-primary"
+                                disabled={actionLoading === 'updating'}
+                            >
+                                {actionLoading === 'updating' ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
         </div>

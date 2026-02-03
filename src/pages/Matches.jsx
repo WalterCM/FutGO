@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Calendar, Clock, Users, CheckCircle, Trash2, LogOut, Loader2 } from 'lucide-react'
+import { Plus, Calendar, Clock, Users, CheckCircle, Trash2, LogOut, Loader2, Pencil } from 'lucide-react'
 
 export default function Matches({ profile, onMatchClick }) {
     const [matches, setMatches] = useState([])
@@ -18,6 +18,7 @@ export default function Matches({ profile, onMatchClick }) {
         status: 'open'
     })
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
+    const [editingId, setEditingId] = useState(null)
 
     useEffect(() => {
         fetchMatches()
@@ -63,19 +64,47 @@ export default function Matches({ profile, onMatchClick }) {
     async function handleSubmit(e) {
         e.preventDefault()
         setLoading(true)
-        const { error } = await supabase
-            .from('matches')
-            .insert([{ ...newMatch, creator_id: profile.id }])
+
+        let error;
+        if (editingId) {
+            const { error: updateError } = await supabase
+                .from('matches')
+                .update(newMatch)
+                .eq('id', editingId)
+            error = updateError
+        } else {
+            const { error: insertError } = await supabase
+                .from('matches')
+                .insert([{ ...newMatch, creator_id: profile.id }])
+            error = insertError
+        }
 
         if (error) {
             showMsg('error', error.message)
         } else {
-            showMsg('success', '¡Encuentro programado! ⚽')
-            setShowForm(false)
-            setNewMatch({ field_id: fields[0]?.id || '', date: '', time: '', status: 'open' })
+            showMsg('success', editingId ? '¡Encuentro actualizado! ⚽' : '¡Encuentro programado! ⚽')
+            cancelForm()
             fetchMatches()
         }
         setLoading(false)
+    }
+
+    function handleEdit(match) {
+        setEditingId(match.id)
+        setNewMatch({
+            field_id: match.field_id,
+            date: match.date,
+            time: match.time,
+            status: match.status
+        })
+        setShowForm(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    function cancelForm() {
+        setShowForm(false)
+        setEditingId(null)
+        setNewMatch({ field_id: fields[0]?.id || '', date: '', time: '', status: 'open' })
     }
 
     async function joinMatch(matchId) {
@@ -142,10 +171,17 @@ export default function Matches({ profile, onMatchClick }) {
         <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Días de Pichanga</h2>
-                {(profile?.is_super_admin || profile?.is_admin) && !showForm && (
+                {(profile?.is_super_admin || profile?.is_admin) && (
                     <button
                         className="btn-primary"
-                        onClick={() => setShowForm(true)}
+                        onClick={() => {
+                            if (showForm && !editingId) setShowForm(false)
+                            else {
+                                setEditingId(null)
+                                setNewMatch({ field_id: fields[0]?.id || '', date: '', time: '', status: 'open' })
+                                setShowForm(true)
+                            }
+                        }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
                         <Plus size={20} /> Programar Encuentro
@@ -173,7 +209,9 @@ export default function Matches({ profile, onMatchClick }) {
             {showForm && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
                     <form onSubmit={handleSubmit} className="premium-card" style={{ width: '100%', maxWidth: '500px' }}>
-                        <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary)' }}>Programar Partido</h3>
+                        <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary)' }}>
+                            {editingId ? 'Editar Encuentro' : 'Programar Partido'}
+                        </h3>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Seleccionar Cancha</label>
@@ -218,8 +256,10 @@ export default function Matches({ profile, onMatchClick }) {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                            <button type="button" onClick={() => setShowForm(false)} className="btn-primary" style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)' }}>Cancelar</button>
-                            <button type="submit" className="btn-primary" style={{ flex: 2 }}>Programar Encuentro</button>
+                            <button type="button" onClick={cancelForm} className="btn-primary" style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)', color: 'white' }}>Cancelar</button>
+                            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                                {editingId ? 'Guardar Cambios' : 'Programar Encuentro'}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -247,16 +287,31 @@ export default function Matches({ profile, onMatchClick }) {
                                 style={{ position: 'relative', cursor: 'pointer' }}
                                 onClick={() => onMatchClick(match)}
                             >
-                                {profile?.is_super_admin && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            deleteMatch(match.id)
-                                        }}
-                                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', zIndex: 10 }}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                {(profile?.is_super_admin || (profile?.is_admin && match.creator_id === profile.id)) && (
+                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleEdit(match)
+                                            }}
+                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                            title="Editar"
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
+                                        {profile?.is_super_admin && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    deleteMatch(match.id)
+                                                }}
+                                                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
 
                                 <div style={{ marginBottom: '1rem' }}>

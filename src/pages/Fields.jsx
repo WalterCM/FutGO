@@ -108,16 +108,18 @@ export default function Fields({ profile }) {
 
     return (
         <div style={{ padding: '2rem' }}>
-            <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Catálogo de Canchas</h2>
-            {profile?.is_super_admin && !showForm && (
-                <button
-                    className="btn-primary"
-                    onClick={() => setShowForm(true)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                    <Plus size={20} /> Nueva Cancha
-                </button>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Catálogo de Canchas</h2>
+                {profile?.is_super_admin && !showForm && (
+                    <button
+                        className="btn-primary"
+                        onClick={() => setShowForm(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <Plus size={20} /> Nueva Cancha
+                    </button>
+                )}
+            </div>
 
             {showForm && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
