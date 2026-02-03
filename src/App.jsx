@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Auth from './pages/Auth'
@@ -9,17 +10,12 @@ import MatchDetail from './pages/MatchDetail'
 import { supabase } from './lib/supabase'
 
 
-function MainContent({ view, setView }) {
+function MainContent() {
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-
-  const [selectedMatch, setSelectedMatch] = useState(null)
-
-  const openMatchDetail = (matchObj) => {
-    setSelectedMatch(matchObj)
-    setView('match-detail')
-  }
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const checkProfile = async () => {
     if (!user) {
@@ -49,26 +45,26 @@ function MainContent({ view, setView }) {
   return (
     <div className="app">
       <header className="header">
-        <div className="logo" onClick={() => setView('dashboard')} style={{ cursor: 'pointer' }}>FutGO</div>
+        <Link to="/" className="logo" style={{ textDecoration: 'none' }}>FutGO</Link>
         <nav style={{ display: 'flex', gap: '2rem' }}>
-          <span
-            onClick={() => setView('dashboard')}
-            style={{ cursor: 'pointer', color: view === 'dashboard' ? 'var(--primary)' : 'white' }}
+          <NavLink
+            to="/"
+            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
           >
             Inicio
-          </span>
-          <span
-            onClick={() => setView('matches')}
-            style={{ cursor: 'pointer', color: view === 'matches' ? 'var(--primary)' : 'white' }}
+          </NavLink>
+          <NavLink
+            to="/partidos"
+            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
           >
             Partidos
-          </span>
-          <span
-            onClick={() => setView('fields')}
-            style={{ cursor: 'pointer', color: view === 'fields' ? 'var(--primary)' : 'white' }}
+          </NavLink>
+          <NavLink
+            to="/canchas"
+            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
           >
             Canchas
-          </span>
+          </NavLink>
         </nav>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'right', marginRight: '1rem' }}>
@@ -79,16 +75,15 @@ function MainContent({ view, setView }) {
         </div>
       </header>
 
-      {view === 'dashboard' && <Dashboard profile={profile} onMatchClick={openMatchDetail} />}
-      {view === 'matches' && <Matches profile={profile} onMatchClick={openMatchDetail} />}
-      {view === 'fields' && <Fields profile={profile} />}
-      {view === 'match-detail' && (
-        <MatchDetail
-          initialMatch={selectedMatch}
-          profile={profile}
-          onBack={() => setView('matches')}
-        />
-      )}
+      <main>
+        <Routes>
+          <Route path="/" element={<Dashboard profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
+          <Route path="/partidos" element={<Matches profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
+          <Route path="/canchas" element={<Fields profile={profile} />} />
+          <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={() => navigate('/partidos')} />} />
+          <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
+        </Routes>
+      </main>
     </div>
   )
 }
@@ -126,12 +121,12 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
 }
 
 function App() {
-  const [view, setView] = useState('dashboard')
-
   return (
-    <AuthProvider>
-      <MainContent view={view} setView={setView} />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <MainContent />
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

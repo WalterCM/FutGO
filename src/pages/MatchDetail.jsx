@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight } from 'lucide-react'
 
-export default function MatchDetail({ initialMatch, profile, onBack }) {
+export default function MatchDetail({ profile, onBack }) {
+    const { id: matchId } = useParams()
+    const location = useLocation()
+    const initialMatch = location.state?.match
+
     const [match, setMatch] = useState(initialMatch || null)
     const [enrollments, setEnrollments] = useState(initialMatch?.enrollments || [])
     const [games, setGames] = useState([])
@@ -13,7 +18,6 @@ export default function MatchDetail({ initialMatch, profile, onBack }) {
     const [actionLoading, setActionLoading] = useState(null)
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
-    const matchId = initialMatch?.id
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
