@@ -1,50 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
-
-function Dashboard() {
-  const { signOut, user } = useAuth()
-
-  return (
-    <div className="app">
-      <header className="header">
-        <div className="logo">FutGO</div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{user?.email}</span>
-          <button className="btn-primary" onClick={signOut} style={{ background: 'var(--danger)', color: 'white' }}>Salir</button>
-        </div>
-      </header>
-
-      <main className="grid-dashboard">
-        <section className="premium-card">
-          <h3>Próximo Partido</h3>
-          <p style={{ color: 'var(--text-dim)', marginBottom: '1rem' }}>Viernes, 20:00 • Cancha "El Monumental"</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>12 / 14 Jugadores</span>
-            <button className="btn-primary" style={{ padding: '0.5rem 1rem' }}>Unirme</button>
-          </div>
-        </section>
-
-        <section className="premium-card">
-          <h3>Mi Ranking</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0' }}>1240 ELO</div>
-          <p style={{ color: 'var(--primary)' }}>Nivel: Amateur ★★★☆☆</p>
-        </section>
-
-        <section className="premium-card">
-          <h3>Pendientes</h3>
-          <p style={{ color: 'var(--danger)' }}>Tienes $20.00 pendientes del partido anterior</p>
-          <button className="btn-primary" style={{ marginTop: '1rem', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}>Ver Deuda</button>
-        </section>
-      </main>
-    </div>
-  )
-}
-
-import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+
 
 function Dashboard() {
   const { signOut, user } = useAuth()
