@@ -98,6 +98,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     function handleTogglePaid(enrol) {
+        if (!canManage) return
         if (enrol.paid) {
             setConfirmModal({
                 show: true,
@@ -111,6 +112,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     function handleTogglePresent(enrol) {
+        if (!canManage) return
         if (enrol.is_present) {
             setConfirmModal({
                 show: true,
@@ -124,6 +126,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleAddGame(e) {
+        if (!canManage) return
         e.preventDefault()
         setActionLoading('game-form')
 
@@ -250,6 +253,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleCloseMatch() {
+        if (!canManage) return
         const collected = enrollments.filter(e => e.paid).length * 10
         const cost = match.fixed_cost || 100
         const surplus = collected - cost
@@ -301,6 +305,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleExpandMatch() {
+        if (!canManage) return
         setActionLoading('expanding')
         const { error } = await supabase.from('matches').update({
             max_players: 15,
@@ -318,6 +323,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleCancelMatch() {
+        if (!canManage) return
         setConfirmModal({
             show: true,
             title: 'Cancelar Partido',
@@ -347,6 +353,8 @@ export default function MatchDetail({ profile, onBack }) {
             }
         })
     }
+
+    const canManage = profile?.is_super_admin || match?.creator_id === profile?.id
 
     if (loading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando detalles...</div>
     if (!match) return null
@@ -515,22 +523,22 @@ export default function MatchDetail({ profile, onBack }) {
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button
                                             onClick={() => handleTogglePaid(enrol)}
-                                            disabled={match.is_locked}
+                                            disabled={match.is_locked || !canManage}
                                             style={{
                                                 padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
                                                 background: enrol.paid ? '#10b981' : 'transparent', color: enrol.paid ? 'black' : 'var(--text-dim)',
-                                                opacity: match.is_locked ? 0.6 : 1
+                                                opacity: (match.is_locked || !canManage) ? 0.6 : 1
                                             }}
                                         >
                                             <CreditCard size={12} style={{ marginRight: '4px' }} /> {enrol.paid ? 'Pagado' : 'Cobrar'}
                                         </button>
                                         <button
                                             onClick={() => handleTogglePresent(enrol)}
-                                            disabled={match.is_locked}
+                                            disabled={match.is_locked || !canManage}
                                             style={{
                                                 padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
                                                 background: enrol.is_present ? 'var(--primary)' : 'transparent', color: enrol.is_present ? 'black' : 'var(--text-dim)',
-                                                opacity: match.is_locked ? 0.6 : 1
+                                                opacity: (match.is_locked || !canManage) ? 0.6 : 1
                                             }}
                                         >
                                             <Users size={12} style={{ marginRight: '4px' }} /> {enrol.is_present ? 'Presente' : 'Ausente'}
@@ -570,7 +578,7 @@ export default function MatchDetail({ profile, onBack }) {
                         </div>
                     </div>
 
-                    {profile?.is_admin && !match.is_locked && (
+                    {canManage && !match.is_locked && (
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                             {match.max_players < 15 && (
                                 <button
@@ -714,7 +722,7 @@ export default function MatchDetail({ profile, onBack }) {
                             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                                 <Trophy size={20} /> Partidos Jugados
                             </h3>
-                            {profile?.is_admin && (
+                            {canManage && (
                                 <button
                                     className="btn-primary"
                                     style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }}
