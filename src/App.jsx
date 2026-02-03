@@ -7,6 +7,7 @@ import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
 import Matches from './pages/Matches'
 import MatchDetail from './pages/MatchDetail'
+import Users from './pages/Users'
 import { supabase } from './lib/supabase'
 
 
@@ -65,6 +66,14 @@ function MainContent() {
           >
             Canchas
           </NavLink>
+          {profile?.is_super_admin && (
+            <NavLink
+              to="/usuarios"
+              style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
+            >
+              Usuarios
+            </NavLink>
+          )}
         </nav>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'right', marginRight: '1rem' }}>
@@ -80,6 +89,7 @@ function MainContent() {
           <Route path="/" element={<Dashboard profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
           <Route path="/partidos" element={<Matches profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
           <Route path="/canchas" element={<Fields profile={profile} />} />
+          <Route path="/usuarios" element={<Users profile={profile} />} />
           <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={() => navigate('/partidos')} />} />
           <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
         </Routes>

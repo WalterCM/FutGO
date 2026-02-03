@@ -90,18 +90,16 @@ export default function Fields({ profile }) {
 
     return (
         <div style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Catálogo de Canchas</h2>
-                {profile?.is_admin && !showForm && (
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowForm(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                        <Plus size={20} /> Nueva Cancha
-                    </button>
-                )}
-            </div>
+            <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Catálogo de Canchas</h2>
+            {profile?.is_super_admin && !showForm && (
+                <button
+                    className="btn-primary"
+                    onClick={() => setShowForm(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                    <Plus size={20} /> Nueva Cancha
+                </button>
+            )}
 
             {showForm && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
@@ -174,7 +172,7 @@ export default function Fields({ profile }) {
                 ) : (
                     fields.map(field => (
                         <div key={field.id} className="premium-card" style={{ position: 'relative' }}>
-                            {profile?.is_admin && (
+                            {profile?.is_super_admin && (
                                 <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
                                         onClick={() => handleEdit(field)}
