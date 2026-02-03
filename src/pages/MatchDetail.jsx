@@ -16,6 +16,7 @@ export default function MatchDetail({ profile, onBack }) {
     const [showGameForm, setShowGameForm] = useState(false)
     const [gameData, setGameData] = useState({ score1: 0, score2: 0, team1Id: 1, team2Id: 2 })
     const [actionLoading, setActionLoading] = useState(null)
+    const [confirmingLeave, setConfirmingLeave] = useState(false)
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
 
@@ -119,6 +120,49 @@ export default function MatchDetail({ profile, onBack }) {
         setActionLoading(null)
     }
 
+    async function joinMatch() {
+        setActionLoading('join')
+        const { error } = await supabase
+            .from('enrollments')
+            .insert([{
+                match_id: matchId,
+                player_id: profile.id
+            }])
+
+        if (error) {
+            if (error.code === '23505') showMsg('error', 'Ya estás inscrito')
+            else showMsg('error', error.message)
+        } else {
+            showMsg('success', '¡Te has unido! ⚽')
+            fetchMatchDetails(true)
+        }
+        setActionLoading(null)
+    }
+
+    async function leaveMatch() {
+        if (!confirmingLeave) {
+            setConfirmingLeave(true)
+            setTimeout(() => setConfirmingLeave(false), 3000)
+            return
+        }
+
+        setActionLoading('leave')
+        const { error } = await supabase
+            .from('enrollments')
+            .delete()
+            .eq('match_id', matchId)
+            .eq('player_id', profile.id)
+
+        if (error) {
+            showMsg('error', error.message)
+        } else {
+            showMsg('success', 'Has salido del partido')
+            setConfirmingLeave(false)
+            fetchMatchDetails(true)
+        }
+        setActionLoading(null)
+    }
+
     const teamConfigs = {
         0: { name: 'Banca', color: 'var(--text-dim)', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' },
         1: { name: 'Crema', color: '#800000', bg: '#fdf5e6', border: '#800000' },
@@ -188,10 +232,10 @@ export default function MatchDetail({ profile, onBack }) {
 
             <div className="premium-card" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                         <h2 style={{ color: 'var(--primary)', fontSize: '2rem', marginBottom: '0.5rem' }}>{match.field?.name}</h2>
                         <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1rem' }}>Sede del Encuentro</p>
-                        <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-dim)' }}>
+                        <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <Calendar size={18} />
                                 {new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -201,11 +245,36 @@ export default function MatchDetail({ profile, onBack }) {
                             </div>
                         </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ textAlign: 'right', minWidth: '120px' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
                             {enrolledCount} / {totalNeeded}
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Jugadores</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '1rem' }}>Jugadores</div>
+
+                        {enrollments.some(e => e.player_id === profile.id) ? (
+                            <button
+                                onClick={leaveMatch}
+                                className="btn-primary"
+                                style={{
+                                    padding: '0.5rem 1rem', fontSize: '0.8rem', width: '100%',
+                                    background: confirmingLeave ? 'var(--danger)' : 'transparent',
+                                    border: '1px solid var(--danger)',
+                                    color: confirmingLeave ? 'white' : 'var(--danger)'
+                                }}
+                                disabled={actionLoading === 'leave'}
+                            >
+                                {actionLoading === 'leave' ? 'Saliendo...' : (confirmingLeave ? '¿Seguro?' : 'Salir')}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={joinMatch}
+                                className="btn-primary"
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', width: '100%' }}
+                                disabled={actionLoading === 'join' || enrolledCount >= totalNeeded}
+                            >
+                                {actionLoading === 'join' ? 'Uniendo...' : (enrolledCount >= totalNeeded ? 'Lleno' : 'Unirme')}
+                            </button>
+                        )}
                     </div>
                 </div>
 

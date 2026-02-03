@@ -69,7 +69,7 @@ function MainContent() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'right', marginRight: '1rem' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{profile?.full_name}</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_admin && '(Admin)'}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_super_admin ? '(Owner)' : (profile?.is_admin && '(Admin)')}</div>
           </div>
           <button className="btn-primary" onClick={signOut} style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem' }}>Salir</button>
         </div>

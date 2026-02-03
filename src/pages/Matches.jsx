@@ -130,7 +130,7 @@ export default function Matches({ profile, onMatchClick }) {
         <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Días de Pichanga</h2>
-                {profile?.is_admin && !showForm && (
+                {profile?.is_super_admin && !showForm && (
                     <button
                         className="btn-primary"
                         onClick={() => setShowForm(true)}
@@ -235,7 +235,7 @@ export default function Matches({ profile, onMatchClick }) {
                                 style={{ position: 'relative', cursor: 'pointer' }}
                                 onClick={() => onMatchClick(match)}
                             >
-                                {profile?.is_admin && (
+                                {profile?.is_super_admin && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation()
