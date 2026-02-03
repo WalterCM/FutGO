@@ -17,6 +17,7 @@ export default function Matches({ profile, onMatchClick }) {
         time: '',
         status: 'open'
     })
+    const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
 
     useEffect(() => {
         fetchMatches()
@@ -52,7 +53,7 @@ export default function Matches({ profile, onMatchClick }) {
 
         if (error) {
             console.error(error)
-            alert(error.message)
+            showMsg('error', error.message)
         } else {
             setMatches(data || [])
         }
@@ -67,8 +68,9 @@ export default function Matches({ profile, onMatchClick }) {
             .insert([{ ...newMatch, creator_id: profile.id }])
 
         if (error) {
-            alert(error.message)
+            showMsg('error', error.message)
         } else {
+            showMsg('success', '¡Encuentro programado! ⚽')
             setShowForm(false)
             setNewMatch({ field_id: fields[0]?.id || '', date: '', time: '', status: 'open' })
             fetchMatches()
@@ -119,11 +121,20 @@ export default function Matches({ profile, onMatchClick }) {
         setActionLoading(null)
     }
 
-    async function deleteMatch(id) {
-        if (!confirm('¿Estás seguro de eliminar este partido?')) return
-        const { error } = await supabase.from('matches').delete().eq('id', id)
-        if (error) alert(error.message)
-        else fetchMatches()
+    function deleteMatch(id) {
+        setConfirmModal({
+            show: true,
+            title: 'Eliminar Partido',
+            message: '¿Estás completamente seguro de eliminar este encuentro? Esta acción no se puede deshacer.',
+            onConfirm: async () => {
+                const { error } = await supabase.from('matches').delete().eq('id', id)
+                if (error) showMsg('error', error.message)
+                else {
+                    showMsg('success', 'Partido eliminado')
+                    fetchMatches()
+                }
+            }
+        })
     }
 
     return (
@@ -330,6 +341,34 @@ export default function Matches({ profile, onMatchClick }) {
                     })
                 )}
             </div>
+            {confirmModal.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <Trash2 size={48} style={{ color: 'var(--danger)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '1rem' }}>{confirmModal.title}</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>{confirmModal.message}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'var(--danger)' }}
+                                onClick={() => {
+                                    confirmModal.onConfirm?.()
+                                    setConfirmModal({ ...confirmModal, show: false })
+                                }}
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
