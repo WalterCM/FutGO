@@ -317,6 +317,37 @@ export default function MatchDetail({ profile, onBack }) {
         setActionLoading(null)
     }
 
+    async function handleCancelMatch() {
+        setConfirmModal({
+            show: true,
+            title: 'Cancelar Partido',
+            message: '¿Estás seguro de cancelar el partido? Se devolverán S/ 10 a cada crack que haya pagado (un total de S/ ' + (enrollments.filter(e => e.paid).length * 10) + ').',
+            onConfirm: async () => {
+                setActionLoading('canceling')
+                const paidEnrollments = enrollments.filter(e => e.paid)
+
+                // Refund to wallets
+                for (const enroll of paidEnrollments) {
+                    const { data: pData } = await supabase.from('profiles').select('balance').eq('id', enroll.player_id).single()
+                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + 10 }).eq('id', enroll.player_id)
+                }
+
+                // Lock the match and mark as canceled
+                // We attempt to set is_canceled: true. If the column doesn't exist, we fallback to just is_locked.
+                const { error } = await supabase.from('matches').update({ is_locked: true, is_canceled: true }).eq('id', matchId)
+
+                if (error) {
+                    await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
+                    showMsg('success', 'Partido cancelado (Caja Bloqueada) y saldos devueltos')
+                } else {
+                    showMsg('success', 'Partido cancelado y saldos devueltos 💸')
+                }
+                fetchMatchDetails()
+                setActionLoading(null)
+            }
+        })
+    }
+
     if (loading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando detalles...</div>
     if (!match) return null
 
@@ -559,13 +590,23 @@ export default function MatchDetail({ profile, onBack }) {
                             >
                                 {actionLoading === 'closing' ? 'Cerrando...' : 'Cerrar Caja'}
                             </button>
+                            <button
+                                onClick={handleCancelMatch}
+                                className="btn-primary"
+                                style={{ flex: 1, background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}
+                                disabled={actionLoading === 'canceling'}
+                            >
+                                {actionLoading === 'canceling' ? 'Cancelando...' : 'Cancelar Partido'}
+                            </button>
                         </div>
                     )}
 
                     {match.is_locked && (
-                        <div className="premium-card" style={{ marginTop: '2rem', textAlign: 'center', border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.05)' }}>
-                            <h4 style={{ color: '#10b981' }}>✓ Partido Finalizado</h4>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>La caja ha sido cerrada y los saldos repartidos.</p>
+                        <div className="premium-card" style={{ marginTop: '2rem', textAlign: 'center', border: `1px solid ${match.is_canceled ? 'var(--danger)' : '#10b981'}`, background: match.is_canceled ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)' }}>
+                            <h4 style={{ color: match.is_canceled ? 'var(--danger)' : '#10b981' }}>{match.is_canceled ? '✕ Partido Cancelado' : '✓ Partido Finalizado'}</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                                {match.is_canceled ? 'El partido fue cancelado y los saldos devueltos.' : 'La caja ha sido cerrada y los saldos repartidos.'}
+                            </p>
                         </div>
                     )}
                 </>

@@ -248,14 +248,14 @@ export default function Matches({ profile, onMatchClick }) {
                                 )}
 
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <h3 style={{ color: 'var(--primary)', marginBottom: '0.2rem' }}>{match.field?.name}</h3>
+                                    <h3 style={{ color: match.is_canceled ? 'var(--text-dim)' : 'var(--primary)', marginBottom: '0.2rem', textDecoration: match.is_canceled ? 'line-through' : 'none' }}>{match.field?.name}</h3>
                                     <span style={{
                                         fontSize: '0.7rem',
-                                        color: isEnrolled ? '#10b981' : (isFull ? 'var(--danger)' : 'var(--primary)'),
+                                        color: match.is_canceled ? 'var(--danger)' : (isEnrolled ? '#10b981' : (isFull ? 'var(--danger)' : 'var(--primary)')),
                                         fontWeight: 'bold',
                                         textTransform: 'uppercase'
                                     }}>
-                                        {isEnrolled ? 'Estás Inscrito ✅' : (isFull ? 'Cupos Llenos' : 'Inscripciones Abiertas')}
+                                        {match.is_canceled ? 'Partido Cancelado ✕' : (isEnrolled ? 'Estás Inscrito ✅' : (isFull ? 'Cupos Llenos' : 'Inscripciones Abiertas'))}
                                     </span>
                                 </div>
 
@@ -278,7 +278,7 @@ export default function Matches({ profile, onMatchClick }) {
                                             e.stopPropagation()
                                             leaveMatch(match.id)
                                         }}
-                                        disabled={actionLoading === match.id}
+                                        disabled={actionLoading === match.id || match.is_locked}
                                         style={{
                                             width: '100%',
                                             background: confirmingLeaveId === match.id ? 'var(--danger)' : 'transparent',
@@ -290,7 +290,8 @@ export default function Matches({ profile, onMatchClick }) {
                                             gap: '0.5rem',
                                             transition: 'all 0.3s ease',
                                             position: 'relative',
-                                            zIndex: 10
+                                            zIndex: 10,
+                                            opacity: match.is_locked ? 0.3 : 1
                                         }}
                                     >
                                         {actionLoading === match.id ? (
@@ -308,10 +309,10 @@ export default function Matches({ profile, onMatchClick }) {
                                             e.stopPropagation()
                                             joinMatch(match.id)
                                         }}
-                                        disabled={isFull || actionLoading === match.id}
+                                        disabled={isFull || actionLoading === match.id || match.is_locked}
                                         style={{
                                             width: '100%',
-                                            opacity: isFull ? 0.5 : 1,
+                                            opacity: (isFull || match.is_locked) ? 0.5 : 1,
                                             display: 'flex',
                                             justifyContent: 'center',
                                             alignItems: 'center',
@@ -320,7 +321,8 @@ export default function Matches({ profile, onMatchClick }) {
                                             zIndex: 10
                                         }}
                                     >
-                                        {actionLoading === match.id ? <Loader2 size={18} className="spin" /> : (isFull ? 'Partido Lleno' : 'Unirme al Partido')}
+                                        {actionLoading === match.id ? <Loader2 size={18} className="spin" /> :
+                                            (match.is_canceled ? 'Partido Cerrado' : (isFull ? 'Partido Lleno' : 'Unirme al Partido'))}
                                     </button>
                                 )}
                             </div>
