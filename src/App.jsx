@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
+import Matches from './pages/Matches'
 import { supabase } from './lib/supabase'
 
 
@@ -49,6 +50,12 @@ function MainContent({ view, setView }) {
             Inicio
           </span>
           <span
+            onClick={() => setView('matches')}
+            style={{ cursor: 'pointer', color: view === 'matches' ? 'var(--primary)' : 'white' }}
+          >
+            Partidos
+          </span>
+          <span
             onClick={() => setView('fields')}
             style={{ cursor: 'pointer', color: view === 'fields' ? 'var(--primary)' : 'white' }}
           >
@@ -64,7 +71,9 @@ function MainContent({ view, setView }) {
         </div>
       </header>
 
-      {view === 'dashboard' ? <Dashboard profile={profile} /> : <Fields profile={profile} />}
+      {view === 'dashboard' && <Dashboard profile={profile} />}
+      {view === 'matches' && <Matches profile={profile} />}
+      {view === 'fields' && <Fields profile={profile} />}
     </div>
   )
 }
