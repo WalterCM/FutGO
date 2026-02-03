@@ -7,6 +7,13 @@ export default function Users({ profile }) {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [actionLoading, setActionLoading] = useState(null)
+    const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
+    const [balanceModal, setBalanceModal] = useState({ show: false, userId: null, userName: '', currentBalance: 0, type: 'deposit', amount: '' })
+
+    function showMsg(type, text) {
+        setStatusMsg({ type, text })
+        setTimeout(() => setStatusMsg({ type: '', text: '' }), 3000)
+    }
 
     useEffect(() => {
         if (profile?.is_super_admin) {
@@ -21,7 +28,7 @@ export default function Users({ profile }) {
             .select('*')
             .order('full_name')
 
-        if (error) alert(error.message)
+        if (error) showMsg('error', error.message)
         else setUsers(data || [])
         setLoading(false)
     }
@@ -36,11 +43,13 @@ export default function Users({ profile }) {
             .eq('id', userId)
 
         if (error) {
-            alert(error.message)
+            showMsg('error', error.message)
         } else {
+            showMsg('success', 'Balance actualizado')
             setUsers(users.map(u =>
                 u.id === userId ? { ...u, balance: newBalance } : u
             ))
+            setBalanceModal({ ...balanceModal, show: false, amount: '' })
         }
         setActionLoading(null)
     }
@@ -53,8 +62,9 @@ export default function Users({ profile }) {
             .eq('id', userId)
 
         if (error) {
-            alert(error.message)
+            showMsg('error', error.message)
         } else {
+            showMsg('success', 'Rol actualizado')
             // Update local state
             setUsers(users.map(u =>
                 u.id === userId ? { ...u, [roleField]: !currentValue } : u
@@ -150,10 +160,10 @@ export default function Users({ profile }) {
                                 {/* Balance Management */}
                                 <div style={{ display: 'flex', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.8rem', marginRight: '0.2rem' }}>
                                     <button
-                                        onClick={() => {
-                                            const amount = prompt('Monto a depositar (S/):')
-                                            if (amount && !isNaN(amount)) adjustBalance(user.id, user.balance, amount)
-                                        }}
+                                        onClick={() => setBalanceModal({
+                                            show: true, userId: user.id, userName: user.full_name,
+                                            currentBalance: user.balance || 0, type: 'deposit', amount: ''
+                                        })}
                                         disabled={actionLoading === user.id + 'balance'}
                                         style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '0.2rem' }}
                                         title="Depositar Saldo"
@@ -161,10 +171,10 @@ export default function Users({ profile }) {
                                         <PlusCircle size={20} />
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            const amount = prompt('Monto a retirar (S/):')
-                                            if (amount && !isNaN(amount)) adjustBalance(user.id, user.balance, -amount)
-                                        }}
+                                        onClick={() => setBalanceModal({
+                                            show: true, userId: user.id, userName: user.full_name,
+                                            currentBalance: user.balance || 0, type: 'withdraw', amount: ''
+                                        })}
                                         disabled={actionLoading === user.id + 'balance'}
                                         style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
                                         title="Retirar Saldo"
@@ -228,6 +238,68 @@ export default function Users({ profile }) {
                             No se encontraron cracks con ese nombre.
                         </div>
                     )}
+                </div>
+            )}
+
+            {balanceModal.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <Wallet size={48} style={{ color: balanceModal.type === 'deposit' ? '#10b981' : 'var(--danger)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '0.5rem' }}>{balanceModal.type === 'deposit' ? 'Depositar Saldo' : 'Retirar Saldo'}</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>Ajustando billetera de <b>{balanceModal.userName}</b></p>
+
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span>Saldo Actual:</span>
+                                <span style={{ fontWeight: 'bold' }}>S/ {balanceModal.currentBalance}</span>
+                            </div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.5rem', display: 'block' }}>Monto (S/)</label>
+                            <input
+                                type="number"
+                                autoFocus
+                                className="premium-input"
+                                style={{ width: '100%', marginTop: '0.3rem', fontSize: '1.2rem', padding: '0.8rem' }}
+                                value={balanceModal.amount}
+                                onChange={(e) => setBalanceModal({ ...balanceModal, amount: e.target.value })}
+                                placeholder="0.00"
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setBalanceModal({ ...balanceModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{ background: balanceModal.type === 'deposit' ? '#10b981' : 'var(--danger)' }}
+                                disabled={!balanceModal.amount || isNaN(balanceModal.amount) || actionLoading}
+                                onClick={() => adjustBalance(balanceModal.userId, balanceModal.currentBalance, balanceModal.type === 'deposit' ? balanceModal.amount : -balanceModal.amount)}
+                            >
+                                {balanceModal.type === 'deposit' ? 'Depositar' : 'Retirar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {statusMsg.text && (
+                <div style={{
+                    position: 'fixed',
+                    top: '2rem',
+                    right: '2rem',
+                    padding: '1rem 2rem',
+                    borderRadius: '8px',
+                    backgroundColor: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    zIndex: 4000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    animation: 'slideIn 0.3s ease-out'
+                }}>
+                    {statusMsg.text}
                 </div>
             )}
         </div>

@@ -22,6 +22,8 @@ export default function MatchDetail({ profile, onBack }) {
     const [activeTab, setActiveTab] = useState('admin') // 'admin' or 'field'
     const [showCheckout, setShowCheckout] = useState(false)
     const [balanceLoading, setBalanceLoading] = useState(false)
+    const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
+    const [expansionData, setExpansionData] = useState({ show: false, newCost: 150 })
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -95,18 +97,30 @@ export default function MatchDetail({ profile, onBack }) {
         }
     }
 
-    async function handleTogglePaid(enrol) {
+    function handleTogglePaid(enrol) {
         if (enrol.paid) {
-            if (!confirm('¿Seguro que quieres desmarcar el pago de ' + enrol.player?.full_name + '?')) return
+            setConfirmModal({
+                show: true,
+                title: 'Desmarcar Pago',
+                message: `¿Estás seguro de que quieres revertir el pago de ${enrol.player?.full_name}?`,
+                onConfirm: () => updateEnrollment(enrol.id, { paid: false })
+            })
+        } else {
+            updateEnrollment(enrol.id, { paid: true })
         }
-        await updateEnrollment(enrol.id, { paid: !enrol.paid })
     }
 
-    async function handleTogglePresent(enrol) {
+    function handleTogglePresent(enrol) {
         if (enrol.is_present) {
-            if (!confirm('¿Seguro que quieres quitar de la cancha a ' + enrol.player?.full_name + '?')) return
+            setConfirmModal({
+                show: true,
+                title: 'Quitar de Cancha',
+                message: `¿Estás seguro de que quieres marcar como ausente a ${enrol.player?.full_name}?`,
+                onConfirm: () => updateEnrollment(enrol.id, { is_present: false })
+            })
+        } else {
+            updateEnrollment(enrol.id, { is_present: true })
         }
-        await updateEnrollment(enrol.id, { is_present: !enrol.is_present })
     }
 
     async function handleAddGame(e) {
@@ -241,46 +255,63 @@ export default function MatchDetail({ profile, onBack }) {
         const surplus = collected - cost
         const presentPlayers = enrollments.filter(e => e.is_present)
 
-        if (surplus < 0) {
-            if (!confirm(`Hay un déficit de S/ ${Math.abs(surplus)}. ¿Cerrar de todas formas? (No se devolverá nada)`)) return
-        } else if (surplus > 0) {
-            const perPerson = (surplus / presentPlayers.length).toFixed(2)
-            if (!confirm(`Se repartirán S/ ${surplus} (S/ ${perPerson} por crack) a las billeteras de los ${presentPlayers.length} presentes. ¿Confirmar?`)) return
-
+        const finalize = async () => {
             setActionLoading('closing')
             // Distribute surplus
-            for (const p of presentPlayers) {
-                const { data: pData } = await supabase.from('profiles').select('balance').eq('id', p.player_id).single()
-                await supabase.from('profiles').update({ balance: (pData?.balance || 0) + Number(perPerson) }).eq('id', p.player_id)
+            if (surplus > 0) {
+                const perPerson = (surplus / presentPlayers.length).toFixed(2)
+                for (const p of presentPlayers) {
+                    const { data: pData } = await supabase.from('profiles').select('balance').eq('id', p.player_id).single()
+                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + Number(perPerson) }).eq('id', p.player_id)
+                }
             }
-        } else {
-            if (!confirm('El balance es 0. ¿Cerrar partido?')) return
+            const { error } = await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
+            if (error) showMsg('error', error.message)
+            else {
+                showMsg('success', '¡Caja cerrada y partido finalizado! 🏁')
+                fetchMatchDetails()
+            }
+            setActionLoading(null)
         }
 
-        setActionLoading('closing')
-        const { error } = await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
-        if (error) showMsg('error', error.message)
-        else {
-            showMsg('success', '¡Caja cerrada y partido finalizado! 🏁')
-            fetchMatchDetails()
+        if (surplus < 0) {
+            setConfirmModal({
+                show: true,
+                title: 'Déficit Detectado',
+                message: `Hay un déficit de S/ ${Math.abs(surplus)}. ¿Cerrar de todas formas? No se repartirá saldo.`,
+                onConfirm: finalize
+            })
+        } else if (surplus > 0) {
+            const perPerson = (surplus / presentPlayers.length).toFixed(2)
+            setConfirmModal({
+                show: true,
+                title: 'Repartir Superávit',
+                message: `Se repartirán S/ ${surplus} (S/ ${perPerson} por crack) a los ${presentPlayers.length} presentes. ¿Confirmar cierre?`,
+                onConfirm: finalize
+            })
+
+        } else {
+            setConfirmModal({
+                show: true,
+                title: 'Cerrar Partido',
+                message: 'El balance es 0. ¿Confirmas el cierre definitivo del partido?',
+                onConfirm: finalize
+            })
         }
-        setActionLoading(null)
     }
 
     async function handleExpandMatch() {
-        const newCost = prompt('Nuevo costo total de la cancha (S/):', (match.fixed_cost || 100) + 50)
-        if (!newCost || isNaN(newCost)) return
-
         setActionLoading('expanding')
         const { error } = await supabase.from('matches').update({
             max_players: 15,
-            fixed_cost: Number(newCost)
+            fixed_cost: Number(expansionData.newCost)
         }).eq('id', matchId)
 
         if (error) {
             showMsg('error', error.message)
         } else {
             showMsg('success', '¡Partido expandido a 3 equipos! ⚽⚽⚽')
+            setExpansionData({ show: false, newCost: 150 })
             fetchMatchDetails(true)
         }
         setActionLoading(null)
@@ -512,7 +543,7 @@ export default function MatchDetail({ profile, onBack }) {
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                             {match.max_players < 15 && (
                                 <button
-                                    onClick={handleExpandMatch}
+                                    onClick={() => setExpansionData({ show: true, newCost: (match.fixed_cost || 100) + 50 })}
                                     className="btn-primary"
                                     style={{ flex: 1, background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
                                     disabled={actionLoading === 'expanding'}
@@ -814,6 +845,73 @@ export default function MatchDetail({ profile, onBack }) {
                     </div>
                 </div>
             )}
+            {confirmModal.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>{confirmModal.title}</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>{confirmModal.message}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={() => {
+                                    confirmModal.onConfirm?.()
+                                    setConfirmModal({ ...confirmModal, show: false })
+                                }}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {expansionData.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <Trophy size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '0.5rem' }}>Expandir Partido</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Habilitar un 3er equipo permitirá hasta 15 jugadores. Ingrese el nuevo costo total de la cancha.
+                        </p>
+
+                        <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginLeft: '0.5rem' }}>Costo Total de Cancha (S/)</label>
+                            <input
+                                type="number"
+                                className="premium-input"
+                                style={{ width: '100%', marginTop: '0.3rem', fontSize: '1.2rem', padding: '1rem' }}
+                                value={expansionData.newCost}
+                                onChange={(e) => setExpansionData({ ...expansionData, newCost: e.target.value })}
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setExpansionData({ ...expansionData, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                disabled={!expansionData.newCost || actionLoading === 'expanding'}
+                                onClick={handleExpandMatch}
+                            >
+                                Expandir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {statusMsg.text && (
                 <div style={{

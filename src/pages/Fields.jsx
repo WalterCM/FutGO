@@ -14,6 +14,13 @@ export default function Fields({ profile }) {
         price_per_hour: '',
         address: ''
     })
+    const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
+    const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
+
+    function showMsg(type, text) {
+        setStatusMsg({ type, text })
+        setTimeout(() => setStatusMsg({ type: '', text: '' }), 3000)
+    }
 
     useEffect(() => {
         fetchFields()
@@ -26,7 +33,7 @@ export default function Fields({ profile }) {
             .select('*')
             .order('name')
 
-        if (error) alert(error.message)
+        if (error) showMsg('error', error.message)
         else setFields(data || [])
         setLoading(false)
     }
@@ -49,8 +56,10 @@ export default function Fields({ profile }) {
             error = insertError
         }
 
-        if (error) alert(error.message)
-        else {
+        if (error) {
+            showMsg('error', error.message)
+        } else {
+            showMsg('success', editingId ? 'Cancha actualizada' : 'Cancha creada')
             setShowForm(false)
             setEditingId(null)
             setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '' })
@@ -77,15 +86,24 @@ export default function Fields({ profile }) {
         setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '' })
     }
 
-    async function deleteField(id) {
-        if (!confirm('¿Estás seguro de eliminar esta cancha?')) return
-        const { error } = await supabase
-            .from('fields')
-            .delete()
-            .eq('id', id)
+    function deleteField(id) {
+        setConfirmModal({
+            show: true,
+            title: 'Eliminar Cancha',
+            message: '¿Estás completamente seguro de que quieres eliminar esta cancha? Esta acción no se puede deshacer.',
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('fields')
+                    .delete()
+                    .eq('id', id)
 
-        if (error) alert(error.message)
-        else fetchFields()
+                if (error) showMsg('error', error.message)
+                else {
+                    showMsg('success', 'Cancha eliminada')
+                    fetchFields()
+                }
+            }
+        })
     }
 
     return (
@@ -220,6 +238,51 @@ export default function Fields({ profile }) {
                     ))
                 )}
             </div>
+            {confirmModal.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <Trash2 size={48} style={{ color: 'var(--danger)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '1rem' }}>{confirmModal.title}</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>{confirmModal.message}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'var(--danger)' }}
+                                onClick={() => {
+                                    confirmModal.onConfirm?.()
+                                    setConfirmModal({ ...confirmModal, show: false })
+                                }}
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {statusMsg.text && (
+                <div style={{
+                    position: 'fixed',
+                    top: '2rem',
+                    right: '2rem',
+                    padding: '1rem 2rem',
+                    borderRadius: '8px',
+                    backgroundColor: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    zIndex: 4000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    animation: 'slideIn 0.3s ease-out'
+                }}>
+                    {statusMsg.text}
+                </div>
+            )}
         </div >
     )
 }
