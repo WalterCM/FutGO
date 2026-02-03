@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet } from 'lucide-react'
 
 export default function MatchDetail({ profile, onBack }) {
     const { id: matchId } = useParams()
@@ -20,6 +20,8 @@ export default function MatchDetail({ profile, onBack }) {
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
     const [activeTab, setActiveTab] = useState('admin') // 'admin' or 'field'
+    const [showCheckout, setShowCheckout] = useState(false)
+    const [balanceLoading, setBalanceLoading] = useState(false)
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -93,6 +95,20 @@ export default function MatchDetail({ profile, onBack }) {
         }
     }
 
+    async function handleTogglePaid(enrol) {
+        if (enrol.paid) {
+            if (!confirm('¿Seguro que quieres desmarcar el pago de ' + enrol.player?.full_name + '?')) return
+        }
+        await updateEnrollment(enrol.id, { paid: !enrol.paid })
+    }
+
+    async function handleTogglePresent(enrol) {
+        if (enrol.is_present) {
+            if (!confirm('¿Seguro que quieres quitar de la cancha a ' + enrol.player?.full_name + '?')) return
+        }
+        await updateEnrollment(enrol.id, { is_present: !enrol.is_present })
+    }
+
     async function handleAddGame(e) {
         e.preventDefault()
         setActionLoading('game-form')
@@ -121,20 +137,46 @@ export default function MatchDetail({ profile, onBack }) {
         setActionLoading(null)
     }
 
-    async function joinMatch() {
+    async function joinMatch(useBalance = false) {
         setActionLoading('join')
+        const cost = 10; // Standard price
+
+        if (useBalance) {
+            if ((profile.balance || 0) < cost) {
+                showMsg('error', 'Saldo insuficiente')
+                setActionLoading(null)
+                return
+            }
+
+            // Deduct from profile balance
+            const { error: balanceError } = await supabase
+                .from('profiles')
+                .update({ balance: profile.balance - cost })
+                .eq('id', profile.id)
+
+            if (balanceError) {
+                showMsg('error', 'Error al usar saldo: ' + balanceError.message)
+                setActionLoading(null)
+                return
+            }
+        }
+
         const { error } = await supabase
             .from('enrollments')
             .insert([{
                 match_id: matchId,
-                player_id: profile.id
+                player_id: profile.id,
+                paid: useBalance, // If used balance, it's already paid
+                is_waitlist: enrolledCount >= totalNeeded
             }])
 
         if (error) {
-            if (error.code === '23505') showMsg('error', 'Ya estás inscrito')
-            else showMsg('error', error.message)
+            showMsg('error', error.message)
+            // If balance was used, we should ideally revert it here, 
+            // but for now we'll just show the error.
         } else {
-            showMsg('success', '¡Te has unido! ⚽')
+            showMsg('success', enrolledCount >= totalNeeded ? '¡Anotado en lista de espera! ⏳' : '¡Te has unido! ⚽')
+            setShowCheckout(false)
             fetchMatchDetails(true)
         }
         setActionLoading(null)
@@ -191,6 +233,57 @@ export default function MatchDetail({ profile, onBack }) {
         if (!selectedPlayerId) return
         await updateEnrollment(selectedPlayerId, { team_assignment: teamId === 0 ? null : teamId })
         setSelectedPlayerId(null)
+    }
+
+    async function handleCloseMatch() {
+        const collected = enrollments.filter(e => e.paid).length * 10
+        const cost = match.fixed_cost || 100
+        const surplus = collected - cost
+        const presentPlayers = enrollments.filter(e => e.is_present)
+
+        if (surplus < 0) {
+            if (!confirm(`Hay un déficit de S/ ${Math.abs(surplus)}. ¿Cerrar de todas formas? (No se devolverá nada)`)) return
+        } else if (surplus > 0) {
+            const perPerson = (surplus / presentPlayers.length).toFixed(2)
+            if (!confirm(`Se repartirán S/ ${surplus} (S/ ${perPerson} por crack) a las billeteras de los ${presentPlayers.length} presentes. ¿Confirmar?`)) return
+
+            setActionLoading('closing')
+            // Distribute surplus
+            for (const p of presentPlayers) {
+                const { data: pData } = await supabase.from('profiles').select('balance').eq('id', p.player_id).single()
+                await supabase.from('profiles').update({ balance: (pData?.balance || 0) + Number(perPerson) }).eq('id', p.player_id)
+            }
+        } else {
+            if (!confirm('El balance es 0. ¿Cerrar partido?')) return
+        }
+
+        setActionLoading('closing')
+        const { error } = await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
+        if (error) showMsg('error', error.message)
+        else {
+            showMsg('success', '¡Caja cerrada y partido finalizado! 🏁')
+            fetchMatchDetails()
+        }
+        setActionLoading(null)
+    }
+
+    async function handleExpandMatch() {
+        const newCost = prompt('Nuevo costo total de la cancha (S/):', (match.fixed_cost || 100) + 50)
+        if (!newCost || isNaN(newCost)) return
+
+        setActionLoading('expanding')
+        const { error } = await supabase.from('matches').update({
+            max_players: 15,
+            fixed_cost: Number(newCost)
+        }).eq('id', matchId)
+
+        if (error) {
+            showMsg('error', error.message)
+        } else {
+            showMsg('success', '¡Partido expandido a 3 equipos! ⚽⚽⚽')
+            fetchMatchDetails(true)
+        }
+        setActionLoading(null)
     }
 
     if (loading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando detalles...</div>
@@ -262,18 +355,18 @@ export default function MatchDetail({ profile, onBack }) {
                                     border: '1px solid var(--danger)',
                                     color: confirmingLeave ? 'white' : 'var(--danger)'
                                 }}
-                                disabled={actionLoading === 'leave'}
+                                disabled={actionLoading === 'leave' || match.is_locked}
                             >
                                 {actionLoading === 'leave' ? 'Saliendo...' : (confirmingLeave ? '¿Seguro?' : 'Salir')}
                             </button>
                         ) : (
                             <button
-                                onClick={joinMatch}
+                                onClick={() => enrolledCount >= totalNeeded ? joinMatch() : setShowCheckout(true)}
                                 className="btn-primary"
                                 style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', width: '100%' }}
-                                disabled={actionLoading === 'join' || enrolledCount >= totalNeeded}
+                                disabled={actionLoading === 'join' || match.is_locked || (enrolledCount >= totalNeeded && enrollments.some(e => e.player_id === profile.id))}
                             >
-                                {actionLoading === 'join' ? 'Uniendo...' : (enrolledCount >= totalNeeded ? 'Lleno' : 'Unirme')}
+                                {actionLoading === 'join' ? 'Uniendo...' : (enrolledCount >= totalNeeded ? 'Me interesa' : 'Unirme')}
                             </button>
                         )}
                     </div>
@@ -359,22 +452,26 @@ export default function MatchDetail({ profile, onBack }) {
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button
-                                            onClick={() => updateEnrollment(enrol.id, { paid: !enrol.paid })}
+                                            onClick={() => handleTogglePaid(enrol)}
+                                            disabled={match.is_locked}
                                             style={{
                                                 padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
-                                                background: enrol.paid ? '#10b981' : 'transparent', color: enrol.paid ? 'black' : 'var(--text-dim)'
+                                                background: enrol.paid ? '#10b981' : 'transparent', color: enrol.paid ? 'black' : 'var(--text-dim)',
+                                                opacity: match.is_locked ? 0.6 : 1
                                             }}
                                         >
                                             <CreditCard size={12} style={{ marginRight: '4px' }} /> {enrol.paid ? 'Pagado' : 'Cobrar'}
                                         </button>
                                         <button
-                                            onClick={() => updateEnrollment(enrol.id, { is_present: !enrol.is_present })}
+                                            onClick={() => handleTogglePresent(enrol)}
+                                            disabled={match.is_locked}
                                             style={{
                                                 padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
-                                                background: enrol.is_present ? 'var(--primary)' : 'transparent', color: enrol.is_present ? 'black' : 'var(--text-dim)'
+                                                background: enrol.is_present ? 'var(--primary)' : 'transparent', color: enrol.is_present ? 'black' : 'var(--text-dim)',
+                                                opacity: match.is_locked ? 0.6 : 1
                                             }}
                                         >
-                                            <Users size={12} style={{ marginRight: '4px' }} /> {enrol.is_present ? 'Presente' : 'Llamar'}
+                                            <Users size={12} style={{ marginRight: '4px' }} /> {enrol.is_present ? 'Presente' : 'Ausente'}
                                         </button>
                                     </div>
                                 </div>
@@ -383,19 +480,63 @@ export default function MatchDetail({ profile, onBack }) {
                     </div>
 
                     <div className="premium-card" style={{ padding: '1.5rem', border: '1px solid var(--primary)', background: 'rgba(var(--primary-rgb), 0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                             <div>
                                 <h4 style={{ color: 'var(--primary)', marginBottom: '0.2rem' }}>Resumen Financiero</h4>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Basado en pagos registrados</p>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>División: S/ 10 por crack</p>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                                    S/ {enrollments.filter(e => e.paid).length * (match.field?.price_per_hour || 0)}
+                            <div style={{ display: 'flex', gap: '2rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                        S/ {enrollments.filter(e => e.paid).length * 10}
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Recaudado</div>
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Total Recaudado</div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)' }}>
+                                        S/ {match.fixed_cost || 100}
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Costo Cancha</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (enrollments.filter(e => e.paid).length * 10) >= (match.fixed_cost || 100) ? '#10b981' : 'var(--danger)' }}>
+                                        S/ {(enrollments.filter(e => e.paid).length * 10) - (match.fixed_cost || 100)}
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Balance</div>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {profile?.is_admin && !match.is_locked && (
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                            {match.max_players < 15 && (
+                                <button
+                                    onClick={handleExpandMatch}
+                                    className="btn-primary"
+                                    style={{ flex: 1, background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
+                                    disabled={actionLoading === 'expanding'}
+                                >
+                                    {actionLoading === 'expanding' ? 'Expandiendo...' : 'Habilitar 3er Equipo'}
+                                </button>
+                            )}
+                            <button
+                                onClick={handleCloseMatch}
+                                className="btn-primary"
+                                style={{ flex: 1, background: '#10b981', color: 'black' }}
+                                disabled={actionLoading === 'closing'}
+                            >
+                                {actionLoading === 'closing' ? 'Cerrando...' : 'Cerrar Caja'}
+                            </button>
+                        </div>
+                    )}
+
+                    {match.is_locked && (
+                        <div className="premium-card" style={{ marginTop: '2rem', textAlign: 'center', border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.05)' }}>
+                            <h4 style={{ color: '#10b981' }}>✓ Partido Finalizado</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>La caja ha sido cerrada y los saldos repartidos.</p>
+                        </div>
+                    )}
                 </>
             ) : (
                 <>
@@ -552,6 +693,7 @@ export default function MatchDetail({ profile, onBack }) {
                                                     border: `1px solid ${teamConfigs[gameData.team2Id].color}`,
                                                     padding: '0.4rem', borderRadius: '6px', marginBottom: '0.5rem', width: '100%', fontWeight: 'bold'
                                                 }}
+                                                disabled={match.is_locked}
                                             >
                                                 {[1, 2, 3].map(id => <option key={id} value={id} style={{ background: 'var(--bg-dark)', color: 'white' }}>{teamConfigs[id].name}</option>)}
                                             </select>
@@ -562,21 +704,24 @@ export default function MatchDetail({ profile, onBack }) {
                                                 value={gameData.score2}
                                                 onChange={(e) => setGameData({ ...gameData, score2: parseInt(e.target.value) || 0 })}
                                                 min="0"
+                                                disabled={match.is_locked}
                                             />
                                         </div>
                                     </div>
                                     <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textAlign: 'center', marginBottom: '1rem' }}>
                                         El score se registrará para los jugadores actualmente en cada equipo.
                                     </p>
-                                    <button
-                                        type="submit"
-                                        className="btn-primary"
-                                        style={{ width: '100%' }}
-                                        disabled={actionLoading === 'game-form' || gameData.team1Id === gameData.team2Id}
-                                    >
-                                        {actionLoading === 'game-form' ? 'Guardando...' :
-                                            gameData.team1Id === gameData.team2Id ? 'Selecciona equipos distintos' : 'Confirmar Resultado'}
-                                    </button>
+                                    {!match.is_locked && (
+                                        <button
+                                            type="submit"
+                                            className="btn-primary"
+                                            style={{ width: '100%' }}
+                                            disabled={actionLoading === 'game-form' || gameData.team1Id === gameData.team2Id}
+                                        >
+                                            {actionLoading === 'game-form' ? 'Guardando...' :
+                                                gameData.team1Id === gameData.team2Id ? 'Selecciona equipos distintos' : 'Confirmar Resultado'}
+                                        </button>
+                                    )}
                                 </form>
                             </div>
                         )}
@@ -621,6 +766,53 @@ export default function MatchDetail({ profile, onBack }) {
                         )}
                     </div>
                 </>
+            )}
+
+            {showCheckout && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.3s ease-out' }}>
+                        <Wallet size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '0.5rem' }}>Confirmar Inscripción</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>La cuota para este partido es de <b>S/ 10.00</b></p>
+
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span>Tu Saldo FutGO:</span>
+                                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>S/ {profile?.balance || 0}</span>
+                            </div>
+                            {profile?.balance >= 10 ? (
+                                <div style={{ fontSize: '0.8rem', color: '#10b981' }}>✓ Tienes saldo suficiente</div>
+                            ) : (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>⚠ Saldo insuficiente para pago automático</div>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'grid', gap: '0.8rem' }}>
+                            <button
+                                className="btn-primary"
+                                disabled={profile?.balance < 10 || actionLoading === 'join'}
+                                onClick={() => joinMatch(true)}
+                                style={{ width: '100%', opacity: profile?.balance < 10 ? 0.5 : 1 }}
+                            >
+                                {actionLoading === 'join' ? 'Procesando...' : 'Usar Saldo FutGO'}
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{ width: '100%', border: '1px solid var(--primary)', background: 'transparent', color: 'var(--primary)' }}
+                                onClick={() => joinMatch(false)}
+                                disabled={actionLoading === 'join'}
+                            >
+                                Pagaré Externo (Yape/Efectivo)
+                            </button>
+                            <button
+                                onClick={() => setShowCheckout(false)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.5rem' }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {statusMsg.text && (

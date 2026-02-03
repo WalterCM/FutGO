@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Users as UsersIcon, Shield, ShieldCheck, User, Search, Loader2 } from 'lucide-react'
+import { Users as UsersIcon, Shield, ShieldCheck, User, Search, Loader2, PlusCircle, MinusCircle, Wallet } from 'lucide-react'
 
 export default function Users({ profile }) {
     const [users, setUsers] = useState([])
@@ -24,6 +24,25 @@ export default function Users({ profile }) {
         if (error) alert(error.message)
         else setUsers(data || [])
         setLoading(false)
+    }
+
+    async function adjustBalance(userId, currentBalance, amount) {
+        setActionLoading(userId + 'balance')
+        const newBalance = Number(currentBalance || 0) + Number(amount)
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ balance: newBalance })
+            .eq('id', userId)
+
+        if (error) {
+            alert(error.message)
+        } else {
+            setUsers(users.map(u =>
+                u.id === userId ? { ...u, balance: newBalance } : u
+            ))
+        }
+        setActionLoading(null)
     }
 
     async function toggleRole(userId, roleField, currentValue) {
@@ -120,11 +139,40 @@ export default function Users({ profile }) {
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
                                             {user.is_super_admin ? 'Owner' : (user.is_admin ? 'Administrador' : 'Jugador')}
                                         </div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <Wallet size={14} /> S/ {user.balance || 0}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.8rem' }}>
+                            <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                                {/* Balance Management */}
+                                <div style={{ display: 'flex', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.8rem', marginRight: '0.2rem' }}>
+                                    <button
+                                        onClick={() => {
+                                            const amount = prompt('Monto a depositar (S/):')
+                                            if (amount && !isNaN(amount)) adjustBalance(user.id, user.balance, amount)
+                                        }}
+                                        disabled={actionLoading === user.id + 'balance'}
+                                        style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '0.2rem' }}
+                                        title="Depositar Saldo"
+                                    >
+                                        <PlusCircle size={20} />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const amount = prompt('Monto a retirar (S/):')
+                                            if (amount && !isNaN(amount)) adjustBalance(user.id, user.balance, -amount)
+                                        }}
+                                        disabled={actionLoading === user.id + 'balance'}
+                                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
+                                        title="Retirar Saldo"
+                                    >
+                                        <MinusCircle size={20} />
+                                    </button>
+                                </div>
+
                                 {/* Admin Toggle */}
                                 <button
                                     onClick={() => toggleRole(user.id, 'is_admin', user.is_admin)}
