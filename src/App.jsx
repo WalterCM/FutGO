@@ -14,10 +14,10 @@ function MainContent({ view, setView }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const [selectedMatchId, setSelectedMatchId] = useState(null)
+  const [selectedMatch, setSelectedMatch] = useState(null)
 
-  const openMatchDetail = (id) => {
-    setSelectedMatchId(id)
+  const openMatchDetail = (matchObj) => {
+    setSelectedMatch(matchObj)
     setView('match-detail')
   }
 
@@ -84,7 +84,7 @@ function MainContent({ view, setView }) {
       {view === 'fields' && <Fields profile={profile} />}
       {view === 'match-detail' && (
         <MatchDetail
-          matchId={selectedMatchId}
+          initialMatch={selectedMatch}
           profile={profile}
           onBack={() => setView('matches')}
         />

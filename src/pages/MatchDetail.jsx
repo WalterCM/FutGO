@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight } from 'lucide-react'
 
-export default function MatchDetail({ matchId, profile, onBack }) {
-    const [match, setMatch] = useState(null)
-    const [enrollments, setEnrollments] = useState([])
+export default function MatchDetail({ initialMatch, profile, onBack }) {
+    const [match, setMatch] = useState(initialMatch || null)
+    const [enrollments, setEnrollments] = useState(initialMatch?.enrollments || [])
     const [games, setGames] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!initialMatch)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [showGameForm, setShowGameForm] = useState(false)
     const [gameData, setGameData] = useState({ score1: 0, score2: 0, team1Id: 1, team2Id: 2 })
     const [actionLoading, setActionLoading] = useState(null)
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
-    const [selectedPlayerId, setSelectedPlayerId] = useState(null) // For mobile "Click to Move"
+    const [selectedPlayerId, setSelectedPlayerId] = useState(null)
+    const matchId = initialMatch?.id
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -21,7 +22,7 @@ export default function MatchDetail({ matchId, profile, onBack }) {
 
     useEffect(() => {
         if (matchId) {
-            fetchMatchDetails()
+            fetchMatchDetails(!!initialMatch)
         }
     }, [matchId])
 
@@ -108,8 +109,8 @@ export default function MatchDetail({ matchId, profile, onBack }) {
         } else {
             showMsg('success', 'Resultado guardado')
             setShowGameForm(false)
-            setGameData({ score1: 0, score2: 0 })
-            fetchMatchDetails()
+            setGameData({ score1: 0, score2: 0, team1Id: 1, team2Id: 2 })
+            fetchMatchDetails(true)
         }
         setActionLoading(null)
     }
@@ -157,7 +158,13 @@ export default function MatchDetail({ matchId, profile, onBack }) {
     }
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+            {isRefreshing && (
+                <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontSize: '0.75rem', animation: 'fadeIn 0.3s' }}>
+                    <div className="spin" style={{ width: '12px', height: '12px', border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%' }}></div>
+                    Actualizando...
+                </div>
+            )}
             <button
                 onClick={onBack}
                 style={{

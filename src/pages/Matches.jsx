@@ -45,7 +45,7 @@ export default function Matches({ profile, onMatchClick }) {
             .select(`
                 *,
                 field:fields(*),
-                enrollments(*)
+                enrollments(*, player:profiles(*))
             `)
             .order('date', { ascending: true })
             .order('time', { ascending: true })
@@ -233,7 +233,7 @@ export default function Matches({ profile, onMatchClick }) {
                                 key={match.id}
                                 className="premium-card"
                                 style={{ position: 'relative', cursor: 'pointer' }}
-                                onClick={() => onMatchClick(match.id)}
+                                onClick={() => onMatchClick(match)}
                             >
                                 {profile?.is_admin && (
                                     <button
