@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Calendar, Clock, Users, CheckCircle, Trash2, LogOut, Loader2 } from 'lucide-react'
 
-export default function Matches({ profile }) {
+export default function Matches({ profile, onMatchClick }) {
     const [matches, setMatches] = useState([])
     const [fields, setFields] = useState([])
     const [loading, setLoading] = useState(true)
@@ -229,11 +229,19 @@ export default function Matches({ profile }) {
                         const isEnrolled = match.enrollments?.some(e => e.player_id === profile.id);
 
                         return (
-                            <div key={match.id} className="premium-card" style={{ position: 'relative' }}>
+                            <div
+                                key={match.id}
+                                className="premium-card"
+                                style={{ position: 'relative', cursor: 'pointer' }}
+                                onClick={() => onMatchClick(match.id)}
+                            >
                                 {profile?.is_admin && (
                                     <button
-                                        onClick={() => deleteMatch(match.id)}
-                                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            deleteMatch(match.id)
+                                        }}
+                                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', zIndex: 10 }}
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -266,7 +274,10 @@ export default function Matches({ profile }) {
                                 {isEnrolled ? (
                                     <button
                                         className="btn-primary"
-                                        onClick={() => leaveMatch(match.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            leaveMatch(match.id)
+                                        }}
                                         disabled={actionLoading === match.id}
                                         style={{
                                             width: '100%',
@@ -277,7 +288,9 @@ export default function Matches({ profile }) {
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                             gap: '0.5rem',
-                                            transition: 'all 0.3s ease'
+                                            transition: 'all 0.3s ease',
+                                            position: 'relative',
+                                            zIndex: 10
                                         }}
                                     >
                                         {actionLoading === match.id ? (
@@ -291,7 +304,10 @@ export default function Matches({ profile }) {
                                 ) : (
                                     <button
                                         className="btn-primary"
-                                        onClick={() => joinMatch(match.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            joinMatch(match.id)
+                                        }}
                                         disabled={isFull || actionLoading === match.id}
                                         style={{
                                             width: '100%',
@@ -299,7 +315,9 @@ export default function Matches({ profile }) {
                                             display: 'flex',
                                             justifyContent: 'center',
                                             alignItems: 'center',
-                                            gap: '0.5rem'
+                                            gap: '0.5rem',
+                                            position: 'relative',
+                                            zIndex: 10
                                         }}
                                     >
                                         {actionLoading === match.id ? <Loader2 size={18} className="spin" /> : (isFull ? 'Partido Lleno' : 'Unirme al Partido')}

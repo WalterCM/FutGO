@@ -5,6 +5,7 @@ import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
 import Matches from './pages/Matches'
+import MatchDetail from './pages/MatchDetail'
 import { supabase } from './lib/supabase'
 
 
@@ -12,6 +13,13 @@ function MainContent({ view, setView }) {
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const [selectedMatchId, setSelectedMatchId] = useState(null)
+
+  const openMatchDetail = (id) => {
+    setSelectedMatchId(id)
+    setView('match-detail')
+  }
 
   const checkProfile = async () => {
     if (!user) {
@@ -71,14 +79,21 @@ function MainContent({ view, setView }) {
         </div>
       </header>
 
-      {view === 'dashboard' && <Dashboard profile={profile} />}
-      {view === 'matches' && <Matches profile={profile} />}
+      {view === 'dashboard' && <Dashboard profile={profile} onMatchClick={openMatchDetail} />}
+      {view === 'matches' && <Matches profile={profile} onMatchClick={openMatchDetail} />}
       {view === 'fields' && <Fields profile={profile} />}
+      {view === 'match-detail' && (
+        <MatchDetail
+          matchId={selectedMatchId}
+          profile={profile}
+          onBack={() => setView('matches')}
+        />
+      )}
     </div>
   )
 }
 
-function Dashboard({ profile }) { // Receive profile as prop
+function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
   const { user } = useAuth()
   // Removed local profile state and useEffect for fetching profile, as it's now passed as a prop
 
