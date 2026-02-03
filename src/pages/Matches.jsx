@@ -122,6 +122,7 @@ export default function Matches({ profile, onMatchClick }) {
     }
 
     function deleteMatch(id) {
+        if (!profile?.is_super_admin) return
         setConfirmModal({
             show: true,
             title: 'Eliminar Partido',
