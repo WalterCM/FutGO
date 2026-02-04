@@ -236,7 +236,17 @@ export default function MatchDetail({ profile, onBack }) {
         0: { name: 'Banca', color: 'var(--text-dim)', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' },
         1: { name: 'Crema', color: '#800000', bg: '#fdf5e6', border: '#800000' },
         2: { name: 'Blanquiazul', color: '#ffffff', bg: '#002366', border: '#ffffff' },
-        3: { name: 'Celeste', color: '#00008b', bg: '#add8e6', border: '#00008b' }
+        3: { name: 'Celeste', color: '#00008b', bg: '#add8e6', border: '#00008b' },
+        4: { name: 'Rojo', color: '#ffffff', bg: '#991b1b', border: '#ffffff' },
+        5: { name: 'Verde', color: '#ffffff', bg: '#064e3b', border: '#ffffff' },
+        6: { name: 'Amarillo', color: '#422006', bg: '#facc15', border: '#422006' }
+    }
+
+    const getOrdinal = (n) => {
+        if (n === 1) return '1er';
+        if (n === 2) return '2do';
+        if (n === 3) return '3er';
+        return `${n}to`;
     }
 
     const onDragStart = (e, enrolId) => {
@@ -319,15 +329,21 @@ export default function MatchDetail({ profile, onBack }) {
     async function handleExpandMatch() {
         if (!canManage) return
         setActionLoading('expanding')
+
+        const playersPerTeam = match.field?.players_per_team || 5
+        const currentTotal = match.max_players || (playersPerTeam * 2)
+        const nextMaxPlayers = currentTotal + playersPerTeam
+
         const { error } = await supabase.from('matches').update({
-            max_players: 15,
+            max_players: nextMaxPlayers,
             fixed_cost: Number(expansionData.newCost)
         }).eq('id', matchId)
 
         if (error) {
             showMsg('error', error.message)
         } else {
-            showMsg('success', '¡Partido expandido a 3 equipos! ⚽⚽⚽')
+            const nextTeamNum = (nextMaxPlayers / playersPerTeam)
+            showMsg('success', `¡Partido expandido a ${nextTeamNum} equipos! ⚽`)
             setExpansionData({ show: false, newCost: 150 })
             fetchMatchDetails(true)
         }
@@ -408,7 +424,9 @@ export default function MatchDetail({ profile, onBack }) {
     if (loading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando detalles...</div>
     if (!match) return null
 
-    const totalNeeded = match.field?.players_per_team * 2;
+    const playersPerTeam = match.field?.players_per_team || 5;
+    const totalNeeded = match.max_players || (playersPerTeam * 2);
+    const numTeams = Math.floor(totalNeeded / playersPerTeam);
     const enrolledCount = enrollments.length;
 
     const getTeamPlayers = (teamId) => {
@@ -666,14 +684,17 @@ export default function MatchDetail({ profile, onBack }) {
 
                     {canManage && !match.is_locked && (
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                            {match.max_players < 15 && (
+                            {numTeams < 6 && (
                                 <button
-                                    onClick={() => setExpansionData({ show: true, newCost: (match.fixed_cost || 100) + 50 })}
+                                    onClick={() => setExpansionData({
+                                        show: true,
+                                        newCost: (match.fixed_cost || 100) + Math.round((match.fixed_cost || 100) / numTeams)
+                                    })}
                                     className="btn-primary"
                                     style={{ flex: 1, background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
                                     disabled={actionLoading === 'expanding'}
                                 >
-                                    {actionLoading === 'expanding' ? 'Expandiendo...' : 'Habilitar 3er Equipo'}
+                                    {actionLoading === 'expanding' ? 'Expandiendo...' : `Habilitar ${getOrdinal(numTeams + 1)} Equipo`}
                                 </button>
                             )}
                             <button
@@ -732,7 +753,7 @@ export default function MatchDetail({ profile, onBack }) {
                             gap: '1rem',
                             alignItems: 'start'
                         }}>
-                            {[0, 1, 2, 3].map(teamId => {
+                            {[0, ...Array.from({ length: numTeams }, (_, i) => i + 1)].map(teamId => {
                                 // En la cancha solo mostramos a los que están presentes
                                 const players = getTeamPlayers(teamId).filter(p => p.is_present)
                                 const config = teamConfigs[teamId]
@@ -830,12 +851,12 @@ export default function MatchDetail({ profile, onBack }) {
                                                 onChange={(e) => setGameData({ ...gameData, team1Id: parseInt(e.target.value) })}
                                                 style={{
                                                     background: teamConfigs[gameData.team1Id].bg,
-                                                    color: gameData.team1Id === 2 ? 'white' : teamConfigs[gameData.team1Id].color,
+                                                    color: (gameData.team1Id === 2 || gameData.team1Id === 4 || gameData.team1Id === 5) ? 'white' : teamConfigs[gameData.team1Id].color,
                                                     border: `1px solid ${teamConfigs[gameData.team1Id].color}`,
                                                     padding: '0.4rem', borderRadius: '6px', marginBottom: '0.5rem', width: '100%', fontWeight: 'bold'
                                                 }}
                                             >
-                                                {[1, 2, 3].map(id => <option key={id} value={id} style={{ background: 'var(--bg-dark)', color: 'white' }}>{teamConfigs[id].name}</option>)}
+                                                {Array.from({ length: numTeams }, (_, i) => i + 1).map(id => <option key={id} value={id} style={{ background: 'var(--bg-dark)', color: 'white' }}>{teamConfigs[id].name}</option>)}
                                             </select>
                                             <input
                                                 type="number"
@@ -855,13 +876,13 @@ export default function MatchDetail({ profile, onBack }) {
                                                 onChange={(e) => setGameData({ ...gameData, team2Id: parseInt(e.target.value) })}
                                                 style={{
                                                     background: teamConfigs[gameData.team2Id].bg,
-                                                    color: gameData.team2Id === 2 ? 'white' : teamConfigs[gameData.team2Id].color,
+                                                    color: (gameData.team2Id === 2 || gameData.team2Id === 4 || gameData.team2Id === 5) ? 'white' : teamConfigs[gameData.team2Id].color,
                                                     border: `1px solid ${teamConfigs[gameData.team2Id].color}`,
                                                     padding: '0.4rem', borderRadius: '6px', marginBottom: '0.5rem', width: '100%', fontWeight: 'bold'
                                                 }}
                                                 disabled={match.is_locked}
                                             >
-                                                {[1, 2, 3].map(id => <option key={id} value={id} style={{ background: 'var(--bg-dark)', color: 'white' }}>{teamConfigs[id].name}</option>)}
+                                                {Array.from({ length: numTeams }, (_, i) => i + 1).map(id => <option key={id} value={id} style={{ background: 'var(--bg-dark)', color: 'white' }}>{teamConfigs[id].name}</option>)}
                                             </select>
                                             <input
                                                 type="number"
@@ -1016,7 +1037,7 @@ export default function MatchDetail({ profile, onBack }) {
                         <Trophy size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
                         <h3 style={{ marginBottom: '0.5rem' }}>Expandir Partido</h3>
                         <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            Habilitar un 3er equipo permitirá hasta 15 jugadores. Ingrese el nuevo costo total de la cancha.
+                            Habilitar el <b>{getOrdinal(numTeams + 1)} equipo</b> permitirá hasta {totalNeeded + playersPerTeam} jugadores. Ingrese el nuevo costo total de la cancha.
                         </p>
 
                         <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
