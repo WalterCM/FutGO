@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil, Palette, Dices } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil, Palette, Dices, Phone } from 'lucide-react'
 
 const KIT_LIBRARY = [
     // Equipos Peruanos
@@ -343,8 +343,8 @@ export default function MatchDetail({ profile, onBack }) {
     /* 
     async function handleCloseMatch() {
         if (!canManage) return
-        const collected = enrollments.filter(e => e.paid).length * 10
-        const cost = match.fixed_cost || 100
+        const collected = enrollments.filter(e => e.paid).length * suggestedQuota
+        const cost = match.fixed_cost || 120
         const surplus = collected - cost
         const presentPlayers = enrollments.filter(e => e.is_present)
 
@@ -394,7 +394,12 @@ export default function MatchDetail({ profile, onBack }) {
         const playersPerTeam = match.field?.players_per_team || 5
         const currentTotal = match.max_players || (playersPerTeam * 2)
         const isShrinking = expansionData.mode === 'shrink'
-        const nextMaxPlayers = isShrinking ? currentTotal - playersPerTeam : currentTotal + playersPerTeam
+
+        // Rectify current state to the nearest valid team count
+        const currentTeams = Math.max(2, Math.round(currentTotal / playersPerTeam))
+        const nextMaxPlayers = isShrinking
+            ? (currentTeams - 1) * playersPerTeam
+            : (currentTeams + 1) * playersPerTeam
 
         if (isShrinking) {
             // Move players from the last team back to bench
@@ -450,7 +455,7 @@ export default function MatchDetail({ profile, onBack }) {
                 // Refund to wallets
                 for (const enroll of paidEnrollments) {
                     const { data: pData } = await supabase.from('profiles').select('balance').eq('id', enroll.player_id).single()
-                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + 10 }).eq('id', enroll.player_id)
+                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + suggestedQuota }).eq('id', enroll.player_id)
                 }
                 */
 
@@ -511,9 +516,12 @@ export default function MatchDetail({ profile, onBack }) {
     if (!match) return null
 
     const playersPerTeam = match.field?.players_per_team || 5;
-    const totalNeeded = match.max_players || (playersPerTeam * 2);
-    const numTeams = Math.floor(totalNeeded / playersPerTeam);
+    const rawTotal = match.max_players || (playersPerTeam * 2);
+    // Rectify to the nearest valid team count (minimum 2 teams)
+    const numTeams = Math.max(2, Math.round(rawTotal / playersPerTeam));
+    const totalNeeded = numTeams * playersPerTeam;
     const enrolledCount = enrollments.length;
+    const suggestedQuota = Math.ceil((match.field?.price_per_hour || 120) / (2 * (match.field?.players_per_team || 5)));
 
     const getTeamPlayers = (teamId) => {
         return enrollments
@@ -779,30 +787,27 @@ export default function MatchDetail({ profile, onBack }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                             <div>
                                 <h4 style={{ color: 'var(--primary)', marginBottom: '0.2rem' }}>Resumen de Partido</h4>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>División sugerida: S/ 10 por crack</p>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Cuota: S/ {suggestedQuota} por crack</p>
                             </div>
-                            <div style={{ display: 'flex', gap: '2rem' }}>
+                            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                                        S/ {enrollments.filter(e => e.paid).length * 10}
+                                        S/ {enrollments.filter(e => e.paid).length * suggestedQuota}
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Recaudado</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)' }}>
-                                        S/ {match.fixed_cost || 100}
+                                        S/ {match.fixed_cost || 120}
                                     </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Costo Cancha</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Costo Fijo</div>
                                 </div>
-                                {/* Financial Balance hidden for now */}
-                                {/* 
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (enrollments.filter(e => e.paid).length * 10) >= (match.fixed_cost || 100) ? '#10b981' : 'var(--danger)' }}>
-                                        S/ {(enrollments.filter(e => e.paid).length * 10) - (match.fixed_cost || 100)}
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (enrollments.filter(e => e.paid).length * suggestedQuota) >= (match.fixed_cost || 120) ? '#10b981' : 'var(--danger)' }}>
+                                        S/ {(enrollments.filter(e => e.paid).length * suggestedQuota) - (match.fixed_cost || 120)}
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Balance</div>
                                 </div>
-                                */}
                             </div>
                         </div>
                     </div>
@@ -811,11 +816,15 @@ export default function MatchDetail({ profile, onBack }) {
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                             {numTeams < 6 && (
                                 <button
-                                    onClick={() => setExpansionData({
-                                        show: true,
-                                        mode: 'expand',
-                                        newCost: (match.fixed_cost || 100) + Math.round((match.fixed_cost || 100) / numTeams)
-                                    })}
+                                    onClick={() => {
+                                        const nextTeams = numTeams + 1;
+                                        const basePrice = match.field?.price_per_hour || 120;
+                                        setExpansionData({
+                                            show: true,
+                                            mode: 'expand',
+                                            newCost: Math.round((basePrice / 2) * nextTeams)
+                                        });
+                                    }}
                                     className="btn-primary"
                                     style={{ flex: 1, background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
                                     disabled={actionLoading === 'capacity'}
@@ -825,11 +834,15 @@ export default function MatchDetail({ profile, onBack }) {
                             )}
                             {numTeams > 2 && (
                                 <button
-                                    onClick={() => setExpansionData({
-                                        show: true,
-                                        mode: 'shrink',
-                                        newCost: (match.fixed_cost || 100) - Math.round((match.fixed_cost || 100) / numTeams)
-                                    })}
+                                    onClick={() => {
+                                        const nextTeams = numTeams - 1;
+                                        const basePrice = match.field?.price_per_hour || 120;
+                                        setExpansionData({
+                                            show: true,
+                                            mode: 'shrink',
+                                            newCost: Math.round((basePrice / 2) * nextTeams)
+                                        });
+                                    }}
                                     className="btn-primary"
                                     style={{ flex: 1, background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}
                                     disabled={actionLoading === 'capacity'}
@@ -1195,14 +1208,14 @@ export default function MatchDetail({ profile, onBack }) {
                     <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.3s ease-out' }}>
                         <Wallet size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
                         <h3 style={{ marginBottom: '0.5rem' }}>Confirmar Inscripción</h3>
-                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>La cuota para este partido es de <b>S/ 10.00</b></p>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>La cuota para este partido es de <b>S/ {suggestedQuota}.00</b></p>
 
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'left' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                 <span>Tu Saldo FutGO:</span>
                                 <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>S/ {profile?.balance || 0}</span>
                             </div>
-                            {profile?.balance >= 10 ? (
+                            {profile?.balance >= suggestedQuota ? (
                                 <div style={{ fontSize: '0.8rem', color: '#10b981' }}>✓ Tienes saldo suficiente</div>
                             ) : (
                                 <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>⚠ Saldo insuficiente para pago automático</div>
@@ -1212,9 +1225,9 @@ export default function MatchDetail({ profile, onBack }) {
                         <div style={{ display: 'grid', gap: '0.8rem' }}>
                             <button
                                 className="btn-primary"
-                                disabled={profile?.balance < 10 || actionLoading === 'join'}
+                                disabled={profile?.balance < suggestedQuota || actionLoading === 'join'}
                                 onClick={() => joinMatch(true)}
-                                style={{ width: '100%', opacity: profile?.balance < 10 ? 0.5 : 1 }}
+                                style={{ width: '100%', opacity: profile?.balance < suggestedQuota ? 0.5 : 1 }}
                             >
                                 {actionLoading === 'join' ? 'Procesando...' : 'Usar Saldo FutGO'}
                             </button>
