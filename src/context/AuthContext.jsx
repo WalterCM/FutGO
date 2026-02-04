@@ -31,12 +31,31 @@ export const AuthProvider = ({ children }) => {
         })
 
         // Listen for changes on auth state (sign in, sign out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             const currentUser = session?.user ?? null
-            setUser(currentUser)
-            if (currentUser) fetchProfile(currentUser.id)
-            else setProfile(null)
-            setLoading(false)
+
+            setUser(prev => {
+                // If it's the same user (e.g. refocus/token refresh), return prev to avoid re-renders
+                if (currentUser?.id === prev?.id) {
+                    return prev
+                }
+
+                // If it's a new user, fetch their profile
+                if (currentUser?.id) {
+                    fetchProfile(currentUser.id)
+                }
+                return currentUser
+            })
+
+            if (!currentUser) {
+                setProfile(null)
+                setLoading(false)
+            } else {
+                // If we already have a profile and the user hasn't changed, we don't need to block loading
+                // But on init, we want to wait for the first fetchProfile if possible.
+                // fetchProfile is async, so we depend on its setProfile to trigger the next step.
+                // Actually, fetchProfile(currentUser.id) is called above.
+            }
         })
 
         return () => subscription.unsubscribe()

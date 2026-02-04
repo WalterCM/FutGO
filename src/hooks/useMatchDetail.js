@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 export const useMatchDetail = (matchId, profile, onBack) => {
@@ -9,6 +9,12 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [actionLoading, setActionLoading] = useState(null)
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
+
+    // Store onBack in a ref to avoid re-triggering effects when the callback changes
+    const onBackRef = useRef(onBack)
+    useEffect(() => {
+        onBackRef.current = onBack
+    }, [onBack])
 
     const showMsg = useCallback((type, text) => {
         setStatusMsg({ type, text })
@@ -54,12 +60,12 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         } catch (error) {
             console.error('Error fetching match details:', error)
             showMsg('error', error.message)
-            if (onBack && !silent) onBack()
+            if (onBackRef.current && !silent) onBackRef.current()
         } finally {
             setLoading(false)
             setIsRefreshing(false)
         }
-    }, [matchId, showMsg, onBack])
+    }, [matchId, showMsg])
 
     useEffect(() => {
         if (matchId) fetchMatchDetails()

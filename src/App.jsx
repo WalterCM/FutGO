@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -16,6 +16,14 @@ function MainContent() {
   const { user, profile, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const handleMatchClick = useCallback((m) => {
+    navigate(`/partido/${m.id}`, { state: { match: m } })
+  }, [navigate])
+
+  const handleBack = useCallback(() => {
+    navigate('/partidos')
+  }, [navigate])
 
   if (user && !profile) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando datos...</div>
   if (!user) return <Auth />
@@ -73,11 +81,11 @@ function MainContent() {
 
       <main>
         <Routes>
-          <Route path="/" element={<Dashboard profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
-          <Route path="/partidos" element={<Matches profile={profile} onMatchClick={(m) => navigate(`/partido/${m.id}`, { state: { match: m } })} />} />
+          <Route path="/" element={<Dashboard profile={profile} onMatchClick={handleMatchClick} />} />
+          <Route path="/partidos" element={<Matches profile={profile} onMatchClick={handleMatchClick} />} />
           <Route path="/canchas" element={<Fields profile={profile} />} />
           <Route path="/usuarios" element={<Users profile={profile} />} />
-          <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={() => navigate('/partidos')} />} />
+          <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={handleBack} />} />
           <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
         </Routes>
       </main>
