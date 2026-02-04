@@ -25,7 +25,7 @@ export default function MatchDetail({ profile, onBack }) {
     const [showCheckout, setShowCheckout] = useState(false)
     const [balanceLoading, setBalanceLoading] = useState(false)
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
-    const [expansionData, setExpansionData] = useState({ show: false, newCost: 150 })
+    const [expansionData, setExpansionData] = useState({ show: false, newCost: 150, mode: 'expand' })
     const [isEditing, setIsEditing] = useState(false)
     const [fields, setFields] = useState([])
     const [editData, setEditData] = useState({ field_id: '', date: '', time: '' })
@@ -109,10 +109,10 @@ export default function MatchDetail({ profile, onBack }) {
                 show: true,
                 title: 'Desmarcar Pago',
                 message: `¿Estás seguro de que quieres revertir el pago de ${enrol.player?.full_name}?`,
-                onConfirm: () => updateEnrollment(enrol.id, { paid: false })
+                onConfirm: () => updateEnrollment(enrol.id, { paid: false, paid_at: null })
             })
         } else {
-            updateEnrollment(enrol.id, { paid: true })
+            updateEnrollment(enrol.id, { paid: true, paid_at: new Date().toISOString() })
         }
     }
 
@@ -126,6 +126,11 @@ export default function MatchDetail({ profile, onBack }) {
                 onConfirm: () => updateEnrollment(enrol.id, { is_present: false })
             })
         } else {
+            // Priority: Cannot be present if hasn't paid
+            if (!enrol.paid) {
+                showMsg('error', '¡Debe pagar antes de ingresar a la cancha! 💸')
+                return
+            }
             updateEnrollment(enrol.id, { is_present: true })
         }
     }
@@ -320,11 +325,22 @@ export default function MatchDetail({ profile, onBack }) {
 
     async function handleExpandMatch() {
         if (!canManage) return
-        setActionLoading('expanding')
+        setActionLoading('capacity')
 
         const playersPerTeam = match.field?.players_per_team || 5
         const currentTotal = match.max_players || (playersPerTeam * 2)
-        const nextMaxPlayers = currentTotal + playersPerTeam
+        const isShrinking = expansionData.mode === 'shrink'
+        const nextMaxPlayers = isShrinking ? currentTotal - playersPerTeam : currentTotal + playersPerTeam
+
+        if (isShrinking) {
+            // Move players from the last team back to bench
+            const teamToRemove = Math.floor(currentTotal / playersPerTeam)
+            await supabase
+                .from('enrollments')
+                .update({ team_assignment: null })
+                .eq('match_id', matchId)
+                .eq('team_assignment', teamToRemove)
+        }
 
         const { error } = await supabase.from('matches').update({
             max_players: nextMaxPlayers,
@@ -335,8 +351,8 @@ export default function MatchDetail({ profile, onBack }) {
             showMsg('error', error.message)
         } else {
             const nextTeamNum = (nextMaxPlayers / playersPerTeam)
-            showMsg('success', `¡Partido expandido a ${nextTeamNum} equipos! ⚽`)
-            setExpansionData({ show: false, newCost: 150 })
+            showMsg('success', isShrinking ? `¡Partido reducido a ${nextTeamNum} equipos! 📉` : `¡Partido expandido a ${nextTeamNum} equipos! ⚽`)
+            setExpansionData({ show: false, newCost: 150, mode: 'expand' })
             fetchMatchDetails(true)
         }
         setActionLoading(null)
@@ -422,10 +438,21 @@ export default function MatchDetail({ profile, onBack }) {
     const enrolledCount = enrollments.length;
 
     const getTeamPlayers = (teamId) => {
-        return enrollments.filter(e => {
-            const assignment = e.team_assignment || 0
-            return assignment === teamId
-        })
+        return enrollments
+            .filter(e => {
+                // Must be paid and present to be in the field view
+                if (!e.paid || !e.is_present) return false
+                const assignment = e.team_assignment || 0
+                return assignment === teamId
+            })
+            .sort((a, b) => {
+                if (teamId === 0) {
+                    // Order by payment time for the bench
+                    return new Date(a.paid_at) - new Date(b.paid_at)
+                }
+                // Sort alphabetically for active teams
+                return (a.player?.full_name || '').localeCompare(b.player?.full_name || '')
+            })
     }
 
     return (
@@ -607,38 +634,66 @@ export default function MatchDetail({ profile, onBack }) {
                     </h3>
                     <div className="premium-card" style={{ marginBottom: '3rem', padding: '1rem' }}>
                         <div style={{ display: 'grid', gap: '0.8rem' }}>
-                            {enrollments.map((enrol, index) => (
-                                <div key={enrol.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{index + 1}.</span>
-                                        <span style={{ fontWeight: '600', color: enrol.is_present ? 'var(--primary)' : 'white' }}>{enrol.player?.full_name}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button
-                                            onClick={() => handleTogglePaid(enrol)}
-                                            disabled={match.is_locked || !canManage}
-                                            style={{
-                                                padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
-                                                background: enrol.paid ? '#10b981' : 'transparent', color: enrol.paid ? 'black' : 'var(--text-dim)',
-                                                opacity: (match.is_locked || !canManage) ? 0.6 : 1
-                                            }}
-                                        >
-                                            <CreditCard size={12} style={{ marginRight: '4px' }} /> {enrol.paid ? 'Pagado' : 'Cobrar'}
-                                        </button>
-                                        <button
-                                            onClick={() => handleTogglePresent(enrol)}
-                                            disabled={match.is_locked || !canManage}
-                                            style={{
-                                                padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
-                                                background: enrol.is_present ? 'var(--primary)' : 'transparent', color: enrol.is_present ? 'black' : 'var(--text-dim)',
-                                                opacity: (match.is_locked || !canManage) ? 0.6 : 1
-                                            }}
-                                        >
-                                            <Users size={12} style={{ marginRight: '4px' }} /> {enrol.is_present ? 'Presente' : 'Ausente'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                            {[...enrollments]
+                                .sort((a, b) => {
+                                    if (a.paid && !b.paid) return -1
+                                    if (!a.paid && b.paid) return 1
+                                    if (a.paid && b.paid) return new Date(a.paid_at) - new Date(b.paid_at)
+                                    return new Date(a.created_at) - new Date(b.created_at)
+                                })
+                                .map((enrol, index) => {
+                                    const rank = index + 1
+                                    const isTitular = rank <= totalNeeded
+
+                                    return (
+                                        <div key={enrol.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{rank}.</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontWeight: '600', color: enrol.is_present ? 'var(--primary)' : 'white' }}>{enrol.player?.full_name}</span>
+                                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
+                                                        <div style={{
+                                                            fontSize: '0.6rem',
+                                                            padding: '0.1rem 0.3rem',
+                                                            borderRadius: '3px',
+                                                            background: isTitular ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                                            color: isTitular ? '#10b981' : 'var(--text-dim)',
+                                                            border: `1px solid ${isTitular ? '#10b981' : 'var(--border)'}`,
+                                                            fontWeight: 'bold'
+                                                        }}>
+                                                            {isTitular ? (enrol.paid ? 'TITULAR' : 'PRIORIDAD') : 'RESERVA'}
+                                                        </div>
+                                                        {enrol.paid && <div style={{ fontSize: '0.6rem', color: 'var(--primary)', opacity: 0.8 }}>Pagó: {new Date(enrol.paid_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => handleTogglePaid(enrol)}
+                                                    disabled={match.is_locked || !canManage}
+                                                    style={{
+                                                        padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
+                                                        background: enrol.paid ? '#10b981' : 'transparent', color: enrol.paid ? 'black' : 'var(--text-dim)',
+                                                        opacity: (match.is_locked || !canManage) ? 0.6 : 1
+                                                    }}
+                                                >
+                                                    <CreditCard size={12} style={{ marginRight: '4px' }} /> {enrol.paid ? 'Pagado' : 'Cobrar'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleTogglePresent(enrol)}
+                                                    disabled={match.is_locked || !canManage}
+                                                    style={{
+                                                        padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', cursor: 'pointer',
+                                                        background: enrol.is_present ? 'var(--primary)' : 'transparent', color: enrol.is_present ? 'black' : 'var(--text-dim)',
+                                                        opacity: (match.is_locked || !canManage || (!enrol.paid && !enrol.is_present)) ? 0.6 : 1
+                                                    }}
+                                                >
+                                                    <Users size={12} style={{ marginRight: '4px' }} /> {enrol.is_present ? 'Presente' : 'Ausente'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                         </div>
                     </div>
 
@@ -680,13 +735,28 @@ export default function MatchDetail({ profile, onBack }) {
                                 <button
                                     onClick={() => setExpansionData({
                                         show: true,
+                                        mode: 'expand',
                                         newCost: (match.fixed_cost || 100) + Math.round((match.fixed_cost || 100) / numTeams)
                                     })}
                                     className="btn-primary"
                                     style={{ flex: 1, background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
-                                    disabled={actionLoading === 'expanding'}
+                                    disabled={actionLoading === 'capacity'}
                                 >
-                                    {actionLoading === 'expanding' ? 'Expandiendo...' : `Habilitar ${getOrdinal(numTeams + 1)} Equipo`}
+                                    {actionLoading === 'capacity' && expansionData.mode === 'expand' ? 'Expandiendo...' : `Habilitar ${getOrdinal(numTeams + 1)} Equipo`}
+                                </button>
+                            )}
+                            {numTeams > 2 && (
+                                <button
+                                    onClick={() => setExpansionData({
+                                        show: true,
+                                        mode: 'shrink',
+                                        newCost: (match.fixed_cost || 100) - Math.round((match.fixed_cost || 100) / numTeams)
+                                    })}
+                                    className="btn-primary"
+                                    style={{ flex: 1, background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}
+                                    disabled={actionLoading === 'capacity'}
+                                >
+                                    {actionLoading === 'capacity' && expansionData.mode === 'shrink' ? 'Reduciendo...' : 'Quitar Equipo'}
                                 </button>
                             )}
                             {/* 
@@ -782,35 +852,42 @@ export default function MatchDetail({ profile, onBack }) {
                                         </h4>
 
                                         <div style={{ display: 'grid', gap: '0.6rem' }}>
-                                            {players.map(p => (
-                                                <div
-                                                    key={p.id}
-                                                    draggable
-                                                    onDragStart={(e) => onDragStart(e, p.id)}
-                                                    onClick={(e) => {
-                                                        if (teamId === 0) {
-                                                            e.stopPropagation()
-                                                            setSelectedPlayerId(selectedPlayerId === p.id ? null : p.id)
-                                                        }
-                                                    }}
-                                                    className="premium-card"
-                                                    style={{
-                                                        padding: '0.8rem',
-                                                        cursor: 'grab',
-                                                        fontSize: '0.8rem',
-                                                        background: selectedPlayerId === p.id ? 'var(--primary)' : (teamId === 0 ? 'var(--bg-card)' : config.bg),
-                                                        border: `1px solid ${teamId === 0 ? 'var(--border)' : config.color}`,
-                                                        color: selectedPlayerId === p.id ? 'black' : (teamId === 0 ? 'white' : (teamId === 2 ? 'white' : config.color)),
-                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center'
-                                                    }}
-                                                >
-                                                    <div style={{ fontWeight: 'bold' }}>{p.player?.full_name}</div>
-                                                    <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>{p.player?.elo_rating}</div>
-                                                </div>
-                                            ))}
+                                            {players.map((p, idx) => {
+                                                return (
+                                                    <div
+                                                        key={p.id}
+                                                        draggable
+                                                        onDragStart={(e) => onDragStart(e, p.id)}
+                                                        onClick={(e) => {
+                                                            if (teamId === 0) {
+                                                                e.stopPropagation()
+                                                                setSelectedPlayerId(selectedPlayerId === p.id ? null : p.id)
+                                                            }
+                                                        }}
+                                                        className="premium-card"
+                                                        style={{
+                                                            padding: '0.8rem',
+                                                            cursor: 'grab',
+                                                            fontSize: '0.8rem',
+                                                            background: selectedPlayerId === p.id ? 'var(--primary)' : (teamId === 0 ? 'var(--bg-card)' : config.bg),
+                                                            border: `1px solid ${teamId === 0 ? 'var(--border)' : config.color}`,
+                                                            color: selectedPlayerId === p.id ? 'black' : (teamId === 0 ? 'white' : (teamId === 2 ? 'white' : config.color)),
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center'
+                                                        }}
+                                                    >
+                                                        <div>
+                                                            <div style={{ fontWeight: 'bold' }}>{p.player?.full_name}</div>
+                                                            <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>ELO: {p.player?.elo_rating}</div>
+                                                        </div>
+                                                        {teamId === 0 && (
+                                                            <div style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 'bold' }}>LISTO</div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )
@@ -909,7 +986,7 @@ export default function MatchDetail({ profile, onBack }) {
 
                         {games.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                                <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Aún no se han registrado resultados de juegos individuales.</p>
+                                <p style={{ color: 'var(--text-dim)' }}>Aún no se han registrado resultados de juegos individuales.</p>
                                 <p style={{ color: 'var(--primary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>¡Los resultados afectan el ELO de los cracks! 📈</p>
                             </div>
                         ) : (
@@ -1029,9 +1106,13 @@ export default function MatchDetail({ profile, onBack }) {
                 <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
                     <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
                         <Trophy size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-                        <h3 style={{ marginBottom: '0.5rem' }}>Expandir Partido</h3>
+                        <h3 style={{ marginBottom: '0.5rem' }}>{expansionData.mode === 'shrink' ? 'Reducir Partido' : 'Expandir Partido'}</h3>
                         <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            Habilitar el <b>{getOrdinal(numTeams + 1)} equipo</b> permitirá hasta {totalNeeded + playersPerTeam} jugadores. Ingrese el nuevo costo total de la cancha.
+                            {expansionData.mode === 'shrink' ? (
+                                <>Quitar el <b>{getOrdinal(numTeams)} equipo</b> limitará el partido a {totalNeeded - playersPerTeam} jugadores. Ingrese el nuevo costo total de la cancha.</>
+                            ) : (
+                                <>Habilitar el <b>{getOrdinal(numTeams + 1)} equipo</b> permitirá hasta {totalNeeded + playersPerTeam} jugadores. Ingrese el nuevo costo total de la cancha.</>
+                            )}
                         </p>
 
                         <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
@@ -1055,10 +1136,10 @@ export default function MatchDetail({ profile, onBack }) {
                             </button>
                             <button
                                 className="btn-primary"
-                                disabled={!expansionData.newCost || actionLoading === 'expanding'}
+                                disabled={!expansionData.newCost || actionLoading === 'capacity'}
                                 onClick={handleExpandMatch}
                             >
-                                Expandir
+                                {expansionData.mode === 'shrink' ? 'Reducir' : 'Expandir'}
                             </button>
                         </div>
                     </div>
