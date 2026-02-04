@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil } from 'lucide-react'
 
 export default function MatchDetail({ profile, onBack }) {
+    const { refreshProfile } = useAuth()
     const { id: matchId } = useParams()
     const location = useLocation()
     const initialMatch = location.state?.match
@@ -161,6 +163,7 @@ export default function MatchDetail({ profile, onBack }) {
         setActionLoading('join')
         const cost = 10; // Standard price
 
+        /* Wallet disabled for decentralized model 
         if (useBalance) {
             if ((profile.balance || 0) < cost) {
                 showMsg('error', 'Saldo insuficiente')
@@ -180,13 +183,14 @@ export default function MatchDetail({ profile, onBack }) {
                 return
             }
         }
+        */
 
         const { error } = await supabase
             .from('enrollments')
             .insert([{
                 match_id: matchId,
                 player_id: profile.id,
-                paid: useBalance, // If used balance, it's already paid
+                paid: false, // Default to false in decentralized model
                 is_waitlist: enrolledCount >= totalNeeded
             }])
 
@@ -198,6 +202,7 @@ export default function MatchDetail({ profile, onBack }) {
             showMsg('success', enrolledCount >= totalNeeded ? '¡Anotado en lista de espera! ⏳' : '¡Te has unido! ⚽')
             setShowCheckout(false)
             fetchMatchDetails(true)
+            refreshProfile()
         }
         setActionLoading(null)
     }
@@ -222,6 +227,7 @@ export default function MatchDetail({ profile, onBack }) {
             showMsg('success', 'Has salido del partido')
             setConfirmingLeave(false)
             fetchMatchDetails(true)
+            refreshProfile()
         }
         setActionLoading(null)
     }
@@ -264,6 +270,7 @@ export default function MatchDetail({ profile, onBack }) {
 
         const finalize = async () => {
             setActionLoading('closing')
+            /* Wallet disabled for decentralized model - No balance distribution
             // Distribute surplus
             if (surplus > 0) {
                 const perPerson = (surplus / presentPlayers.length).toFixed(2)
@@ -272,11 +279,13 @@ export default function MatchDetail({ profile, onBack }) {
                     await supabase.from('profiles').update({ balance: (pData?.balance || 0) + Number(perPerson) }).eq('id', p.player_id)
                 }
             }
+            */
             const { error } = await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
             if (error) showMsg('error', error.message)
             else {
                 showMsg('success', '¡Caja cerrada y partido finalizado! 🏁')
                 fetchMatchDetails()
+                refreshProfile()
             }
             setActionLoading(null)
         }
@@ -326,7 +335,37 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     async function handleCancelMatch() {
-        // ... existing handleCancelMatch code ...
+        if (!canManage) return
+        setConfirmModal({
+            show: true,
+            title: 'Cancelar Partido',
+            message: '¿Estás seguro de cancelar el partido? (Recuerda realizar las devoluciones manuales si corresponde).',
+            onConfirm: async () => {
+                setActionLoading('canceling')
+                /* Wallet disabled for decentralized model - No automated refunds
+                const paidEnrollments = enrollments.filter(e => e.paid)
+
+                // Refund to wallets
+                for (const enroll of paidEnrollments) {
+                    const { data: pData } = await supabase.from('profiles').select('balance').eq('id', enroll.player_id).single()
+                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + 10 }).eq('id', enroll.player_id)
+                }
+                */
+
+                // Lock the match and mark as canceled
+                const { error } = await supabase.from('matches').update({ is_locked: true, is_canceled: true }).eq('id', matchId)
+
+                if (error) {
+                    await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
+                    showMsg('success', 'Partido cancelado (Caja Bloqueada) y saldos devueltos')
+                } else {
+                    showMsg('success', 'Partido cancelado y saldos devueltos 💸')
+                }
+                fetchMatchDetails()
+                refreshProfile()
+                setActionLoading(null)
+            }
+        })
     }
 
     async function handleUpdateMatch(e) {
@@ -452,7 +491,7 @@ export default function MatchDetail({ profile, onBack }) {
                             </button>
                         ) : (
                             <button
-                                onClick={() => enrolledCount >= totalNeeded ? joinMatch() : setShowCheckout(true)}
+                                onClick={() => joinMatch()}
                                 className="btn-primary"
                                 style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', width: '100%' }}
                                 disabled={actionLoading === 'join' || match.is_locked || (enrolledCount >= totalNeeded && enrollments.some(e => e.player_id === profile.id))}
@@ -573,8 +612,8 @@ export default function MatchDetail({ profile, onBack }) {
                     <div className="premium-card" style={{ padding: '1.5rem', border: '1px solid var(--primary)', background: 'rgba(var(--primary-rgb), 0.05)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                             <div>
-                                <h4 style={{ color: 'var(--primary)', marginBottom: '0.2rem' }}>Resumen Financiero</h4>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>División: S/ 10 por crack</p>
+                                <h4 style={{ color: 'var(--primary)', marginBottom: '0.2rem' }}>Resumen de Partido</h4>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>División sugerida: S/ 10 por crack</p>
                             </div>
                             <div style={{ display: 'flex', gap: '2rem' }}>
                                 <div style={{ textAlign: 'right' }}>
@@ -589,12 +628,15 @@ export default function MatchDetail({ profile, onBack }) {
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Costo Cancha</div>
                                 </div>
+                                {/* Financial Balance hidden for now */}
+                                {/* 
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (enrollments.filter(e => e.paid).length * 10) >= (match.fixed_cost || 100) ? '#10b981' : 'var(--danger)' }}>
                                         S/ {(enrollments.filter(e => e.paid).length * 10) - (match.fixed_cost || 100)}
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Balance</div>
                                 </div>
+                                */}
                             </div>
                         </div>
                     </div>
@@ -869,6 +911,8 @@ export default function MatchDetail({ profile, onBack }) {
                 </>
             )}
 
+            {/* Checkout Modal disabled for decentralized model */}
+            {/* 
             {showCheckout && (
                 <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, padding: '1rem' }}>
                     <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.3s ease-out' }}>
@@ -915,6 +959,7 @@ export default function MatchDetail({ profile, onBack }) {
                     </div>
                 </div>
             )}
+            */}
             {confirmModal.show && (
                 <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
                     <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>

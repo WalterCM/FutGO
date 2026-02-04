@@ -5,18 +5,37 @@ const AuthContext = createContext({})
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
+    const [profile, setProfile] = useState(null)
     const [loading, setLoading] = useState(true)
+
+    const fetchProfile = async (userId) => {
+        if (!userId) {
+            setProfile(null)
+            return
+        }
+        const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single()
+        setProfile(data)
+    }
 
     useEffect(() => {
         // Check active sessions and sets the user
         supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
+            const currentUser = session?.user ?? null
+            setUser(currentUser)
+            if (currentUser) fetchProfile(currentUser.id)
             setLoading(false)
         })
 
         // Listen for changes on auth state (sign in, sign out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null)
+            const currentUser = session?.user ?? null
+            setUser(currentUser)
+            if (currentUser) fetchProfile(currentUser.id)
+            else setProfile(null)
             setLoading(false)
         })
 
@@ -27,7 +46,9 @@ export const AuthProvider = ({ children }) => {
         signUp: (data) => supabase.auth.signUp(data),
         signIn: (data) => supabase.auth.signInWithPassword(data),
         signOut: () => supabase.auth.signOut(),
+        refreshProfile: () => fetchProfile(user?.id),
         user,
+        profile
     }
 
     return (

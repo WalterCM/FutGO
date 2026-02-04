@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { Users as UsersIcon, Shield, ShieldCheck, User, Search, Loader2, PlusCircle, MinusCircle, Wallet } from 'lucide-react'
 
 export default function Users({ profile }) {
+    const { refreshProfile } = useAuth()
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -50,6 +52,7 @@ export default function Users({ profile }) {
                 u.id === userId ? { ...u, balance: newBalance } : u
             ))
             setBalanceModal({ ...balanceModal, show: false, amount: '' })
+            refreshProfile()
         }
         setActionLoading(null)
     }
@@ -65,10 +68,10 @@ export default function Users({ profile }) {
             showMsg('error', error.message)
         } else {
             showMsg('success', 'Rol actualizado')
-            // Update local state
             setUsers(users.map(u =>
                 u.id === userId ? { ...u, [roleField]: !currentValue } : u
             ))
+            refreshProfile()
         }
         setActionLoading(null)
     }
@@ -149,15 +152,19 @@ export default function Users({ profile }) {
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
                                             {user.is_super_admin ? 'Owner' : (user.is_admin ? 'Administrador' : 'Jugador')}
                                         </div>
+                                        {/* Wallet disabled for decentralized model */}
+                                        {/* 
                                         <div style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                            <Wallet size={14} /> S/ {user.balance || 0}
-                                        </div>
+                                             <Wallet size={14} /> S/ {user.balance || 0}
+                                         </div>
+                                         */}
                                     </div>
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                                {/* Balance Management */}
+                                {/* Balance Management disabled for decentralized model */}
+                                {/* 
                                 <div style={{ display: 'flex', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.8rem', marginRight: '0.2rem' }}>
                                     <button
                                         onClick={() => setBalanceModal({
@@ -182,6 +189,7 @@ export default function Users({ profile }) {
                                         <MinusCircle size={20} />
                                     </button>
                                 </div>
+                                */}
 
                                 {/* Admin Toggle */}
                                 <button
