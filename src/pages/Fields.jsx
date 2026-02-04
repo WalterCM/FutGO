@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, MapPin, Users, DollarSign, Trash2, Pencil, X } from 'lucide-react'
+import { Plus, MapPin, Users, DollarSign, Trash2, Pencil, X, Phone } from 'lucide-react'
 
 export default function Fields({ profile }) {
     const [fields, setFields] = useState([])
@@ -12,7 +12,8 @@ export default function Fields({ profile }) {
         name: '',
         players_per_team: 5,
         price_per_hour: '',
-        address: ''
+        address: '',
+        phone: ''
     })
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
@@ -62,7 +63,7 @@ export default function Fields({ profile }) {
             showMsg('success', editingId ? 'Cancha actualizada' : 'Cancha creada')
             setShowForm(false)
             setEditingId(null)
-            setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '' })
+            setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '' })
             fetchFields()
         }
         setLoading(false)
@@ -74,7 +75,8 @@ export default function Fields({ profile }) {
             name: field.name,
             players_per_team: field.players_per_team,
             price_per_hour: field.price_per_hour,
-            address: field.address
+            address: field.address,
+            phone: field.phone
         })
         setShowForm(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -83,7 +85,7 @@ export default function Fields({ profile }) {
     function cancelEdit() {
         setShowForm(false)
         setEditingId(null)
-        setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '' })
+        setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '' })
     }
 
     function deleteField(id) {
@@ -178,6 +180,17 @@ export default function Fields({ profile }) {
                                     onChange={e => setNewField({ ...newField, address: e.target.value })}
                                 />
                             </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Teléfono (para llamadas directas)</label>
+                                <input
+                                    type="text"
+                                    className="premium-input"
+                                    style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                    value={newField.phone}
+                                    onChange={e => setNewField({ ...newField, phone: e.target.value })}
+                                    placeholder="Ej: 987654321"
+                                />
+                            </div>
                         </div>
                         <button className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Guardar Cancha</button>
                     </form>
@@ -191,7 +204,7 @@ export default function Fields({ profile }) {
                     <p style={{ color: 'var(--text-dim)' }}>No hay canchas registradas aún.</p>
                 ) : (
                     fields.map(field => (
-                        <div key={field.id} className="premium-card" style={{ position: 'relative' }}>
+                        <div key={field.id} className="premium-card" style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
                             {profile?.is_super_admin && (
                                 <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
@@ -234,6 +247,36 @@ export default function Fields({ profile }) {
                                             field.address
                                         )}
                                     </div>
+                                )}
+                                {field.phone && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Phone size={16} /> {field.phone}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
+                                <div style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                                    S/ {field.price_per_hour} <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>/ hr</span>
+                                </div>
+                                {field.phone && (
+                                    <a
+                                        href={`tel:${field.phone}`}
+                                        className="btn-primary"
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            fontSize: '0.8rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.3rem',
+                                            textDecoration: 'none',
+                                            background: 'rgba(var(--primary-rgb), 0.1)',
+                                            border: '1px solid var(--primary)',
+                                            color: 'var(--primary)'
+                                        }}
+                                    >
+                                        <Phone size={14} /> Llamar
+                                    </a>
                                 )}
                             </div>
                         </div>

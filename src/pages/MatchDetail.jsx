@@ -514,6 +514,29 @@ export default function MatchDetail({ profile, onBack }) {
                         )}
                     </div>
                 )}
+
+                {match.field?.phone && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)' }}>
+                            <Phone size={18} />
+                            {match.field.phone}
+                        </div>
+                        <a
+                            href={`tel:${match.field.phone}`}
+                            className="btn-primary"
+                            style={{
+                                padding: '0.4rem 1rem',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                textDecoration: 'none'
+                            }}
+                        >
+                            <Phone size={14} /> Llamar a Cancha
+                        </a>
+                    </div>
+                )}
             </div>
 
             {/* Tab Navigation */}
