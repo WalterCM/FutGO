@@ -2,7 +2,37 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil, Palette } from 'lucide-react'
+
+const KIT_LIBRARY = [
+    // Equipos Peruanos
+    { name: 'Crema', color: '#800000', bg: '#fdf5e6', border: '#800000' },
+    { name: 'Blanquiazul', color: '#ffffff', bg: '#002366', border: '#ffffff' },
+    { name: 'Celeste', color: '#00008b', bg: '#add8e6', border: '#00008b' },
+    { name: 'Rojo y Negro', color: '#ffffff', bg: 'linear-gradient(90deg, #991b1b 0%, #991b1b 50%, #111111 50%, #111111 100%)', border: '#cc0000' },
+    { name: 'Rosado', color: '#000000', bg: '#ff69b4', border: '#000000' },
+    { name: 'Rojo', color: '#ffffff', bg: '#991b1b', border: '#ffffff' },
+
+    // Identidades Nacionales
+    { name: 'Blanquirroja', color: '#ffffff', bg: 'linear-gradient(135deg, #ffffff 0%, #ffffff 40%, #cc0000 40%, #cc0000 60%, #ffffff 60%, #ffffff 100%)', border: '#cc0000', shadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' },
+    { name: 'Celeste y Blanco', color: '#00385b', bg: 'linear-gradient(90deg, #7dd3fc 0%, #7dd3fc 33%, #ffffff 33%, #ffffff 66%, #7dd3fc 66%, #7dd3fc 100%)', border: '#7dd3fc' },
+    { name: 'Verde Amarela', color: '#004d00', bg: 'linear-gradient(90deg, #ffdf00 0%, #ffdf00 50%, #009c3b 50%, #009c3b 100%)', border: '#009c3b' },
+
+    // Clásicos e Internacionales
+    { name: 'Azul Grana', color: '#ffdf00', bg: 'linear-gradient(90deg, #a50044 0%, #a50044 50%, #004d98 50%, #004d98 100%)', border: '#ffdf00' },
+    { name: 'Blanco', color: '#000000', bg: '#ffffff', border: '#cccccc' },
+    { name: 'Azul y Oro', color: '#facc15', bg: '#002366', border: '#facc15' },
+
+
+    // Colores Primarios y Alternativos
+    { name: 'Amarillo', color: '#000000', bg: '#facc15', border: '#000000' },
+    { name: 'Verde', color: '#ffffff', bg: '#064e3b', border: '#ffffff' },
+    { name: 'Naranja', color: '#ffffff', bg: '#f97316', border: '#ffffff' },
+    { name: 'Negro y Oro', color: '#facc15', bg: '#111111', border: '#facc15' }
+]
+
+const DEFAULT_KIT = { name: 'Equipo', color: '#ffffff', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' }
+const BENCH_KIT = { name: 'Banca', color: 'var(--text-dim)', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' }
 
 export default function MatchDetail({ profile, onBack }) {
     const { refreshProfile } = useAuth()
@@ -29,6 +59,7 @@ export default function MatchDetail({ profile, onBack }) {
     const [isEditing, setIsEditing] = useState(false)
     const [fields, setFields] = useState([])
     const [editData, setEditData] = useState({ field_id: '', date: '', time: '' })
+    const [kitPicker, setKitPicker] = useState({ show: false, teamId: null })
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -238,13 +269,33 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     const teamConfigs = {
-        0: { name: 'Banca', color: 'var(--text-dim)', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' },
-        1: { name: 'Crema', color: '#800000', bg: '#fdf5e6', border: '#800000' },
-        2: { name: 'Blanquiazul', color: '#ffffff', bg: '#002366', border: '#ffffff' },
-        3: { name: 'Celeste', color: '#00008b', bg: '#add8e6', border: '#00008b' },
-        4: { name: 'Rojo', color: '#ffffff', bg: '#991b1b', border: '#ffffff' },
-        5: { name: 'Verde', color: '#ffffff', bg: '#064e3b', border: '#ffffff' },
-        6: { name: 'Amarillo', color: '#422006', bg: '#facc15', border: '#422006' }
+        0: BENCH_KIT,
+        ...(match?.team_configs || {
+            1: KIT_LIBRARY[0],
+            2: KIT_LIBRARY[1],
+            3: KIT_LIBRARY[2],
+            4: KIT_LIBRARY[3],
+            5: KIT_LIBRARY[4],
+            6: KIT_LIBRARY[5]
+        })
+    }
+
+    async function handleUpdateTeamKit(teamId, kit) {
+        if (!canManage) return
+        const newConfigs = { ...teamConfigs }
+        delete newConfigs[0] // Don't persist bench
+        newConfigs[teamId] = kit
+
+        const { error } = await supabase
+            .from('matches')
+            .update({ team_configs: newConfigs })
+            .eq('id', matchId)
+
+        if (error) showMsg('error', error.message)
+        else {
+            showMsg('success', '¡Uniforme actualizado! 👕')
+            fetchMatchDetails(true)
+        }
     }
 
     const getOrdinal = (n) => {
@@ -344,7 +395,21 @@ export default function MatchDetail({ profile, onBack }) {
 
         const { error } = await supabase.from('matches').update({
             max_players: nextMaxPlayers,
-            fixed_cost: Number(expansionData.newCost)
+            fixed_cost: Number(expansionData.newCost),
+            // Assign a random kit to the new team if expanding
+            team_configs: !isShrinking ? (() => {
+                const currentConfigs = { ...teamConfigs }
+                delete currentConfigs[0]
+                const nextTeamId = Math.floor(nextMaxPlayers / playersPerTeam)
+                const usedKits = Object.values(currentConfigs).map(k => k.name)
+                const availableKits = KIT_LIBRARY.filter(k => !usedKits.includes(k.name))
+                const randomKit = availableKits.length > 0
+                    ? availableKits[Math.floor(Math.random() * availableKits.length)]
+                    : KIT_LIBRARY[Math.floor(Math.random() * KIT_LIBRARY.length)]
+
+                currentConfigs[nextTeamId] = randomKit
+                return currentConfigs
+            })() : undefined
         }).eq('id', matchId)
 
         if (error) {
@@ -838,18 +903,56 @@ export default function MatchDetail({ profile, onBack }) {
                                             cursor: selectedPlayerId ? 'pointer' : 'default'
                                         }}
                                     >
-                                        <h4 style={{
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
                                             color: teamId === 0 ? 'var(--text-dim)' : config.color,
+                                            textShadow: config.shadow || 'none',
                                             background: teamId === 0 ? 'transparent' : config.bg,
                                             padding: '0.4rem',
                                             borderRadius: '6px',
                                             textAlign: 'center',
                                             marginBottom: '1rem',
                                             fontSize: '0.8rem',
-                                            border: teamId === 0 ? 'none' : `1px solid ${config.color}`
+                                            fontWeight: 'bold',
+                                            border: teamId === 0 ? 'none' : `1px solid ${config.color}`,
+                                            position: 'relative'
                                         }}>
-                                            {config.name} ({players.length})
-                                        </h4>
+                                            {teamId === 0 ? config.name : (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', justifyContent: 'center' }}>
+                                                    <span>{config.name}</span>
+                                                    {canManage && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setKitPicker({ show: true, teamId: teamId })
+                                                            }}
+                                                            style={{
+                                                                background: 'transparent',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                padding: '4px',
+                                                                borderRadius: '4px',
+                                                                color: config.color,
+                                                                textShadow: config.shadow || 'none',
+                                                                transition: 'background 0.2s',
+                                                                fontWeight: 'bold'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                            title="Cambiar Uniforme"
+                                                        >
+                                                            <Palette size={14} style={{ opacity: 0.8 }} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>({players.length})</span>
+                                        </div>
 
                                         <div style={{ display: 'grid', gap: '0.6rem' }}>
                                             {players.map((p, idx) => {
@@ -871,7 +974,7 @@ export default function MatchDetail({ profile, onBack }) {
                                                             fontSize: '0.8rem',
                                                             background: selectedPlayerId === p.id ? 'var(--primary)' : (teamId === 0 ? 'var(--bg-card)' : config.bg),
                                                             border: `1px solid ${teamId === 0 ? 'var(--border)' : config.color}`,
-                                                            color: selectedPlayerId === p.id ? 'black' : (teamId === 0 ? 'white' : (teamId === 2 ? 'white' : config.color)),
+                                                            color: selectedPlayerId === p.id ? 'black' : (teamId === 0 ? 'white' : config.color),
                                                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
@@ -922,7 +1025,8 @@ export default function MatchDetail({ profile, onBack }) {
                                                 onChange={(e) => setGameData({ ...gameData, team1Id: parseInt(e.target.value) })}
                                                 style={{
                                                     background: teamConfigs[gameData.team1Id].bg,
-                                                    color: (gameData.team1Id === 2 || gameData.team1Id === 4 || gameData.team1Id === 5) ? 'white' : teamConfigs[gameData.team1Id].color,
+                                                    color: teamConfigs[gameData.team1Id].color,
+                                                    textShadow: teamConfigs[gameData.team1Id].shadow || 'none',
                                                     border: `1px solid ${teamConfigs[gameData.team1Id].color}`,
                                                     padding: '0.4rem', borderRadius: '6px', marginBottom: '0.5rem', width: '100%', fontWeight: 'bold'
                                                 }}
@@ -947,7 +1051,8 @@ export default function MatchDetail({ profile, onBack }) {
                                                 onChange={(e) => setGameData({ ...gameData, team2Id: parseInt(e.target.value) })}
                                                 style={{
                                                     background: teamConfigs[gameData.team2Id].bg,
-                                                    color: (gameData.team2Id === 2 || gameData.team2Id === 4 || gameData.team2Id === 5) ? 'white' : teamConfigs[gameData.team2Id].color,
+                                                    color: teamConfigs[gameData.team2Id].color,
+                                                    textShadow: teamConfigs[gameData.team2Id].shadow || 'none',
                                                     border: `1px solid ${teamConfigs[gameData.team2Id].color}`,
                                                     padding: '0.4rem', borderRadius: '6px', marginBottom: '0.5rem', width: '100%', fontWeight: 'bold'
                                                 }}
@@ -996,7 +1101,8 @@ export default function MatchDetail({ profile, onBack }) {
                                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
                                             <div style={{ textAlign: 'center', flex: 1 }}>
                                                 <div style={{
-                                                    color: game.team1Id === 2 ? 'white' : teamConfigs[game.team1_id || 1]?.color,
+                                                    color: teamConfigs[game.team1_id || 1]?.color,
+                                                    textShadow: teamConfigs[game.team1_id || 1]?.shadow || 'none',
                                                     background: teamConfigs[game.team1_id || 1]?.bg,
                                                     padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
                                                     border: `1px solid ${teamConfigs[game.team1_id || 1]?.color}`
@@ -1008,7 +1114,8 @@ export default function MatchDetail({ profile, onBack }) {
                                             <div style={{ color: 'var(--text-dim)', fontWeight: 'bold' }}>VS</div>
                                             <div style={{ textAlign: 'center', flex: 1 }}>
                                                 <div style={{
-                                                    color: game.team2Id === 2 ? 'white' : teamConfigs[game.team2_id || 2]?.color,
+                                                    color: teamConfigs[game.team2_id || 2]?.color,
+                                                    textShadow: teamConfigs[game.team2_id || 2]?.shadow || 'none',
                                                     background: teamConfigs[game.team2_id || 2]?.bg,
                                                     padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
                                                     border: `1px solid ${teamConfigs[game.team2_id || 2]?.color}`
@@ -1231,6 +1338,87 @@ export default function MatchDetail({ profile, onBack }) {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {/* Kit Picker Modal */}
+            {kitPicker.show && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem'
+                }}>
+                    <div className="premium-card" style={{ maxWidth: '450px', width: '100%', padding: '2rem', border: '1px solid var(--primary)', animation: 'scaleIn 0.2s ease-out' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--primary)' }}>
+                                <Palette size={20} /> Elegir Uniforme
+                            </h3>
+                            <button onClick={() => setKitPicker({ show: false, teamId: null })} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                            gap: '0.8rem',
+                            maxHeight: '400px',
+                            overflowY: 'auto',
+                            paddingRight: '0.5rem'
+                        }}>
+                            {KIT_LIBRARY.map((kit, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        handleUpdateTeamKit(kitPicker.teamId, kit)
+                                        setKitPicker({ show: false, teamId: null })
+                                    }}
+                                    style={{
+                                        background: kit.bg,
+                                        border: `2px solid ${kit.border}`,
+                                        color: kit.color,
+                                        padding: '0.8rem',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 'bold',
+                                        textAlign: 'center',
+                                        transition: 'transform 0.2s, box-shadow 0.2s',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: '0.4rem',
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+                                        overflow: 'hidden',
+                                        backfaceVisibility: 'hidden',
+                                        transform: 'translateZ(0)',
+                                        backgroundClip: 'padding-box'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.05) translateZ(0)'
+                                        e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.3)'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1) translateZ(0)'
+                                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.2)'
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        borderRadius: '50%',
+                                        background: kit.bg,
+                                        border: `2px solid ${kit.color}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: kit.color }} />
+                                    </div>
+                                    <span style={{ fontWeight: 'bold', textShadow: kit.shadow || 'none' }}>{kit.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
