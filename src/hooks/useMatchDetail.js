@@ -49,7 +49,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             // Fetch games
             const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
-                .select('*, team1:profiles!games_team1_id_fkey(*), team2:profiles!games_team2_id_fkey(*)')
+                .select('*')
                 .eq('match_id', matchId)
                 .order('created_at', { ascending: false })
 
@@ -149,7 +149,10 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('games')
                 .insert([{
-                    ...gameData,
+                    score1: gameData.score1,
+                    score2: gameData.score2,
+                    team1_id: gameData.team1Id,
+                    team2_id: gameData.team2Id,
                     match_id: matchId
                 }])
 
