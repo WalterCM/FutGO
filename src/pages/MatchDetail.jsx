@@ -271,6 +271,7 @@ export default function MatchDetail({ profile, onBack }) {
         setSelectedPlayerId(null)
     }
 
+    /* 
     async function handleCloseMatch() {
         if (!canManage) return
         const collected = enrollments.filter(e => e.paid).length * 10
@@ -280,20 +281,10 @@ export default function MatchDetail({ profile, onBack }) {
 
         const finalize = async () => {
             setActionLoading('closing')
-            /* Wallet disabled for decentralized model - No balance distribution
-            // Distribute surplus
-            if (surplus > 0) {
-                const perPerson = (surplus / presentPlayers.length).toFixed(2)
-                for (const p of presentPlayers) {
-                    const { data: pData } = await supabase.from('profiles').select('balance').eq('id', p.player_id).single()
-                    await supabase.from('profiles').update({ balance: (pData?.balance || 0) + Number(perPerson) }).eq('id', p.player_id)
-                }
-            }
-            */
             const { error } = await supabase.from('matches').update({ is_locked: true }).eq('id', matchId)
             if (error) showMsg('error', error.message)
             else {
-                showMsg('success', '¡Caja cerrada y partido finalizado! 🏁')
+                showMsg('success', '¡Partido finalizado! 🏁')
                 fetchMatchDetails()
                 refreshProfile()
             }
@@ -304,7 +295,7 @@ export default function MatchDetail({ profile, onBack }) {
             setConfirmModal({
                 show: true,
                 title: 'Déficit Detectado',
-                message: `Hay un déficit de S/ ${Math.abs(surplus)}. ¿Cerrar de todas formas? No se repartirá saldo.`,
+                message: `Hay un déficit de S/ ${Math.abs(surplus)}. ¿Finalizar de todas formas?`,
                 onConfirm: finalize
             })
         } else if (surplus > 0) {
@@ -312,19 +303,20 @@ export default function MatchDetail({ profile, onBack }) {
             setConfirmModal({
                 show: true,
                 title: 'Repartir Superávit',
-                message: `Se repartirán S/ ${surplus} (S/ ${perPerson} por crack) a los ${presentPlayers.length} presentes. ¿Confirmar cierre?`,
+                message: `Hay un sobrante de S/ ${surplus} (S/ ${perPerson} por crack). ¿Confirmar finalización?`,
                 onConfirm: finalize
             })
 
         } else {
             setConfirmModal({
                 show: true,
-                title: 'Cerrar Partido',
-                message: 'El balance es 0. ¿Confirmas el cierre definitivo del partido?',
+                title: 'Finalizar Partido',
+                message: '¿Confirmas la finalización definitiva del partido?',
                 onConfirm: finalize
             })
         }
     }
+    */
 
     async function handleExpandMatch() {
         if (!canManage) return
@@ -697,6 +689,7 @@ export default function MatchDetail({ profile, onBack }) {
                                     {actionLoading === 'expanding' ? 'Expandiendo...' : `Habilitar ${getOrdinal(numTeams + 1)} Equipo`}
                                 </button>
                             )}
+                            {/* 
                             <button
                                 onClick={handleCloseMatch}
                                 className="btn-primary"
@@ -705,6 +698,7 @@ export default function MatchDetail({ profile, onBack }) {
                             >
                                 {actionLoading === 'closing' ? 'Cerrando...' : 'Cerrar Caja'}
                             </button>
+                            */}
                             <button
                                 onClick={handleCancelMatch}
                                 className="btn-primary"
