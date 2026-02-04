@@ -419,7 +419,7 @@ export default function MatchDetail({ profile, onBack }) {
     }
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+        <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', position: 'relative' }}>
             {isRefreshing && (
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontSize: '0.75rem', animation: 'fadeIn 0.3s' }}>
                     <div className="spin" style={{ width: '12px', height: '12px', border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%' }}></div>

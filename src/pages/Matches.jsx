@@ -168,7 +168,7 @@ export default function Matches({ profile, onMatchClick }) {
     }
 
     return (
-        <div style={{ padding: '2rem' }}>
+        <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Días de Pichanga</h2>
                 {(profile?.is_super_admin || profile?.is_admin) && (

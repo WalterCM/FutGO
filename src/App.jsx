@@ -90,7 +90,7 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
   // Removed local profile state and useEffect for fetching profile, as it's now passed as a prop
 
   return (
-    <main className="grid-dashboard">
+    <div className="grid-dashboard">
       <section className="premium-card">
         <h3>Próximo Partido</h3>
         <p style={{ color: 'var(--text-dim)', marginBottom: '1rem' }}>Sábado, 20:00 • El Monumental</p>
@@ -114,7 +114,7 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
         <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0' }}>{profile?.elo_rating || 1200} ELO</div>
         <p style={{ color: 'var(--primary)' }}>Nivel: {profile?.elo_rating > 1400 ? 'Crack ★★★★★' : 'Promesa ★★★☆☆'}</p>
       </section>
-    </main>
+    </div>
   )
 }
 
