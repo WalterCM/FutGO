@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil, Palette } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, CreditCard, Trophy, Plus, ChevronRight, Wallet, Pencil, Palette, Dices } from 'lucide-react'
 
 const KIT_LIBRARY = [
     // Equipos Peruanos
@@ -14,15 +14,14 @@ const KIT_LIBRARY = [
     { name: 'Rojo', color: '#ffffff', bg: '#991b1b', border: '#ffffff' },
 
     // Identidades Nacionales
-    { name: 'Blanquirroja', color: '#ffffff', bg: 'linear-gradient(135deg, #ffffff 0%, #ffffff 40%, #cc0000 40%, #cc0000 60%, #ffffff 60%, #ffffff 100%)', border: '#cc0000', shadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' },
-    { name: 'Celeste y Blanco', color: '#00385b', bg: 'linear-gradient(90deg, #7dd3fc 0%, #7dd3fc 33%, #ffffff 33%, #ffffff 66%, #7dd3fc 66%, #7dd3fc 100%)', border: '#7dd3fc' },
+    { name: 'Blanquirroja', color: '#000000', bg: 'linear-gradient(135deg, #ffffff 0%, #ffffff 40%, #cc0000 40%, #cc0000 60%, #ffffff 60%, #ffffff 100%)', border: '#cc0000' },
+    { name: 'Albiceleste', color: '#00385b', bg: 'linear-gradient(90deg, #7dd3fc 0%, #7dd3fc 33%, #ffffff 33%, #ffffff 66%, #7dd3fc 66%, #7dd3fc 100%)', border: '#7dd3fc' },
     { name: 'Verde Amarela', color: '#004d00', bg: 'linear-gradient(90deg, #ffdf00 0%, #ffdf00 50%, #009c3b 50%, #009c3b 100%)', border: '#009c3b' },
 
     // Clásicos e Internacionales
     { name: 'Azul Grana', color: '#ffdf00', bg: 'linear-gradient(90deg, #a50044 0%, #a50044 50%, #004d98 50%, #004d98 100%)', border: '#ffdf00' },
     { name: 'Blanco', color: '#000000', bg: '#ffffff', border: '#cccccc' },
     { name: 'Azul y Oro', color: '#facc15', bg: '#002366', border: '#facc15' },
-
 
     // Colores Primarios y Alternativos
     { name: 'Amarillo', color: '#000000', bg: '#facc15', border: '#000000' },
@@ -296,6 +295,20 @@ export default function MatchDetail({ profile, onBack }) {
             showMsg('success', '¡Uniforme actualizado! 👕')
             fetchMatchDetails(true)
         }
+    }
+
+    async function handleRandomizeKit(teamId) {
+        if (!canManage) return
+        const usedKitNames = Object.values(teamConfigs).map(k => k.name)
+        const availableKits = KIT_LIBRARY.filter(k => !usedKitNames.includes(k.name))
+
+        if (availableKits.length === 0) {
+            showMsg('error', '¡No hay más uniformes disponibles! 😅')
+            return
+        }
+
+        const randomKit = availableKits[Math.floor(Math.random() * availableKits.length)]
+        await handleUpdateTeamKit(teamId, randomKit)
     }
 
     const getOrdinal = (n) => {
@@ -921,37 +934,79 @@ export default function MatchDetail({ profile, onBack }) {
                                             position: 'relative'
                                         }}>
                                             {teamId === 0 ? config.name : (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', justifyContent: 'center' }}>
-                                                    <span>{config.name}</span>
+                                                <>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.4rem',
+                                                        width: '100%',
+                                                        justifyContent: 'flex-start',
+                                                        paddingRight: '3rem'
+                                                    }}>
+                                                        <span>{config.name}</span>
+                                                        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>({players.length})</span>
+                                                    </div>
                                                     {canManage && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                setKitPicker({ show: true, teamId: teamId })
-                                                            }}
-                                                            style={{
-                                                                background: 'transparent',
-                                                                border: 'none',
-                                                                cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                padding: '4px',
-                                                                borderRadius: '4px',
-                                                                color: config.color,
-                                                                textShadow: config.shadow || 'none',
-                                                                transition: 'background 0.2s',
-                                                                fontWeight: 'bold'
-                                                            }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                            title="Cambiar Uniforme"
-                                                        >
-                                                            <Palette size={14} style={{ opacity: 0.8 }} />
-                                                        </button>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            gap: '0.2rem',
+                                                            position: 'absolute',
+                                                            right: '0.4rem',
+                                                            top: '50%',
+                                                            transform: 'translateY(-50%)'
+                                                        }}>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setKitPicker({ show: true, teamId: teamId })
+                                                                }}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    padding: '4px',
+                                                                    borderRadius: '4px',
+                                                                    color: config.color,
+                                                                    textShadow: config.shadow || 'none',
+                                                                    transition: 'background 0.2s',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                                title="Elegir Uniforme"
+                                                            >
+                                                                <Palette size={14} style={{ opacity: 0.8 }} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleRandomizeKit(teamId)
+                                                                }}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    padding: '4px',
+                                                                    borderRadius: '4px',
+                                                                    color: config.color,
+                                                                    textShadow: config.shadow || 'none',
+                                                                    transition: 'background 0.2s',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                                title="Aleatorio"
+                                                            >
+                                                                <Dices size={14} style={{ opacity: 0.8 }} />
+                                                            </button>
+                                                        </div>
                                                     )}
-                                                </div>
+                                                </>
                                             )}
-                                            <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>({players.length})</span>
                                         </div>
 
                                         <div style={{ display: 'grid', gap: '0.6rem' }}>
