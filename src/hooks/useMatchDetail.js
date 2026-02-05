@@ -142,7 +142,11 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     }
 
     const togglePresent = async (enrol) => {
-        await updateEnrollment(enrol.id, { is_present: !enrol.is_present })
+        const isPresent = !enrol.is_present
+        await updateEnrollment(enrol.id, {
+            is_present: isPresent,
+            present_at: isPresent ? new Date().toISOString() : null
+        })
     }
 
     const movePlayer = async (enrolId, teamId) => {
@@ -174,15 +178,20 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const updateMatchCapacity = async (newMaxPlayers, newCost) => {
+    const updateMatchCapacity = async (newMaxPlayers, newCost, newTeamConfigs = null) => {
         setActionLoading('capacity')
         try {
+            const updates = {
+                max_players: newMaxPlayers,
+                fixed_cost: newCost
+            }
+            if (newTeamConfigs) {
+                updates.team_configs = newTeamConfigs
+            }
+
             const { error } = await supabase
                 .from('matches')
-                .update({
-                    max_players: newMaxPlayers,
-                    fixed_cost: newCost
-                })
+                .update(updates)
                 .eq('id', matchId)
 
             if (error) throw error
@@ -230,6 +239,111 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
+    const randomizeTeams = async (numTeams, kitLibrary = []) => {
+        setActionLoading('randomizing')
+        try {
+            // 1. Get present players and SORT BY ARRIVAL (First in, first out)
+            const presentEnrollments = [...enrollments]
+                .filter(e => e.is_present)
+                .sort((a, b) => new Date(a.present_at) - new Date(b.present_at))
+
+            if (presentEnrollments.length === 0) {
+                throw new Error('No hay jugadores marcados como "Presente"')
+            }
+
+            // 2. Business Logic: Determine how many full teams can be formed
+            const playersPerTeam = match?.field?.players_per_team || 5
+            const teamsToFill = Math.min(numTeams, Math.floor(presentEnrollments.length / playersPerTeam))
+            const maxParticipantsCount = teamsToFill * playersPerTeam
+
+            if (maxParticipantsCount === 0) {
+                throw new Error(`No hay suficientes jugadores para formar al menos un equipo de ${playersPerTeam}`)
+            }
+
+            // 3. Selection: Take strictly the first X people who arrived
+            const participants = presentEnrollments.slice(0, maxParticipantsCount)
+
+            // 4. Balanced Shuffle (ELO Jitter) of ONLY the selected participants
+            const sortedByElo = [...participants].sort((a, b) => {
+                const jitterA = (Math.random() * 200) - 100
+                const jitterB = (Math.random() * 200) - 100
+                const scoreA = (a.player?.elo_rating || 1000) + jitterA
+                const scoreB = (b.player?.elo_rating || 1000) + jitterB
+                return scoreB - scoreA
+            })
+
+            const updates = []
+
+            // 5. Assign ONLY selected participants (Snake Draft)
+            sortedByElo.forEach((enrol, index) => {
+                // Alternating assignment for balance
+                // 0, 1, 2, 2, 1, 0, 0, 1, 2... (Snake)
+                const cycle = teamsToFill * 2
+                const pos = index % cycle
+                let teamId
+                if (pos < teamsToFill) {
+                    teamId = pos + 1
+                } else {
+                    teamId = cycle - pos
+                }
+
+                updates.push(
+                    supabase
+                        .from('enrollments')
+                        .update({ team_assignment: teamId })
+                        .eq('id', enrol.id)
+                )
+            })
+
+            // 6. Move LATE ARRIVALS and ABSENT to Bench (Team 0)
+            const participantIds = participants.map(p => p.id)
+            const benchEnrollments = enrollments.filter(e => !participantIds.includes(e.id))
+
+            if (benchEnrollments.length > 0) {
+                updates.push(
+                    supabase
+                        .from('enrollments')
+                        .update({ team_assignment: 0 })
+                        .in('id', benchEnrollments.map(e => e.id))
+                )
+            }
+
+            // 3. Assign Kits if missing
+            const currentConfigs = { ...(match.team_configs || {}) }
+            let configsChanged = false
+
+            if (kitLibrary.length > 0) {
+                for (let i = 1; i <= numTeams; i++) {
+                    if (!currentConfigs[i] || !currentConfigs[i].bg || currentConfigs[i].bg.includes('rgba')) {
+                        // Use a kit from library not already taken
+                        const takenKits = Object.values(currentConfigs).map(c => c.name)
+                        const availableKits = kitLibrary.filter(k => !takenKits.includes(k.name))
+                        const pool = availableKits.length > 0 ? availableKits : kitLibrary
+                        currentConfigs[i] = pool[Math.floor(Math.random() * pool.length)]
+                        configsChanged = true
+                    }
+                }
+            }
+
+            if (configsChanged) {
+                updates.push(
+                    supabase
+                        .from('matches')
+                        .update({ team_configs: currentConfigs })
+                        .eq('id', matchId)
+                )
+            }
+
+            await Promise.all(updates)
+            showMsg('success', 'Equipos balanceados y colores asignados 🎲⚽')
+            await fetchMatchDetails(true)
+        } catch (error) {
+            showMsg('error', error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
     return {
         match,
         enrollments,
@@ -248,6 +362,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         updateMatchCapacity,
         cancelMatch,
         updateMatch,
+        randomizeTeams,
         refresh: () => fetchMatchDetails(true)
     }
 }

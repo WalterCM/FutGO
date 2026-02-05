@@ -41,7 +41,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         addGameResult,
         updateMatchCapacity,
         cancelMatch,
-        updateMatch
+        updateMatch,
+        randomizeTeams
     } = useMatchDetail(matchId, profile, onBack)
 
     // Local UI State
@@ -148,6 +149,16 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             [teamId]: randomKit
         }
         await updateMatch({ team_configs: newConfigs })
+    }
+
+    const handleRandomizeAllKits = async () => {
+        let nextConfigs = { ...(match.team_configs || {}) }
+        const shuffledKits = [...KIT_LIBRARY].sort(() => Math.random() - 0.5)
+
+        for (let i = 1; i <= numTeams; i++) {
+            nextConfigs[i] = shuffledKits[i % shuffledKits.length]
+        }
+        await updateMatch({ team_configs: nextConfigs })
     }
 
     const handleTogglePresent = (enrol) => {
@@ -261,9 +272,12 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     onDrop={onDrop}
                     onKitPicker={(id) => setKitPicker({ show: true, teamId: id })}
                     onRandomizeKit={handleRandomizeKit}
+                    onRandomizeAll={() => randomizeTeams(numTeams, KIT_LIBRARY)}
+                    onRandomizeKitsAll={handleRandomizeAllKits}
                     selectedPlayerId={selectedPlayerId}
                     onPlayerClick={onPlayerClick}
                     onMobileMove={handleMobileMove}
+                    actionLoading={actionLoading}
                 />
             )}
 
@@ -294,9 +308,23 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 show={expansionData.show}
                 onClose={() => setExpansionData({ ...expansionData, show: false })}
                 onConfirm={() => {
+                    const nextTeams = expansionData.mode === 'expand' ? numTeams + 1 : numTeams - 1
+                    let nextConfigs = { ...(match.team_configs || {}) }
+
+                    if (expansionData.mode === 'expand') {
+                        const takenNames = Object.values(nextConfigs).map(c => c.name)
+                        const pool = KIT_LIBRARY.filter(k => !takenNames.includes(k.name))
+                        const finalPool = pool.length > 0 ? pool : KIT_LIBRARY
+                        nextConfigs[nextTeams] = finalPool[Math.floor(Math.random() * finalPool.length)]
+                    } else {
+                        // Cleanup deleted team config
+                        delete nextConfigs[numTeams]
+                    }
+
                     updateMatchCapacity(
-                        expansionData.mode === 'expand' ? (numTeams + 1) * playersPerTeam : (numTeams - 1) * playersPerTeam,
-                        expansionData.newCost
+                        nextTeams * playersPerTeam,
+                        expansionData.newCost,
+                        nextConfigs
                     )
                     setExpansionData({ ...expansionData, show: false })
                 }}

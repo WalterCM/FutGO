@@ -1,7 +1,8 @@
 import React from 'react'
-import { MapPin, Palette, Dices } from 'lucide-react'
+import { Users, Palette, Dices, Shuffle } from 'lucide-react'
 import TeamSection from './TeamSection'
 import Card from '../../components/ui/Card'
+import Button from '../../components/ui/Button'
 
 const FieldTab = ({
     enrollments,
@@ -14,17 +15,45 @@ const FieldTab = ({
     onDrop,
     onKitPicker,
     onRandomizeKit,
+    onRandomizeAll,
+    onRandomizeKitsAll,
     selectedPlayerId,
     onPlayerClick,
-    onMobileMove
+    onMobileMove,
+    actionLoading
 }) => {
     const hasPresent = enrollments.some(e => e.is_present)
 
     return (
         <>
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: hasPresent ? 1 : 0.5 }}>
-                <MapPin size={20} /> Cancha y Equipos
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: hasPresent ? 1 : 0.5 }}>
+                    <Users size={20} /> Equipos
+                </h3>
+
+                {canManage && hasPresent && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={onRandomizeKitsAll}
+                            icon={Palette}
+                            title="Camisetas Aleatorias"
+                        >
+                            Colores
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={onRandomizeAll}
+                            icon={Shuffle}
+                            loading={actionLoading === 'randomizing'}
+                        >
+                            Sorteo de Equipos
+                        </Button>
+                    </div>
+                )}
+            </div>
 
             {!hasPresent && (
                 <Card style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem', border: '2px dashed var(--border)' }} hover={false}>
@@ -61,6 +90,18 @@ const FieldTab = ({
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                    {/* Bench Section - NOW AT TOP */}
+                    <TeamSection
+                        teamId={0}
+                        players={getTeamPlayers(0)}
+                        config={teamConfigs[0]}
+                        onDragOver={onDragOver}
+                        onDrop={onDrop}
+                        canManage={canManage}
+                        selectedPlayerId={selectedPlayerId}
+                        onPlayerClick={onPlayerClick}
+                    />
+
                     {/* Teams Loop */}
                     {Array.from({ length: numTeams }, (_, i) => i + 1).map(teamId => (
                         <TeamSection
@@ -77,18 +118,6 @@ const FieldTab = ({
                             onPlayerClick={onPlayerClick}
                         />
                     ))}
-
-                    {/* Bench Section */}
-                    <TeamSection
-                        teamId={0}
-                        players={getTeamPlayers(0)}
-                        config={teamConfigs[0]}
-                        onDragOver={onDragOver}
-                        onDrop={onDrop}
-                        canManage={canManage}
-                        selectedPlayerId={selectedPlayerId}
-                        onPlayerClick={onPlayerClick}
-                    />
                 </div>
             </div>
         </>

@@ -49,7 +49,7 @@ const TabsNavigation = ({ activeTab, onTabChange }) => {
                     gap: '0.5rem'
                 }}
             >
-                <MapPin size={18} /> Cancha / Equipos
+                <MapPin size={18} /> Equipos
             </button>
         </div>
     )
