@@ -11,6 +11,7 @@ export default function Users({ profile }) {
     const [actionLoading, setActionLoading] = useState(null)
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [balanceModal, setBalanceModal] = useState({ show: false, userId: null, userName: '', currentBalance: 0, type: 'deposit', amount: '' })
+    const [roleConfirm, setRoleConfirm] = useState({ show: false, user: null, roleField: '', newValue: false, inputName: '' })
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -58,10 +59,24 @@ export default function Users({ profile }) {
     }
 
     async function toggleRole(userId, roleField, currentValue) {
+        const newValue = !currentValue
+        const targetUser = users.find(u => u.id === userId)
+
+        if (!roleConfirm.show) {
+            setRoleConfirm({
+                show: true,
+                user: targetUser,
+                roleField,
+                newValue,
+                inputName: ''
+            })
+            return
+        }
+
         setActionLoading(userId + roleField)
         const { error } = await supabase
             .from('profiles')
-            .update({ [roleField]: !currentValue })
+            .update({ [roleField]: newValue })
             .eq('id', userId)
 
         if (error) {
@@ -69,11 +84,12 @@ export default function Users({ profile }) {
         } else {
             showMsg('success', 'Rol actualizado')
             setUsers(users.map(u =>
-                u.id === userId ? { ...u, [roleField]: !currentValue } : u
+                u.id === userId ? { ...u, [roleField]: newValue } : u
             ))
             refreshProfile()
         }
         setActionLoading(null)
+        setRoleConfirm({ show: false, user: null, roleField: '', newValue: false, inputName: '' })
     }
 
     if (!profile?.is_super_admin) {
@@ -288,6 +304,75 @@ export default function Users({ profile }) {
                                 onClick={() => adjustBalance(balanceModal.userId, balanceModal.currentBalance, balanceModal.type === 'deposit' ? balanceModal.amount : -balanceModal.amount)}
                             >
                                 {balanceModal.type === 'deposit' ? 'Depositar' : 'Retirar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {roleConfirm.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 3000, padding: '1rem', backdropFilter: 'blur(8px)' }}>
+                    <div className="premium-card" style={{
+                        maxWidth: '450px',
+                        width: '100%',
+                        border: roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue ? '1px solid var(--danger)' : '1px solid var(--primary)',
+                        animation: 'scaleIn 0.2s ease-out'
+                    }}>
+                        <ShieldCheck size={48} style={{ color: roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue ? 'var(--danger)' : 'var(--primary)', marginBottom: '1rem' }} />
+                        <h3 style={{ color: roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue ? 'var(--danger)' : 'var(--primary)', marginBottom: '0.5rem' }}>
+                            Confirmar Cambio de Rol
+                        </h3>
+                        <p style={{ marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                            {roleConfirm.newValue ? 'Estás a punto de convertir a ' : 'Estás a punto de quitar el rango de '}
+                            <b>{roleConfirm.user?.full_name}</b>
+                            {roleConfirm.newValue ? ' en ' : ' a '}
+                            <b>{roleConfirm.roleField === 'is_super_admin' ? 'Owner (Dueño)' : 'Administrador'}</b>.
+                            <br />
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>
+                                {roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue
+                                    ? 'Esta persona tendrá control total sobre usuarios y finanzas.'
+                                    : 'Esta acción cambiará los permisos de gestión del usuario.'}
+                            </span>
+                        </p>
+
+                        {roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue && (
+                            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+                                <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', display: 'block', marginBottom: '0.5rem' }}>
+                                    Escribe el nombre completo del crack para confirmar:
+                                </label>
+                                <input
+                                    type="text"
+                                    className="premium-input"
+                                    style={{ width: '100%', padding: '0.8rem', border: roleConfirm.inputName === roleConfirm.user?.full_name ? '1px solid #10b981' : '1px solid var(--border)' }}
+                                    value={roleConfirm.inputName}
+                                    onChange={(e) => setRoleConfirm({ ...roleConfirm, inputName: e.target.value })}
+                                    placeholder={roleConfirm.user?.full_name}
+                                    autoFocus
+                                />
+                            </div>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setRoleConfirm({ show: false, user: null, roleField: '', newValue: false, inputName: '' })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{
+                                    background: (roleConfirm.roleField !== 'is_super_admin' || !roleConfirm.newValue || roleConfirm.inputName === roleConfirm.user?.full_name)
+                                        ? (roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue ? 'var(--danger)' : 'var(--primary)')
+                                        : 'rgba(255, 255, 255, 0.05)',
+                                    cursor: (roleConfirm.roleField !== 'is_super_admin' || !roleConfirm.newValue || roleConfirm.inputName === roleConfirm.user?.full_name) ? 'pointer' : 'not-allowed',
+                                    color: (roleConfirm.roleField !== 'is_super_admin' || !roleConfirm.newValue || roleConfirm.inputName === roleConfirm.user?.full_name) ? 'black' : 'var(--text-dim)'
+                                }}
+                                disabled={(roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue && roleConfirm.inputName !== roleConfirm.user?.full_name) || actionLoading}
+                                onClick={() => toggleRole(roleConfirm.user.id, roleConfirm.roleField, !roleConfirm.newValue)}
+                            >
+                                {actionLoading ? <Loader2 size={16} className="spin" /> : 'Confirmar'}
                             </button>
                         </div>
                     </div>
