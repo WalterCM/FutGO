@@ -262,3 +262,42 @@ body,
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* Admin Tab Player List */
+.admin-player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.admin-player-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.admin-player-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .admin-player-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+    padding: 1rem 0.5rem;
+  }
+
+  .admin-player-actions {
+    justify-content: space-between;
+  }
+
+  .admin-player-actions button {
+    flex: 1;
+  }
+}

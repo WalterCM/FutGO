@@ -155,24 +155,102 @@ describe('MatchDetail Business Logic', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByText(/S\/ 12 por crack/i)).toBeDefined()
+            expect(screen.getByText(/Cuota: S\/ 12/i)).toBeDefined()
         })
     })
 
     test('calculates quota correctly for 7v7 at S/150', async () => {
         const field = createMockField({ players_per_team: 7, price_per_hour: 150 })
-        const match = createMockMatch({ id: 'match-1', field })
+        const match = createMockMatch({ id: 'match-7v7', field, fixed_cost: 150 })
 
         mockQuery.single.mockResolvedValue({ data: match, error: null })
         mockQuery.order.mockResolvedValue({ data: [], error: null })
 
         renderWithRouter(
             <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
-            { matchId: 'match-1' }
+            { matchId: 'match-7v7' }
         )
 
         await waitFor(() => {
-            expect(screen.getByText(/S\/ 11 por crack/i)).toBeDefined()
+            expect(screen.getByText(/Cuota: S\/ 11/i)).toBeDefined()
+        })
+    })
+
+    test('requires confirmation to leave a match', async () => {
+        const currentUser = createMockProfile({ id: 'current-user-leave' })
+        const match = createMockMatch({ id: 'match-leave' })
+        const enrollments = [createMockEnrollment({ match_id: 'match-leave', player_id: 'current-user-leave', player: currentUser })]
+
+        mockQuery.single.mockResolvedValue({ data: match, error: null })
+        mockQuery.order.mockResolvedValue({ data: enrollments, error: null })
+
+        renderWithRouter(
+            <MatchDetail profile={currentUser} onBack={() => { }} />,
+            { matchId: 'match-leave' }
+        )
+
+        await waitFor(() => {
+            expect(screen.getByText(/1 \/ 10/i)).toBeDefined()
+            expect(screen.getByRole('button', { name: /Salir/i })).toBeDefined()
+        })
+
+        // First click: should change to confirmation state
+        const leaveBtn = screen.getByRole('button', { name: /Salir/i })
+        await userEvent.click(leaveBtn)
+
+        expect(screen.getByRole('button', { name: /¿Seguro\?/i })).toBeDefined()
+        expect(mockQuery.delete).not.toHaveBeenCalled()
+
+        // Second click: should actually call delete
+        await userEvent.click(screen.getByRole('button', { name: /¿Seguro\?/i }))
+        expect(mockQuery.delete).toHaveBeenCalled()
+        expect(mockQuery.eq).toHaveBeenCalledWith('match_id', 'match-leave')
+        expect(mockQuery.eq).toHaveBeenCalledWith('player_id', 'current-user-leave')
+    })
+
+    test('opens Edit Match modal and saves changes', async () => {
+        const currentUser = createMockProfile({ id: 'admin-user-edit', is_admin: true })
+        const match = createMockMatch({ id: 'match-edit', creator_id: 'admin-user-edit' })
+
+        mockQuery.single.mockResolvedValue({ data: match, error: null })
+        mockQuery.order.mockResolvedValue({ data: [], error: null })
+        mockQuery.update.mockResolvedValue({ data: { ...match }, error: null })
+
+        renderWithRouter(
+            <MatchDetail profile={currentUser} onBack={() => { }} />,
+            { matchId: 'match-edit' }
+        )
+
+        await waitFor(() => {
+            expect(screen.getByTitle(/Editar detalles/i)).toBeDefined()
+        })
+
+        // Open modal
+        await userEvent.click(screen.getByTitle(/Editar detalles/i))
+        expect(screen.getByText(/Editar Encuentro/i)).toBeDefined()
+
+        // Save changes
+        await userEvent.click(screen.getByText(/Guardar Cambios/i))
+
+        await waitFor(() => {
+            expect(mockQuery.update).toHaveBeenCalled()
+            expect(mockQuery.eq).toHaveBeenCalledWith('id', 'match-edit')
+        })
+    })
+
+    test('queries games using match_day_id column', async () => {
+        const match = createMockMatch({ id: 'match-games' })
+        mockQuery.single.mockResolvedValue({ data: match, error: null })
+        mockQuery.order.mockResolvedValue({ data: [], error: null })
+
+        renderWithRouter(
+            <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
+            { matchId: 'match-games' }
+        )
+
+        await waitFor(() => {
+            expect(mockQuery.from).toHaveBeenCalledWith('games')
+            expect(mockQuery.eq).toHaveBeenCalledWith('match_day_id', 'match-games')
         })
     })
 })

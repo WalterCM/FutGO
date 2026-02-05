@@ -45,6 +45,7 @@ function createProxyMock() {
 
 // Simpler approach: just make sure each method returns itself
 export const mockQuery = {
+    from: vi.fn(),
     select: vi.fn(),
     insert: vi.fn(),
     update: vi.fn(),
@@ -70,7 +71,7 @@ beforeEach(() => {
 // Global mock for Supabase
 vi.mock('../lib/supabase', () => ({
     supabase: {
-        from: vi.fn(() => mockQuery),
+        from: (table) => mockQuery.from(table),
         auth: {
             getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
             onAuthStateChange: vi.fn(() => ({

@@ -86,8 +86,8 @@ const AdminTab = ({
                         const isTitular = rank <= totalNeeded
 
                         return (
-                            <div key={enrol.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div key={enrol.id} className="admin-player-row">
+                                <div className="admin-player-info">
                                     <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{rank}.</span>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: '600', color: enrol.is_present ? 'var(--primary)' : 'white' }}>{enrol.player?.full_name}</span>
@@ -107,13 +107,14 @@ const AdminTab = ({
                                         </div>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div className="admin-player-actions">
                                     <Button
                                         size="sm"
                                         variant={enrol.paid ? 'success' : 'outline'}
                                         onClick={() => onTogglePaid(enrol)}
                                         disabled={match.is_locked || !canManage}
                                         icon={CreditCard}
+                                        style={{ transition: 'none' }}
                                     >
                                         {enrol.paid ? 'Pagado' : 'Cobrar'}
                                     </Button>
