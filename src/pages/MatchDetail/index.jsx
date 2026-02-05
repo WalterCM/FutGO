@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -55,6 +55,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const [kitPicker, setKitPicker] = useState({ show: false, teamId: null })
     const [teamKits, setTeamKits] = useState({})
     const [editModal, setEditModal] = useState({ show: false, date: '', time: '' })
+    const leaveTimerRef = useRef(null)
 
     // Derived Data
     const playersPerTeam = match?.field?.players_per_team || 5
@@ -90,12 +91,24 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const handleLeave = async () => {
         if (!confirmingLeave) {
             setConfirmingLeave(true)
-            setTimeout(() => setConfirmingLeave(false), 3000)
+            if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
+            leaveTimerRef.current = setTimeout(() => setConfirmingLeave(false), 2500)
             return
+        }
+        if (leaveTimerRef.current) {
+            clearTimeout(leaveTimerRef.current)
+            leaveTimerRef.current = null
         }
         await leaveMatch()
         setConfirmingLeave(false)
     }
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
+        }
+    }, [])
 
     const getTeamPlayers = (teamId) => {
         return enrollments

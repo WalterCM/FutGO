@@ -64,13 +64,13 @@ const MatchHeader = ({
                             {isEnrolled ? (
                                 <Button
                                     onClick={onLeave}
-                                    variant={confirmingLeave ? 'danger' : 'outline-danger'}
+                                    variant={(confirmingLeave || actionLoading === 'leave') ? 'danger' : 'outline-danger'}
                                     size="sm"
-                                    style={{ width: '100%' }}
+                                    style={{ width: '100%', transition: 'none' }}
                                     loading={actionLoading === 'leave'}
                                     disabled={match.is_locked}
                                 >
-                                    {confirmingLeave ? '¿Seguro?' : 'Salir'}
+                                    {(confirmingLeave || actionLoading === 'leave') ? '¿Seguro?' : 'Salir'}
                                 </Button>
                             ) : (
                                 <Button

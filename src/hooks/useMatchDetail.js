@@ -12,6 +12,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
 
     // Store onBack in a ref to avoid re-triggering effects when the callback changes
     const onBackRef = useRef(onBack)
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
     useEffect(() => {
         onBackRef.current = onBack
     }, [onBack])
@@ -75,16 +76,19 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         if (!profile) return
         setActionLoading('join')
         try {
-            const { error } = await supabase
-                .from('enrollments')
-                .insert([{
-                    match_id: matchId,
-                    player_id: profile.id
-                }])
-
-            if (error) throw error
+            await Promise.all([
+                supabase
+                    .from('enrollments')
+                    .insert([{
+                        match_id: matchId,
+                        player_id: profile.id
+                    }]),
+                wait(300)
+            ]).then(([res]) => {
+                if (res.error) throw res.error
+            })
             showMsg('success', '¡Te has unido al encuentro!')
-            fetchMatchDetails(true)
+            await fetchMatchDetails(true)
         } catch (error) {
             showMsg('error', error.message)
         } finally {
@@ -96,15 +100,18 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         if (!profile) return
         setActionLoading('leave')
         try {
-            const { error } = await supabase
-                .from('enrollments')
-                .delete()
-                .eq('match_id', matchId)
-                .eq('player_id', profile.id)
-
-            if (error) throw error
+            await Promise.all([
+                supabase
+                    .from('enrollments')
+                    .delete()
+                    .eq('match_id', matchId)
+                    .eq('player_id', profile.id),
+                wait(300)
+            ]).then(([res]) => {
+                if (res.error) throw res.error
+            })
             showMsg('success', 'Has salido del encuentro')
-            fetchMatchDetails(true)
+            await fetchMatchDetails(true)
         } catch (error) {
             showMsg('error', error.message)
         } finally {

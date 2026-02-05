@@ -92,10 +92,12 @@ const Button = ({
         >
             {loading ? (
                 <Spinner size={16} color={variant === 'primary' ? 'var(--bg-dark)' : 'currentColor'} />
-            ) : Icon && (
-                <Icon size={size === 'sm' ? 14 : 18} />
+            ) : (
+                <>
+                    {Icon && <Icon size={size === 'sm' ? 14 : 18} />}
+                    {children}
+                </>
             )}
-            {children}
         </button>
     )
 }

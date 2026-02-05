@@ -207,6 +207,11 @@ body,
   gap: 2rem;
 }
 
+.match-status-badge .action-btn-container {
+  width: 130px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 600px) {
   .match-header-top {
     flex-direction: column;
@@ -235,7 +240,7 @@ body,
   }
 
   .match-status-badge .action-btn-container {
-    width: 140px;
+    width: 130px;
     margin: 0;
   }
 }
