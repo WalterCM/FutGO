@@ -102,19 +102,33 @@ const TeamSection = ({
             </div>
 
             <div style={{ display: 'grid', gap: '0.6rem' }}>
-                {players.map((p) => (
-                    <PlayerCard
-                        key={p.id}
-                        registration={p}
-                        isSelected={selectedPlayerId === p.id}
-                        isBench={teamId === 0}
-                        config={config}
-                        onClick={() => onPlayerClick(p.id, teamId)}
-                        onDragStart={(e) => {
-                            e.dataTransfer.setData('enrolId', p.id)
-                        }}
-                    />
-                ))}
+                {players.length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '2rem 1rem',
+                        color: 'var(--text-dim)',
+                        fontSize: '0.8rem',
+                        border: '1px dashed var(--border)',
+                        borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.01)'
+                    }}>
+                        Vacío
+                    </div>
+                ) : (
+                    players.map((p) => (
+                        <PlayerCard
+                            key={p.id}
+                            registration={p}
+                            isSelected={selectedPlayerId === p.id}
+                            isBench={teamId === 0}
+                            config={config}
+                            onClick={() => onPlayerClick(p.id, teamId)}
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('enrolId', p.id)
+                            }}
+                        />
+                    ))
+                )}
             </div>
         </div>
     )

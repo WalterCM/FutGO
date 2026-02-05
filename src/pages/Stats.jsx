@@ -40,8 +40,8 @@ export default function Stats() {
     return (
         <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <h2 style={{ color: 'var(--primary)', fontSize: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
-                    <Trophy size={40} /> Líderes de la Cancha
+                <h2 style={{ color: 'var(--primary)', fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+                    Líderes de la Cancha
                 </h2>
                 <p style={{ color: 'var(--text-dim)' }}>Los más cracks de la comunidad FutGO</p>
             </div>
@@ -52,10 +52,10 @@ export default function Stats() {
                 </div>
             ) : (
                 <div style={{ display: 'grid', gap: '2rem' }}>
-                    {/* Top 5 ELO Ranking */}
+                    {/* Top 5 Ranking */}
                     <section>
                         <h3 style={{ marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <Medal size={24} style={{ color: 'var(--primary)' }} /> Top 5 Ranking ELO
+                            <Medal size={24} style={{ color: 'var(--primary)' }} /> Top 5 Ranking
                         </h3>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             {topPlayers.map((player, index) => {
