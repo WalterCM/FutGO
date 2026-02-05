@@ -85,6 +85,26 @@ const AdminTab = ({
                         const rank = index + 1
                         const isTitular = rank <= totalNeeded
 
+                        // Simplest logic: Only Paid = Fixed Status. No pay = No tag.
+                        let tagLabel = null
+                        let tagColor = ''
+                        let tagBg = ''
+                        let tagBorder = ''
+
+                        if (enrol.paid) {
+                            if (isTitular) {
+                                tagLabel = 'TITULAR'
+                                tagColor = '#10b981'
+                                tagBg = 'rgba(16, 185, 129, 15%)'
+                                tagBorder = '#10b981'
+                            } else {
+                                tagLabel = 'RESERVA'
+                                tagColor = 'var(--text-dim)'
+                                tagBg = 'rgba(255, 255, 255, 0.05)'
+                                tagBorder = 'var(--border)'
+                            }
+                        }
+
                         return (
                             <div key={enrol.id} className="admin-player-row">
                                 <div className="admin-player-info">
@@ -92,41 +112,64 @@ const AdminTab = ({
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: '600', color: enrol.is_present ? 'var(--primary)' : 'white' }}>{enrol.player?.full_name}</span>
                                         <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
-                                            <div style={{
-                                                fontSize: '0.6rem',
-                                                padding: '0.1rem 0.3rem',
-                                                borderRadius: '3px',
-                                                background: isTitular ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                                color: isTitular ? '#10b981' : 'var(--text-dim)',
-                                                border: `1px solid ${isTitular ? '#10b981' : 'var(--border)'}`,
-                                                fontWeight: 'bold'
-                                            }}>
-                                                {isTitular ? (enrol.paid ? 'TITULAR' : 'PRIORIDAD') : 'RESERVA'}
-                                            </div>
+                                            {tagLabel && (
+                                                <div style={{
+                                                    fontSize: '0.6rem',
+                                                    padding: '0.1rem 0.3rem',
+                                                    borderRadius: '3px',
+                                                    background: tagBg,
+                                                    color: tagColor,
+                                                    border: `1px solid ${tagBorder}`,
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {tagLabel}
+                                                </div>
+                                            )}
                                             {enrol.paid && <div style={{ fontSize: '0.6rem', color: 'var(--primary)', opacity: 0.8 }}>Pagó: {new Date(enrol.paid_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="admin-player-actions">
-                                    <Button
-                                        size="sm"
-                                        variant={enrol.paid ? 'success' : 'outline'}
-                                        onClick={() => onTogglePaid(enrol)}
-                                        disabled={match.is_locked || !canManage}
-                                        icon={CreditCard}
-                                        style={{ transition: 'none' }}
-                                    >
-                                        {enrol.paid ? 'Pagado' : 'Cobrar'}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant={enrol.is_present ? 'primary' : 'outline'}
-                                        onClick={() => onTogglePresent(enrol)}
-                                        disabled={match.is_locked || !canManage || (!enrol.paid && !enrol.is_present)}
-                                        icon={Users}
-                                    >
-                                        {enrol.is_present ? 'Presente' : 'Ausente'}
-                                    </Button>
+                                    {canManage ? (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                variant={enrol.paid ? 'success' : 'outline'}
+                                                onClick={() => onTogglePaid(enrol)}
+                                                disabled={match.is_locked || !canManage}
+                                                icon={CreditCard}
+                                                style={{ transition: 'none' }}
+                                            >
+                                                {enrol.paid ? 'Pagado' : 'Cobrar'}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant={enrol.is_present ? 'primary' : 'outline'}
+                                                onClick={() => onTogglePresent(enrol)}
+                                                disabled={match.is_locked || !canManage || (!enrol.paid && !enrol.is_present)}
+                                                icon={Users}
+                                            >
+                                                {enrol.is_present ? 'Presente' : 'Ausente'}
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        enrol.is_present && (
+                                            <div style={{
+                                                fontSize: '0.7rem',
+                                                color: 'var(--primary)',
+                                                padding: '0.2rem 0.6rem',
+                                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                                borderRadius: '30px',
+                                                fontWeight: 'bold',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.3rem',
+                                                border: '1px solid rgba(var(--primary-rgb), 0.2)'
+                                            }}>
+                                                <Users size={12} /> PRESENTE
+                                            </div>
+                                        )
+                                    )}
                                 </div>
                             </div>
                         )
