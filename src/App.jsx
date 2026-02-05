@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { Wallet, Star, LayoutDashboard, Calendar, MapPin, Users as UsersIcon, LogOut } from 'lucide-react'
+import { Wallet, Star, LayoutDashboard, Calendar, MapPin, Users as UsersIcon, LogOut, Menu, X } from 'lucide-react'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
@@ -16,68 +16,139 @@ function MainContent() {
   const { user, profile, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const handleMatchClick = useCallback((m) => {
     navigate(`/partido/${m.id}`, { state: { match: m } })
+    setIsMenuOpen(false)
   }, [navigate])
 
   const handleBack = useCallback(() => {
     navigate('/partidos')
   }, [navigate])
 
+  // Close menu when location changes
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [location])
+
   if (user && !profile) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando datos...</div>
   if (!user) return <Auth />
   if (!profile) return <ProfileSetup onComplete={refreshProfile} />
 
+  const NavLinks = ({ mobile = false }) => (
+    <>
+      <NavLink
+        to="/"
+        style={({ isActive }) => ({
+          cursor: 'pointer',
+          color: isActive ? 'var(--primary)' : 'white',
+          textDecoration: 'none',
+          fontSize: mobile ? '1.2rem' : '1rem',
+          fontWeight: mobile ? '600' : 'normal'
+        })}
+      >
+        Inicio
+      </NavLink>
+      <NavLink
+        to="/partidos"
+        style={({ isActive }) => ({
+          cursor: 'pointer',
+          color: isActive ? 'var(--primary)' : 'white',
+          textDecoration: 'none',
+          fontSize: mobile ? '1.2rem' : '1rem',
+          fontWeight: mobile ? '600' : 'normal'
+        })}
+      >
+        Partidos
+      </NavLink>
+      <NavLink
+        to="/canchas"
+        style={({ isActive }) => ({
+          cursor: 'pointer',
+          color: isActive ? 'var(--primary)' : 'white',
+          textDecoration: 'none',
+          fontSize: mobile ? '1.2rem' : '1rem',
+          fontWeight: mobile ? '600' : 'normal'
+        })}
+      >
+        Canchas
+      </NavLink>
+      {profile?.is_super_admin && (
+        <NavLink
+          to="/usuarios"
+          style={({ isActive }) => ({
+            cursor: 'pointer',
+            color: isActive ? 'var(--primary)' : 'white',
+            textDecoration: 'none',
+            fontSize: mobile ? '1.2rem' : '1rem',
+            fontWeight: mobile ? '600' : 'normal'
+          })}
+        >
+          Usuarios
+        </NavLink>
+      )}
+    </>
+  )
+
   return (
     <div className="app">
       <header className="header">
-        <Link to="/" className="logo" style={{ textDecoration: 'none' }}>FutGO</Link>
-        <nav style={{ display: 'flex', gap: '2rem' }}>
-          <NavLink
-            to="/"
-            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
-          >
-            Inicio
-          </NavLink>
-          <NavLink
-            to="/partidos"
-            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
-          >
-            Partidos
-          </NavLink>
-          <NavLink
-            to="/canchas"
-            style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
-          >
-            Canchas
-          </NavLink>
-          {profile?.is_super_admin && (
-            <NavLink
-              to="/usuarios"
-              style={({ isActive }) => ({ cursor: 'pointer', color: isActive ? 'var(--primary)' : 'white', textDecoration: 'none' })}
-            >
-              Usuarios
-            </NavLink>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="nav-mobile-toggle" onClick={() => setIsMenuOpen(true)}>
+            <Menu size={24} />
+          </button>
+          <Link to="/" className="logo" style={{ textDecoration: 'none' }}>FutGO</Link>
+        </div>
+
+        <nav className="nav-desktop">
+          <NavLinks />
         </nav>
+
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          {/* Wallet disabled for decentralized model */}
-          {/* 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
-            <Wallet size={16} style={{ color: 'var(--primary)' }} />
-            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>S/ {profile?.balance || 0}</span>
-          </div>
-          */}
-          <div style={{ textAlign: 'right', marginRight: '1rem' }}>
+          <div className="user-info-desktop" style={{ textAlign: 'right', marginRight: '1rem' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{profile?.full_name}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_super_admin ? '(Owner)' : (profile?.is_admin && '(Admin)')}</div>
           </div>
           <button className="btn-primary" onClick={signOut} style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <LogOut size={16} /> <span style={{ display: 'none' }}>Salir</span>
+            <LogOut size={16} /> <span className="user-info-desktop">Salir</span>
           </button>
         </div>
       </header>
+
+      {/* Mobile Menu Drawer */}
+      {isMenuOpen && (
+        <>
+          <div className="mobile-menu-overlay" onClick={() => setIsMenuOpen(false)} />
+          <div className="mobile-menu-drawer animate-slide-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span className="logo">FutGO</span>
+              <button onClick={() => setIsMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: '1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{profile?.full_name}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{user?.email}</div>
+            </div>
+
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <NavLinks mobile />
+            </nav>
+
+            <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+              <button
+                className="btn-primary"
+                onClick={signOut}
+                style={{ background: 'var(--danger)', color: 'white', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem' }}
+              >
+                <LogOut size={20} /> Salir
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <main>
         <Routes>

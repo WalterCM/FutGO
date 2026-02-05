@@ -54,6 +54,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const [expansionData, setExpansionData] = useState({ show: false, newCost: 150, mode: 'expand' })
     const [kitPicker, setKitPicker] = useState({ show: false, teamId: null })
     const [teamKits, setTeamKits] = useState({})
+    const [editModal, setEditModal] = useState({ show: false, date: '', time: '' })
 
     // Derived Data
     const playersPerTeam = match?.field?.players_per_team || 5
@@ -201,7 +202,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 actionLoading={actionLoading}
                 confirmingLeave={confirmingLeave}
                 canManage={canManage}
-                onEdit={() => {/* To Implement: Edit Modal */ }}
+                onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
             />
 
             <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
@@ -305,6 +306,55 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     setKitPicker({ show: false, teamId: null })
                 }}
             />
+
+            <Modal
+                show={editModal.show}
+                onClose={() => setEditModal({ ...editModal, show: false })}
+                title="Editar Encuentro"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem' }}>
+                    <div className="form-group">
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Fecha</label>
+                        <input
+                            type="date"
+                            value={editModal.date}
+                            onChange={(e) => setEditModal({ ...editModal, date: e.target.value })}
+                            className="premium-input"
+                            style={{ width: '100%', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'white', padding: '0.8rem', borderRadius: '8px' }}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Hora</label>
+                        <input
+                            type="time"
+                            value={editModal.time}
+                            onChange={(e) => setEditModal({ ...editModal, time: e.target.value })}
+                            className="premium-input"
+                            style={{ width: '100%', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'white', padding: '0.8rem', borderRadius: '8px' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <Button
+                            onClick={() => setEditModal({ ...editModal, show: false })}
+                            variant="outline"
+                            style={{ flex: 1 }}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                const success = await updateMatch({ date: editModal.date, time: editModal.time })
+                                if (success) setEditModal({ ...editModal, show: false })
+                            }}
+                            variant="primary"
+                            style={{ flex: 1 }}
+                            loading={actionLoading === 'update'}
+                        >
+                            Guardar Cambios
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             <StatusMessage type={statusMsg.type} text={statusMsg.text} />
         </div>

@@ -103,16 +103,145 @@ body,
   letter-spacing: -1px;
 }
 
-@keyframes slideIn {
+/* Responsive Navigation */
+.nav-desktop {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.mobile-menu-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  z-index: 1000;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .nav-desktop {
+    display: none;
+  }
+
+  .nav-mobile-toggle {
+    display: block;
+  }
+
+  .header {
+    padding: 1rem 1.5rem;
+  }
+
+  .user-info-desktop {
+    display: none;
+  }
+}
+
+@keyframes slideInLeft {
   from {
-    transform: translateX(100%);
-    opacity: 0;
+    transform: translateX(-100%);
   }
 
   to {
     transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* Match Header Responsive */
+.match-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.match-title {
+  font-size: 2rem;
+  color: var(--primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.match-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+@media (max-width: 600px) {
+  .match-header-top {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .match-title {
+    font-size: 1.5rem;
+  }
+
+  .match-status-badge {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    width: 100%;
+  }
+
+  .match-status-badge .player-count-box {
+    text-align: center;
+  }
+
+  .match-status-badge .action-btn-container {
+    width: 140px;
+    margin: 0;
+  }
+}
+
+.player-count-box {
+  text-align: right;
 }
 
 @keyframes spin {

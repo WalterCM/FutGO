@@ -38,71 +38,77 @@ const MatchHeader = ({
             </button>
 
             <Card style={{ marginBottom: '2rem' }} hover={false}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
-                            <h2 style={{ color: 'var(--primary)', fontSize: '2rem', margin: 0 }}>{match.field?.name}</h2>
-                            {canManage && !match.is_locked && (
-                                <button
-                                    onClick={onEdit}
-                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.7 }}
-                                    title="Editar detalles"
-                                >
-                                    <Pencil size={20} />
-                                </button>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-dim)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <Calendar size={18} />
-                                {new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <Clock size={18} /> {match.time.substring(0, 5)} hrs
-                            </div>
-                            {match.field?.address && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <MapPin size={18} />
-                                    {match.field.address}
-                                </div>
-                            )}
-                            {match.field?.phone && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Phone size={18} />
-                                    {match.field.phone}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right', minWidth: '120px' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {enrolledCount} / {totalNeeded}
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '1rem' }}>Jugadores</div>
-
-                        {isEnrolled ? (
-                            <Button
-                                onClick={onLeave}
-                                variant={confirmingLeave ? 'danger' : 'outline-danger'}
-                                size="sm"
-                                style={{ width: '100%' }}
-                                loading={actionLoading === 'leave'}
-                                disabled={match.is_locked}
+                <div className="match-header-top">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                        <h2 className="match-title">{match.field?.name}</h2>
+                        {canManage && !match.is_locked && (
+                            <button
+                                onClick={onEdit}
+                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.7, padding: '0.5rem 0' }}
+                                title="Editar detalles"
                             >
-                                {confirmingLeave ? '¿Seguro?' : 'Salir'}
-                            </Button>
-                        ) : (
-                            <Button
-                                onClick={onJoin}
-                                size="sm"
-                                style={{ width: '100%' }}
-                                loading={actionLoading === 'join'}
-                                disabled={match.is_locked || enrolledCount >= totalNeeded}
-                            >
-                                {enrolledCount >= totalNeeded ? 'Me interesa' : 'Unirme'}
-                            </Button>
+                                <Pencil size={20} />
+                            </button>
                         )}
                     </div>
+
+                    <div className="match-status-badge">
+                        <div className="player-count-box">
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
+                                {enrolledCount} / {totalNeeded}
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Jugadores</div>
+                        </div>
+
+                        <div className="action-btn-container">
+                            {isEnrolled ? (
+                                <Button
+                                    onClick={onLeave}
+                                    variant={confirmingLeave ? 'danger' : 'outline-danger'}
+                                    size="sm"
+                                    style={{ width: '100%' }}
+                                    loading={actionLoading === 'leave'}
+                                    disabled={match.is_locked}
+                                >
+                                    {confirmingLeave ? '¿Seguro?' : 'Salir'}
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={onJoin}
+                                    size="sm"
+                                    style={{ width: '100%' }}
+                                    loading={actionLoading === 'join'}
+                                    disabled={match.is_locked || enrolledCount >= totalNeeded}
+                                >
+                                    {enrolledCount >= totalNeeded ? 'Me interesa' : 'Unirme'}
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ height: '1px', background: 'var(--border)', margin: '1.5rem -1.5rem', width: 'auto' }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-dim)', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Calendar size={18} />
+                        <span>{new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Clock size={18} /> <span>{match.time.substring(0, 5)} hrs</span>
+                    </div>
+                    {match.field?.address && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <MapPin size={18} />
+                            <span>{match.field.address}</span>
+                        </div>
+                    )}
+                    {match.field?.phone && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Phone size={18} />
+                            <span>{match.field.phone}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div style={{
