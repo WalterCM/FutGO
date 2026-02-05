@@ -48,10 +48,13 @@ function MainContent() {
           color: isActive ? 'var(--primary)' : 'white',
           textDecoration: 'none',
           fontSize: mobile ? '1.2rem' : '1rem',
-          fontWeight: mobile ? '600' : 'normal'
+          fontWeight: mobile ? '600' : 'normal',
+          display: 'flex',
+          alignItems: 'center',
+          gap: mobile ? '0.8rem' : '0.4rem'
         })}
       >
-        Inicio
+        <LayoutDashboard size={mobile ? 24 : 18} /> Inicio
       </NavLink>
       <NavLink
         to="/partidos"
@@ -60,10 +63,13 @@ function MainContent() {
           color: isActive ? 'var(--primary)' : 'white',
           textDecoration: 'none',
           fontSize: mobile ? '1.2rem' : '1rem',
-          fontWeight: mobile ? '600' : 'normal'
+          fontWeight: mobile ? '600' : 'normal',
+          display: 'flex',
+          alignItems: 'center',
+          gap: mobile ? '0.8rem' : '0.4rem'
         })}
       >
-        Partidos
+        <Calendar size={mobile ? 24 : 18} /> Partidos
       </NavLink>
       <NavLink
         to="/canchas"
@@ -72,10 +78,13 @@ function MainContent() {
           color: isActive ? 'var(--primary)' : 'white',
           textDecoration: 'none',
           fontSize: mobile ? '1.2rem' : '1rem',
-          fontWeight: mobile ? '600' : 'normal'
+          fontWeight: mobile ? '600' : 'normal',
+          display: 'flex',
+          alignItems: 'center',
+          gap: mobile ? '0.8rem' : '0.4rem'
         })}
       >
-        Canchas
+        <MapPin size={mobile ? 24 : 18} /> Canchas
       </NavLink>
       <NavLink
         to="/lideres"
@@ -100,10 +109,13 @@ function MainContent() {
             color: isActive ? 'var(--primary)' : 'white',
             textDecoration: 'none',
             fontSize: mobile ? '1.2rem' : '1rem',
-            fontWeight: mobile ? '600' : 'normal'
+            fontWeight: mobile ? '600' : 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: mobile ? '0.8rem' : '0.4rem'
           })}
         >
-          Usuarios
+          <UsersIcon size={mobile ? 24 : 18} /> Usuarios
         </NavLink>
       )}
     </>
@@ -225,9 +237,10 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
 
       <section className="premium-card" style={{ cursor: 'pointer' }} onClick={() => navigate('/lideres')}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Trophy size={20} /> Mi Ranking
+          <Trophy size={20} /> Mi Nivel
         </h3>
-        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0.5rem 0', color: 'var(--primary)' }}>
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Rating FutGO</div>
+        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: 'var(--primary)' }}>
           {rating}
         </div>
         <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Toca para ver los Líderes</p>
