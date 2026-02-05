@@ -13,7 +13,8 @@ export default function Fields({ profile }) {
         players_per_team: 5,
         price_per_hour: '',
         address: '',
-        phone: ''
+        phone: '',
+        google_maps_url: ''
     })
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
@@ -63,7 +64,7 @@ export default function Fields({ profile }) {
             showMsg('success', editingId ? 'Cancha actualizada' : 'Cancha creada')
             setShowForm(false)
             setEditingId(null)
-            setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '' })
+            setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
             fetchFields()
         }
         setLoading(false)
@@ -76,7 +77,8 @@ export default function Fields({ profile }) {
             players_per_team: field.players_per_team,
             price_per_hour: field.price_per_hour,
             address: field.address,
-            phone: field.phone
+            phone: field.phone,
+            google_maps_url: field.google_maps_url || ''
         })
         setShowForm(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -85,7 +87,7 @@ export default function Fields({ profile }) {
     function cancelEdit() {
         setShowForm(false)
         setEditingId(null)
-        setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '' })
+        setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
     }
 
     function deleteField(id) {
@@ -171,13 +173,24 @@ export default function Fields({ profile }) {
                                 />
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Dirección / Link Maps</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Dirección (Nombre de la Sede)</label>
                                 <input
                                     type="text"
                                     className="premium-input"
                                     style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
                                     value={newField.address}
                                     onChange={e => setNewField({ ...newField, address: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Link de Google Maps</label>
+                                <input
+                                    type="text"
+                                    className="premium-input"
+                                    style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                    value={newField.google_maps_url}
+                                    onChange={e => setNewField({ ...newField, google_maps_url: e.target.value })}
+                                    placeholder="https://maps.google.com/..."
                                 />
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
@@ -234,18 +247,7 @@ export default function Fields({ profile }) {
                                 {field.address && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <MapPin size={16} />
-                                        {field.address.startsWith('http') ? (
-                                            <a
-                                                href={field.address}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}
-                                            >
-                                                Ver ubicación en Maps
-                                            </a>
-                                        ) : (
-                                            field.address
-                                        )}
+                                        {field.address}
                                     </div>
                                 )}
                                 {field.phone && (
@@ -259,25 +261,48 @@ export default function Fields({ profile }) {
                                 <div style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
                                     S/ {field.price_per_hour} <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>/ hr</span>
                                 </div>
-                                {field.phone && (
-                                    <a
-                                        href={`tel:${field.phone}`}
-                                        className="btn-primary"
-                                        style={{
-                                            padding: '0.4rem 0.8rem',
-                                            fontSize: '0.8rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.3rem',
-                                            textDecoration: 'none',
-                                            background: 'rgba(var(--primary-rgb), 0.1)',
-                                            border: '1px solid var(--primary)',
-                                            color: 'var(--primary)'
-                                        }}
-                                    >
-                                        <Phone size={14} /> Llamar
-                                    </a>
-                                )}
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {field.google_maps_url && (
+                                        <a
+                                            href={field.google_maps_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn-primary"
+                                            style={{
+                                                padding: '0.4rem 0.8rem',
+                                                fontSize: '0.8rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.3rem',
+                                                textDecoration: 'none',
+                                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                                border: '1px solid var(--primary)',
+                                                color: 'var(--primary)'
+                                            }}
+                                        >
+                                            <MapPin size={14} /> Mapa
+                                        </a>
+                                    )}
+                                    {field.phone && (
+                                        <a
+                                            href={`tel:${field.phone}`}
+                                            className="btn-primary"
+                                            style={{
+                                                padding: '0.4rem 0.8rem',
+                                                fontSize: '0.8rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.3rem',
+                                                textDecoration: 'none',
+                                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                                border: '1px solid var(--primary)',
+                                                color: 'var(--primary)'
+                                            }}
+                                        >
+                                            <Phone size={14} /> Llamar
+                                        </a>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))

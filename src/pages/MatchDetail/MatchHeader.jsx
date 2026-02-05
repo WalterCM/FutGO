@@ -63,36 +63,13 @@ const MatchHeader = ({
                             {match.field?.address && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <MapPin size={18} />
-                                    {match.field.address.startsWith('http') ? (
-                                        <a href={match.field.address} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
-                                            Ver en Google Maps
-                                        </a>
-                                    ) : (
-                                        match.field.address
-                                    )}
+                                    {match.field.address}
                                 </div>
                             )}
                             {match.field?.phone && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Phone size={18} />
-                                        {match.field.phone}
-                                    </div>
-                                    <a
-                                        href={`tel:${match.field.phone}`}
-                                        className="btn-primary"
-                                        style={{
-                                            padding: '0.3rem 0.8rem',
-                                            fontSize: '0.75rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.4rem',
-                                            textDecoration: 'none',
-                                            color: 'var(--bg-dark)'
-                                        }}
-                                    >
-                                        <Phone size={12} /> Llamar
-                                    </a>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Phone size={18} />
+                                    {match.field.phone}
                                 </div>
                             )}
                         </div>
@@ -128,21 +105,75 @@ const MatchHeader = ({
                     </div>
                 </div>
 
-                {match.creator?.full_name && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '1.5rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid var(--border)',
+                    flexWrap: 'wrap',
+                    gap: '1rem'
+                }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.4rem',
                         color: 'var(--primary)',
                         fontWeight: '500',
-                        fontSize: '0.9rem',
-                        marginTop: '1.5rem',
-                        paddingTop: '1rem',
-                        borderTop: '1px solid var(--border)'
+                        fontSize: '0.9rem'
                     }}>
-                        <Shield size={18} /> Administrado por {match.creator.full_name}
+                        {match.creator?.full_name && (
+                            <>
+                                <Shield size={18} />
+                                <span>Administrado por {match.creator.full_name}</span>
+                            </>
+                        )}
                     </div>
-                )}
+
+                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                        {match.field?.google_maps_url && (
+                            <a
+                                href={match.field.google_maps_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-primary"
+                                style={{
+                                    padding: '0.4rem 1rem',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    textDecoration: 'none',
+                                    background: 'rgba(var(--primary-rgb), 0.1)',
+                                    border: '1px solid var(--primary)',
+                                    color: 'var(--primary)'
+                                }}
+                            >
+                                <MapPin size={14} /> Mapa
+                            </a>
+                        )}
+                        {match.field?.phone && (
+                            <a
+                                href={`tel:${match.field.phone}`}
+                                className="btn-primary"
+                                style={{
+                                    padding: '0.4rem 1rem',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    textDecoration: 'none',
+                                    background: 'rgba(var(--primary-rgb), 0.1)',
+                                    border: '1px solid var(--primary)',
+                                    color: 'var(--primary)'
+                                }}
+                            >
+                                <Phone size={14} /> Llamar
+                            </a>
+                        )}
+                    </div>
+                </div>
             </Card>
         </>
     )
