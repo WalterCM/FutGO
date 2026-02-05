@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Users as UsersIcon, Shield, ShieldCheck, User, Search, Loader2, PlusCircle, MinusCircle, Wallet } from 'lucide-react'
+import { Users as UsersIcon, Shield, ShieldCheck, User, Search, Loader2, PlusCircle, MinusCircle, Wallet, Pencil } from 'lucide-react'
 
 export default function Users({ profile }) {
     const { refreshProfile } = useAuth()
@@ -12,6 +12,7 @@ export default function Users({ profile }) {
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
     const [balanceModal, setBalanceModal] = useState({ show: false, userId: null, userName: '', currentBalance: 0, type: 'deposit', amount: '' })
     const [roleConfirm, setRoleConfirm] = useState({ show: false, user: null, roleField: '', newValue: false, inputName: '' })
+    const [editNameModal, setEditNameModal] = useState({ show: false, userId: null, currentName: '', newName: '' })
 
     function showMsg(type, text) {
         setStatusMsg({ type, text })
@@ -34,6 +35,28 @@ export default function Users({ profile }) {
         if (error) showMsg('error', error.message)
         else setUsers(data || [])
         setLoading(false)
+    }
+
+    async function updateUserName(userId, newName) {
+        if (!newName.trim()) return
+        setActionLoading(userId + 'name')
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ full_name: newName.trim() })
+            .eq('id', userId)
+
+        if (error) {
+            showMsg('error', error.message)
+        } else {
+            showMsg('success', 'Identidad actualizada')
+            setUsers(users.map(u =>
+                u.id === userId ? { ...u, full_name: newName.trim() } : u
+            ))
+            setEditNameModal({ ...editNameModal, show: false })
+            refreshProfile()
+        }
+        setActionLoading(null)
     }
 
     async function adjustBalance(userId, currentBalance, amount) {
@@ -159,6 +182,13 @@ export default function Users({ profile }) {
                                 <div>
                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         {user.full_name}
+                                        <button
+                                            onClick={() => setEditNameModal({ show: true, userId: user.id, currentName: user.full_name, newName: user.full_name })}
+                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.5, padding: '0.2rem' }}
+                                            title="Editar Nombre/Apodo"
+                                        >
+                                            <Pencil size={14} />
+                                        </button>
                                         {user.is_super_admin && <ShieldCheck size={16} style={{ color: 'var(--primary)' }} title="Owner" />}
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.3rem' }}>
@@ -373,6 +403,46 @@ export default function Users({ profile }) {
                                 onClick={() => toggleRole(roleConfirm.user.id, roleConfirm.roleField, !roleConfirm.newValue)}
                             >
                                 {actionLoading ? <Loader2 size={16} className="spin" /> : 'Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {editNameModal.show && (
+                <div className="flex-center" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, padding: '1rem' }}>
+                    <div className="premium-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <Pencil size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+                        <h3 style={{ marginBottom: '0.5rem' }}>Corregir Identidad</h3>
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>Estás editando el nombre de cancha para este crack.</p>
+
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', display: 'block', marginBottom: '0.5rem' }}>Nombre o Apodo:</label>
+                            <input
+                                type="text"
+                                autoFocus
+                                className="premium-input"
+                                style={{ width: '100%', fontSize: '1.1rem', padding: '0.8rem' }}
+                                value={editNameModal.newName}
+                                onChange={(e) => setEditNameModal({ ...editNameModal, newName: e.target.value })}
+                                placeholder="Ej: Lolo Fernández"
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'white' }}
+                                onClick={() => setEditNameModal({ ...editNameModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn-primary"
+                                disabled={!editNameModal.newName.trim() || editNameModal.newName === editNameModal.currentName || actionLoading}
+                                onClick={() => updateUserName(editNameModal.userId, editNameModal.newName)}
+                            >
+                                {actionLoading === editNameModal.userId + 'name' ? <Loader2 size={16} className="spin" /> : 'Guardar'}
                             </button>
                         </div>
                     </div>

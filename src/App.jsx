@@ -34,7 +34,7 @@ function MainContent() {
 
   if (user && !profile) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando datos...</div>
   if (!user) return <Auth />
-  if (!profile) return <ProfileSetup onComplete={refreshProfile} />
+  if (!profile || !profile.full_name) return <ProfileSetup onComplete={refreshProfile} />
 
   const NavLinks = ({ mobile = false }) => (
     <>

@@ -33,17 +33,17 @@ export default function ProfileSetup({ onComplete }) {
             <form onSubmit={handleSubmit} className="premium-card" style={{ width: '100%', maxWidth: '400px' }}>
                 <h2 style={{ marginBottom: '1.5rem', color: 'var(--primary)', textAlign: 'center' }}>Completa tu Ficha</h2>
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', textAlign: 'center' }}>
-                    Para armar los equipos, necesitamos saber tu nombre.
+                    Necesitamos saber cómo te conocen en la cancha para armar los equipos.
                 </p>
 
                 <div style={{ marginBottom: '2rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Nombre Completo</label>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Tu Nombre o Apodo</label>
                     <input
                         type="text"
                         className="premium-input"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Ej: Oliver Atom"
+                        placeholder="Ej: Lolo Fernández o 'El Capitán'"
                         required
                         style={{
                             width: '100%', padding: '1rem', borderRadius: '12px',

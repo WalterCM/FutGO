@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
             .single()
 
         if (error || !data) {
-            supabase.auth.signOut()
+            console.log('Profile not found or error, but staying logged in to allow setup:', error?.message)
             setProfile(null)
             setLoading(false)
             return
