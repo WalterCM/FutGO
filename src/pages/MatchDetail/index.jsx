@@ -220,6 +220,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 onBack={onBack}
                 enrolledCount={enrolledCount}
                 totalNeeded={totalNeeded}
+                numTeams={numTeams}
+                playersPerTeam={playersPerTeam}
                 isEnrolled={isEnrolled}
                 onJoin={handleJoin}
                 onLeave={handleLeave}

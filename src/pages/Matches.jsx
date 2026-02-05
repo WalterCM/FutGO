@@ -277,7 +277,11 @@ export default function Matches({ profile, onMatchClick }) {
                 ) : (
                     matches.map(match => {
                         const enrolledCount = match.enrollments?.length || 0;
-                        const totalNeeded = (match.field?.players_per_team || 5) * 2;
+                        const playersPerTeam = match.field?.players_per_team || 5;
+                        const rawTotal = match.max_players || (playersPerTeam * 2);
+                        const numTeams = Math.max(2, Math.round(rawTotal / playersPerTeam));
+                        const totalNeeded = numTeams * playersPerTeam;
+
                         const isFull = enrolledCount >= totalNeeded;
                         const isEnrolled = match.enrollments?.some(e => e.player_id === profile.id);
 
@@ -335,7 +339,10 @@ export default function Matches({ profile, onMatchClick }) {
                                         <Clock size={16} /> {match.time.substring(0, 5)} hrs
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Users size={16} /> {enrolledCount} / {totalNeeded} jugadores
+                                        <Users size={16} />
+                                        <span>
+                                            {enrolledCount} / {totalNeeded} jugadores • Fútbol {playersPerTeam} • {numTeams} equipos
+                                        </span>
                                     </div>
                                     {match.creator?.full_name && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '500' }}>

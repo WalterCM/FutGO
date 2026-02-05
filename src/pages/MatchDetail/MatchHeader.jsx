@@ -8,6 +8,8 @@ const MatchHeader = ({
     onBack,
     enrolledCount,
     totalNeeded,
+    numTeams,
+    playersPerTeam,
     isEnrolled,
     onJoin,
     onLeave,
@@ -57,7 +59,10 @@ const MatchHeader = ({
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
                                 {enrolledCount} / {totalNeeded}
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Jugadores</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>Jugadores</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--primary)', opacity: 0.8, marginTop: '0.4rem', fontWeight: 'bold' }}>
+                                Fútbol {playersPerTeam} • {numTeams} Equipos
+                            </div>
                         </div>
 
                         <div className="action-btn-container">
