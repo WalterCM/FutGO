@@ -13,11 +13,19 @@ export const AuthProvider = ({ children }) => {
             setProfile(null)
             return
         }
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', userId)
             .single()
+
+        if (error || !data) {
+            console.warn('Profile not found, signing out...')
+            supabase.auth.signOut()
+            setProfile(null)
+            setLoading(false)
+            return
+        }
         setProfile(data)
     }
 

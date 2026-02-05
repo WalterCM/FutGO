@@ -136,6 +136,38 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         await updateMatch({ team_configs: newConfigs })
     }
 
+    const handleTogglePresent = (enrol) => {
+        if (enrol.is_present) {
+            setConfirmModal({
+                show: true,
+                title: 'Quitar Presencia',
+                message: `¿Estás seguro de marcar a ${enrol.player?.full_name} como ausente? Se perderá su posición en la cancha.`,
+                onConfirm: async () => {
+                    await togglePresent(enrol)
+                    setConfirmModal(prev => ({ ...prev, show: false }))
+                }
+            })
+        } else {
+            togglePresent(enrol)
+        }
+    }
+
+    const handleTogglePaid = (enrol) => {
+        if (enrol.paid) {
+            setConfirmModal({
+                show: true,
+                title: 'Anular Pago',
+                message: `¿Estás seguro de anular el pago de ${enrol.player?.full_name}?`,
+                onConfirm: async () => {
+                    await togglePaid(enrol)
+                    setConfirmModal(prev => ({ ...prev, show: false }))
+                }
+            })
+        } else {
+            togglePaid(enrol)
+        }
+    }
+
     const handleAddGame = async (e) => {
         e.preventDefault()
         const success = await addGameResult(gameData)
@@ -181,8 +213,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     suggestedQuota={suggestedQuota}
                     match={match}
                     canManage={canManage}
-                    onTogglePaid={togglePaid}
-                    onTogglePresent={togglePresent}
+                    onTogglePaid={handleTogglePaid}
+                    onTogglePresent={handleTogglePresent}
                     onExpand={() => {
                         const next = numTeams + 1
                         setExpansionData({ show: true, mode: 'expand', newCost: Math.round((match.field?.price_per_hour || 120) / 2 * next) })
