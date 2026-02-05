@@ -9,7 +9,10 @@ import Fields from './pages/Fields'
 import Matches from './pages/Matches'
 import MatchDetail from './pages/MatchDetail'
 import Users from './pages/Users'
+import Stats from './pages/Stats'
+import { Trophy } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { getRating } from './lib/utils'
 
 
 function MainContent() {
@@ -73,6 +76,21 @@ function MainContent() {
         })}
       >
         Canchas
+      </NavLink>
+      <NavLink
+        to="/lideres"
+        style={({ isActive }) => ({
+          cursor: 'pointer',
+          color: isActive ? 'var(--primary)' : 'white',
+          textDecoration: 'none',
+          fontSize: mobile ? '1.2rem' : '1rem',
+          fontWeight: mobile ? '600' : 'normal',
+          display: 'flex',
+          alignItems: 'center',
+          gap: mobile ? '0.8rem' : '0.4rem'
+        })}
+      >
+        <Trophy size={mobile ? 24 : 18} /> Líderes
       </NavLink>
       {profile?.is_super_admin && (
         <NavLink
@@ -156,6 +174,7 @@ function MainContent() {
           <Route path="/partidos" element={<Matches profile={profile} onMatchClick={handleMatchClick} />} />
           <Route path="/canchas" element={<Fields profile={profile} />} />
           <Route path="/usuarios" element={<Users profile={profile} />} />
+          <Route path="/lideres" element={<Stats />} />
           <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={handleBack} />} />
           <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
         </Routes>
@@ -165,8 +184,24 @@ function MainContent() {
 }
 
 function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
-  const { user } = useAuth()
-  // Removed local profile state and useEffect for fetching profile, as it's now passed as a prop
+  const navigate = useNavigate()
+  const [maxElo, setMaxElo] = useState(2000)
+
+  useEffect(() => {
+    async function fetchMaxElo() {
+      const { data } = await supabase
+        .from('profiles')
+        .select('elo_rating')
+        .order('elo_rating', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (data?.elo_rating) setMaxElo(data.elo_rating)
+    }
+    fetchMaxElo()
+  }, [])
+
+  const rating = getRating(profile?.elo_rating, maxElo)
 
   return (
     <div className="grid-dashboard">
@@ -188,10 +223,14 @@ function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
       </section>
       */}
 
-      <section className="premium-card">
-        <h3>Mi Ranking</h3>
-        <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0' }}>{profile?.elo_rating || 1200} ELO</div>
-        <p style={{ color: 'var(--primary)' }}>Nivel: {profile?.elo_rating > 1400 ? 'Crack ★★★★★' : 'Promesa ★★★☆☆'}</p>
+      <section className="premium-card" style={{ cursor: 'pointer' }} onClick={() => navigate('/lideres')}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Trophy size={20} /> Mi Ranking
+        </h3>
+        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0.5rem 0', color: 'var(--primary)' }}>
+          {rating}
+        </div>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Toca para ver los Líderes</p>
       </section>
     </div>
   )

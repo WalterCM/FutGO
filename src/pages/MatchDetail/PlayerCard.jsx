@@ -33,7 +33,6 @@ const PlayerCard = ({
         >
             <div>
                 <div style={{ fontWeight: 'bold' }}>{player?.full_name}</div>
-                <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>ELO: {player?.elo_rating}</div>
             </div>
             {isBench && (
                 <div style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 'bold' }}>LISTO</div>

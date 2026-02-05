@@ -192,9 +192,6 @@ export default function Users({ profile }) {
                                         {user.is_super_admin && <ShieldCheck size={16} style={{ color: 'var(--primary)' }} title="Owner" />}
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.3rem' }}>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                            {user.elo_rating} ELO
-                                        </div>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
                                             {user.is_super_admin ? 'Owner' : (user.is_admin ? 'Administrador' : 'Jugador')}
                                         </div>
