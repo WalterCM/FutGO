@@ -282,7 +282,8 @@ export default function Matches({ profile, onMatchClick }) {
                         const numTeams = Math.max(2, Math.round(rawTotal / playersPerTeam));
                         const totalNeeded = numTeams * playersPerTeam;
 
-                        const isFull = enrolledCount >= totalNeeded;
+                        const isAtLimit = enrolledCount >= totalNeeded;
+                        const canJoinWaitlist = enrolledCount < totalNeeded + playersPerTeam;
                         const isEnrolled = match.enrollments?.some(e => e.player_id === profile.id);
 
                         return (
@@ -323,11 +324,11 @@ export default function Matches({ profile, onMatchClick }) {
                                     <h3 style={{ color: match.is_canceled ? 'var(--text-dim)' : 'var(--primary)', marginBottom: '0.2rem', textDecoration: match.is_canceled ? 'line-through' : 'none' }}>{match.field?.name}</h3>
                                     <span style={{
                                         fontSize: '0.7rem',
-                                        color: match.is_canceled ? 'var(--danger)' : (isEnrolled ? '#10b981' : (isFull ? 'var(--danger)' : 'var(--primary)')),
+                                        color: match.is_canceled ? 'var(--danger)' : (isEnrolled ? '#10b981' : (isAtLimit ? '#f59e0b' : 'var(--primary)')),
                                         fontWeight: 'bold',
                                         textTransform: 'uppercase'
                                     }}>
-                                        {match.is_canceled ? 'Partido Cancelado ✕' : (isEnrolled ? 'Estás Inscrito ✅' : (isFull ? 'Cupos Llenos' : 'Inscripciones Abiertas'))}
+                                        {match.is_canceled ? 'Partido Cancelado ✕' : (isEnrolled ? 'Estás Inscrito ✅' : (isAtLimit ? 'Completos (Lista de Espera) 🕒' : 'Inscripciones Abiertas'))}
                                     </span>
                                 </div>
 
@@ -341,7 +342,10 @@ export default function Matches({ profile, onMatchClick }) {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <Users size={16} />
                                         <span>
-                                            {enrolledCount} / {totalNeeded} jugadores • Fútbol {playersPerTeam} • {numTeams} equipos
+                                            {enrolledCount > totalNeeded
+                                                ? `${totalNeeded} / ${totalNeeded} (+${enrolledCount - totalNeeded} en espera)`
+                                                : `${enrolledCount} / ${totalNeeded}`
+                                            } jugadores • Fútbol {playersPerTeam} • {numTeams} equipos
                                         </span>
                                     </div>
                                     {match.creator?.full_name && (
@@ -389,10 +393,10 @@ export default function Matches({ profile, onMatchClick }) {
                                             e.stopPropagation()
                                             joinMatch(match.id)
                                         }}
-                                        disabled={isFull || actionLoading === match.id || match.is_locked}
+                                        disabled={!canJoinWaitlist || actionLoading === match.id || match.is_locked}
                                         style={{
                                             width: '100%',
-                                            opacity: (isFull || match.is_locked) ? 0.5 : 1,
+                                            opacity: (!canJoinWaitlist || match.is_locked) ? 0.5 : 1,
                                             display: 'flex',
                                             justifyContent: 'center',
                                             alignItems: 'center',
@@ -402,7 +406,7 @@ export default function Matches({ profile, onMatchClick }) {
                                         }}
                                     >
                                         {actionLoading === match.id ? <Loader2 size={18} className="spin" /> :
-                                            (match.is_canceled ? 'Partido Cerrado' : (isFull ? 'Partido Lleno' : 'Unirme al Partido'))}
+                                            (match.is_canceled ? 'Partido Cerrado' : (isAtLimit ? 'Unirme a Lista de Espera' : 'Unirme al Partido'))}
                                     </button>
                                 )}
                             </div>

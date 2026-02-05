@@ -56,10 +56,13 @@ const MatchHeader = ({
 
                     <div className="match-status-badge">
                         <div className="player-count-box">
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
-                                {enrolledCount} / {totalNeeded}
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
+                                {enrolledCount > totalNeeded
+                                    ? `${totalNeeded} / ${totalNeeded} (+${enrolledCount - totalNeeded})`
+                                    : `${enrolledCount} / ${totalNeeded}`
+                                }
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>Jugadores</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>Jugadores</div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--primary)', opacity: 0.8, marginTop: '0.4rem', fontWeight: 'bold' }}>
                                 Fútbol {playersPerTeam} • {numTeams} Equipos
                             </div>
@@ -83,9 +86,10 @@ const MatchHeader = ({
                                     size="sm"
                                     style={{ width: '100%' }}
                                     loading={actionLoading === 'join'}
-                                    disabled={match.is_locked || enrolledCount >= totalNeeded}
+                                    disabled={match.is_locked || enrolledCount >= totalNeeded + playersPerTeam}
                                 >
-                                    {enrolledCount >= totalNeeded ? 'Me interesa' : 'Unirme'}
+                                    {enrolledCount >= totalNeeded + playersPerTeam ? 'Lleno' :
+                                        enrolledCount >= totalNeeded ? 'Unirme a Espera' : 'Unirme'}
                                 </Button>
                             )}
                         </div>
