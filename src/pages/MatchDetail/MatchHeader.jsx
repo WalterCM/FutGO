@@ -41,12 +41,20 @@ const MatchHeader = ({
 
             <Card style={{ marginBottom: '2rem' }} hover={false}>
                 <div className="match-header-top">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                    <div className="match-header-title-container">
                         <h2 className="match-title">{match.field?.name}</h2>
                         {canManage && !match.is_locked && (
                             <button
                                 onClick={onEdit}
-                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.7, padding: '0.5rem 0' }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--primary)',
+                                    cursor: 'pointer',
+                                    opacity: 0.7,
+                                    padding: '0.3rem 0',
+                                    flexShrink: 0
+                                }}
                                 title="Editar detalles"
                             >
                                 <Pencil size={20} />
@@ -120,16 +128,7 @@ const MatchHeader = ({
                     )}
                 </div>
 
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: '1.5rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid var(--border)',
-                    flexWrap: 'wrap',
-                    gap: '1rem'
-                }}>
+                <div className="match-header-footer">
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -146,7 +145,7 @@ const MatchHeader = ({
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                    <div className="match-header-btn-group">
                         {match.field?.google_maps_url && (
                             <a
                                 href={match.field.google_maps_url}
