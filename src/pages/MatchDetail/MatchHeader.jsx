@@ -52,7 +52,7 @@ const MatchHeader = ({
                                 </button>
                             )}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-dim)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-dim)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <Calendar size={18} />
                                 {new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -60,6 +60,41 @@ const MatchHeader = ({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <Clock size={18} /> {match.time.substring(0, 5)} hrs
                             </div>
+                            {match.field?.address && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <MapPin size={18} />
+                                    {match.field.address.startsWith('http') ? (
+                                        <a href={match.field.address} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
+                                            Ver en Google Maps
+                                        </a>
+                                    ) : (
+                                        match.field.address
+                                    )}
+                                </div>
+                            )}
+                            {match.field?.phone && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Phone size={18} />
+                                        {match.field.phone}
+                                    </div>
+                                    <a
+                                        href={`tel:${match.field.phone}`}
+                                        className="btn-primary"
+                                        style={{
+                                            padding: '0.3rem 0.8rem',
+                                            fontSize: '0.75rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            textDecoration: 'none',
+                                            color: 'var(--bg-dark)'
+                                        }}
+                                    >
+                                        <Phone size={12} /> Llamar
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: '120px' }}>
@@ -93,43 +128,6 @@ const MatchHeader = ({
                     </div>
                 </div>
 
-                {match.field?.address && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)', marginBottom: '1rem' }}>
-                        <MapPin size={18} />
-                        {match.field.address.startsWith('http') ? (
-                            <a href={match.field.address} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none' }}>
-                                Ver en Google Maps
-                            </a>
-                        ) : (
-                            match.field.address
-                        )}
-                    </div>
-                )}
-
-                {match.field?.phone && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: match.creator?.full_name ? '1rem' : '0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)' }}>
-                            <Phone size={18} />
-                            {match.field.phone}
-                        </div>
-                        <a
-                            href={`tel:${match.field.phone}`}
-                            className="btn-primary"
-                            style={{
-                                padding: '0.4rem 1rem',
-                                fontSize: '0.8rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                textDecoration: 'none',
-                                color: 'var(--bg-dark)'
-                            }}
-                        >
-                            <Phone size={14} /> Llamar a Cancha
-                        </a>
-                    </div>
-                )}
-
                 {match.creator?.full_name && (
                     <div style={{
                         display: 'flex',
@@ -138,6 +136,7 @@ const MatchHeader = ({
                         color: 'var(--primary)',
                         fontWeight: '500',
                         fontSize: '0.9rem',
+                        marginTop: '1.5rem',
                         paddingTop: '1rem',
                         borderTop: '1px solid var(--border)'
                     }}>
