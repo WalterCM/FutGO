@@ -50,7 +50,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
                 .select('*')
-                .eq('match_id', matchId)
+                .eq('match_day_id', matchId)
                 .order('created_at', { ascending: false })
 
             // Note: games relationship might be different in actual schema, 
@@ -71,7 +71,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         if (matchId) fetchMatchDetails()
     }, [matchId, fetchMatchDetails])
 
-    const joinMatch = async (useBalance = false) => {
+    const joinMatch = async () => {
         if (!profile) return
         setActionLoading('join')
         try {
@@ -79,8 +79,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 .from('enrollments')
                 .insert([{
                     match_id: matchId,
-                    player_id: profile.id,
-                    use_balance: useBalance
+                    player_id: profile.id
                 }])
 
             if (error) throw error
@@ -153,7 +152,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     score2: gameData.score2,
                     team1_id: gameData.team1Id,
                     team2_id: gameData.team2Id,
-                    match_id: matchId
+                    match_day_id: matchId
                 }])
 
             if (error) throw error
