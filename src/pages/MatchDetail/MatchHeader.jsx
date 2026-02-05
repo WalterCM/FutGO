@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 
@@ -52,8 +52,7 @@ const MatchHeader = ({
                                 </button>
                             )}
                         </div>
-                        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1rem' }}>Sede del Encuentro</p>
-                        <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-dim)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <Calendar size={18} />
                                 {new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -108,7 +107,7 @@ const MatchHeader = ({
                 )}
 
                 {match.field?.phone && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: match.creator?.full_name ? '1rem' : '0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)' }}>
                             <Phone size={18} />
                             {match.field.phone}
@@ -128,6 +127,21 @@ const MatchHeader = ({
                         >
                             <Phone size={14} /> Llamar a Cancha
                         </a>
+                    </div>
+                )}
+
+                {match.creator?.full_name && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        color: 'var(--primary)',
+                        fontWeight: '500',
+                        fontSize: '0.9rem',
+                        paddingTop: '1rem',
+                        borderTop: '1px solid var(--border)'
+                    }}>
+                        <Shield size={18} /> Administrado por {match.creator.full_name}
                     </div>
                 )}
             </Card>

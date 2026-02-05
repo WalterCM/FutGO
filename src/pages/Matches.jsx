@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Calendar, Clock, Users, CheckCircle, Trash2, LogOut, Loader2, Pencil } from 'lucide-react'
+import { Plus, Calendar, Clock, Users, CheckCircle, Trash2, LogOut, Loader2, Pencil, Shield } from 'lucide-react'
 
 export default function Matches({ profile, onMatchClick }) {
     const [matches, setMatches] = useState([])
@@ -47,6 +47,7 @@ export default function Matches({ profile, onMatchClick }) {
             .select(`
                 *,
                 field:fields(*),
+                creator:profiles(full_name),
                 enrollments(*, player:profiles(*))
             `)
             .order('date', { ascending: true })
@@ -336,6 +337,11 @@ export default function Matches({ profile, onMatchClick }) {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <Users size={16} /> {enrolledCount} / {totalNeeded} jugadores
                                     </div>
+                                    {match.creator?.full_name && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '500' }}>
+                                            <Shield size={16} /> Administrado por {match.creator.full_name.split(' ')[0]}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isEnrolled ? (
