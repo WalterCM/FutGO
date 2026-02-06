@@ -134,7 +134,7 @@ describe('Matches', () => {
         renderWithRouter(<Matches profile={createMockProfile()} onMatchClick={() => { }} />)
 
         await waitFor(() => {
-            expect(screen.getByText(/Cupos Llenos/i)).toBeDefined()
+            expect(screen.getByText(/Completos/i)).toBeDefined()
         })
     })
 })
