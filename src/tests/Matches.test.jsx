@@ -1,7 +1,7 @@
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import { expect, test, describe, beforeEach, afterEach } from 'vitest'
 import { BrowserRouter } from 'react-router-dom'
-import Matches from '../pages/Matches'
+import Matches from '../pages/Matches/index'
 import { createMockMatch, createMockProfile, createMockField, resetIdCounter } from './factories'
 import { mockQuery } from './setup'
 

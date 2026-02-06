@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, describe, vi, beforeEach } from 'vitest'
-import Users from '../pages/Users'
+import Users from '../pages/Users/index'
 import { supabase } from '../lib/supabase'
 import { createMockProfile, resetIdCounter } from './factories'
 

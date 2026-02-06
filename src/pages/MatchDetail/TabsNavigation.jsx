@@ -1,7 +1,16 @@
 import React from 'react'
-import { CheckCircle, MapPin, Trophy } from 'lucide-react'
+import { CheckCircle, MapPin, Trophy, Calendar } from 'lucide-react'
 
 const TabsNavigation = ({ activeTab, onTabChange }) => {
+    // Map internal 'games' or 'fixtures' to 'results' if needed, 
+    // but here we use distinct IDs for clarity.
+    const tabs = [
+        { id: 'admin', label: 'Admin', icon: CheckCircle },
+        { id: 'field', label: 'Equipos', icon: MapPin },
+        { id: 'fixtures', label: 'Fixture', icon: Calendar },
+        { id: 'games', label: 'Resultados', icon: Trophy }
+    ]
+
     return (
         <div style={{
             display: 'flex',
@@ -10,13 +19,10 @@ const TabsNavigation = ({ activeTab, onTabChange }) => {
             borderRadius: '12px',
             marginBottom: '2rem',
             border: '1px solid var(--border)',
-            gap: '0.2rem'
+            gap: '0.2rem',
+            overflowX: 'auto'
         }}>
-            {[
-                { id: 'admin', label: 'Admin', icon: CheckCircle },
-                { id: 'field', label: 'Equipos', icon: MapPin },
-                { id: 'results', label: 'Resultados', icon: Trophy }
-            ].map(tab => (
+            {tabs.map(tab => (
                 <button
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
@@ -36,11 +42,11 @@ const TabsNavigation = ({ activeTab, onTabChange }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.3rem',
-                        minWidth: 0
+                        minWidth: '70px'
                     }}
                 >
                     <tab.icon size={18} />
-                    <span style={{ fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
                         {tab.label}
                     </span>
                 </button>

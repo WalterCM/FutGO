@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FastForward, Play, GripVertical, CheckCircle2, Circle, Settings2, Trophy } from 'lucide-react'
+import { FastForward, Play, GripVertical, CheckCircle2, Circle, Settings2, Trophy, PlusCircle } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import TeamBadge from './TeamBadge'
@@ -14,6 +14,7 @@ const FixtureTimeline = ({
     onUpdateMode,
     onReorder,
     onAddFinals,
+    onGenerateFixtures,
     games = []
 }) => {
     const [isReordering, setIsReordering] = useState(false)
@@ -104,11 +105,20 @@ const FixtureTimeline = ({
             {fixtures.length === 0 ? (
                 <Card style={{ textAlign: 'center', padding: '2.5rem', background: 'rgba(255,255,255,0.02)' }} hover={false}>
                     <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.3 }}>⚽</div>
-                    <p style={{ color: 'var(--text-dim)', margin: 0 }}>
+                    <p style={{ color: 'var(--text-dim)', margin: 0, marginBottom: '1.5rem' }}>
                         {matchMode === 'free'
                             ? 'Modo Libre activo. Registra los encuentros manualmente usando el botón de abajo.'
                             : canManage ? 'Selecciona un modo arriba para generar el fixture.' : 'Esperando a que el organizador defina el modo.'}
                     </p>
+                    {canManage && matchMode !== 'free' && (
+                        <Button
+                            variant="primary"
+                            onClick={() => onGenerateFixtures(matchMode)}
+                            icon={PlusCircle}
+                        >
+                            Generar Encuentros
+                        </Button>
+                    )}
                 </Card>
             ) : (
                 <div style={{ display: 'grid', gap: '0.6rem' }}>
