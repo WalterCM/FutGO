@@ -17,7 +17,7 @@ import TabsNavigation from './TabsNavigation'
 import AdminTab from './AdminTab'
 import FieldTab from './FieldTab'
 import GameResultForm from './GameResultForm'
-import FixtureSuggester from './FixtureSuggester'
+import FixtureTimeline from './FixtureTimeline'
 import KitPicker from './KitPicker'
 import { BENCH_KIT, DEFAULT_KIT, KIT_LIBRARY } from './constants'
 
@@ -41,6 +41,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         movePlayer,
         addGameResult,
         updateMatchMode,
+        generateFixtures,
+        updateFixtures,
+        addFinals,
         updateMatchCapacity,
         cancelMatch,
         updateMatch,
@@ -215,20 +218,21 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         }
     }
 
-    const handleAddGame = async (e) => {
-        e.preventDefault()
-        const success = await addGameResult(gameData)
-        if (success) setShowGameForm(false)
-    }
-
-    const handleStartMatch = (team1Id, team2Id) => {
+    const handleStartMatch = (team1Id, team2Id, fixtureId = null) => {
         setGameData({
             ...gameData,
             team1Id,
             team2Id,
+            fixtureId,
             goals: []
         })
         setShowGameForm(true)
+    }
+
+    const handleAddGame = async (e) => {
+        e.preventDefault()
+        const success = await addGameResult(gameData, gameData.fixtureId)
+        if (success) setShowGameForm(false)
     }
 
     if (loading) return (
@@ -321,14 +325,17 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
 
             {activeTab === 'results' && (
                 <>
-                    <FixtureSuggester
+                    <FixtureTimeline
                         matchMode={match?.match_mode || 'liguilla'}
                         numTeams={numTeams}
-                        games={games}
+                        fixtures={match?.fixtures || []}
                         teamConfigs={teamConfigs}
                         onStartMatch={handleStartMatch}
                         canManage={canManage}
                         onUpdateMode={updateMatchMode}
+                        onReorder={updateFixtures}
+                        onAddFinals={addFinals}
+                        games={games}
                     />
                     <GameResultForm
                         showForm={showGameForm}

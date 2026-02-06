@@ -153,7 +153,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         await updateEnrollment(enrolId, { team_assignment: teamId })
     }
 
-    const addGameResult = async (gameData) => {
+    const addGameResult = async (gameData, fixtureId = null) => {
         setActionLoading('game-form')
         try {
             // If goals array is provided, calculate scores automatically
@@ -188,6 +188,15 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 }])
 
             if (error) throw error
+
+            // Update fixture status if linked
+            if (fixtureId && match.fixtures) {
+                const nextFixtures = (match.fixtures || []).map(f =>
+                    f.id === fixtureId ? { ...f, status: 'completed' } : f
+                )
+                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
+            }
+
             showMsg('success', 'Resultado registrado')
             fetchMatchDetails(true)
             return true
@@ -210,11 +219,116 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             if (error) throw error
             setMatch(prev => ({ ...prev, match_mode: mode }))
             showMsg('success', `Modo cambiado a ${mode}`)
+
+            // Auto-generate fixtures for the new mode if they don't exist
+            if (mode !== 'free') generateFixtures(mode)
         } catch (error) {
             showMsg('error', error.message)
         } finally {
             setActionLoading(null)
         }
+    }
+
+    const generateFixtures = async (mode) => {
+        if (!match) return
+
+        // Logical pairings based on numTeams
+        const playersPerTeam = match.field?.players_per_team || 5
+        const maxPlayers = match.max_players || (playersPerTeam * 2)
+        const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
+
+        const newFixtures = []
+        if (mode === 'liguilla' || mode === 'tournament') {
+            for (let i = 1; i <= numTeams; i++) {
+                for (let j = i + 1; j <= numTeams; j++) {
+                    newFixtures.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        team1Id: i,
+                        team2Id: j,
+                        status: 'pending',
+                        label: 'Fase de Grupos'
+                    })
+                }
+            }
+            // Shuffle them initially
+            newFixtures.sort(() => Math.random() - 0.5)
+        } else if (mode === 'winner_stays') {
+            newFixtures.push({
+                id: Math.random().toString(36).substr(2, 9),
+                team1Id: 1,
+                team2Id: 2,
+                status: 'pending',
+                label: 'Partido Inaugural'
+            })
+        }
+
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .update({ fixtures: newFixtures })
+                .eq('id', matchId)
+            if (error) throw error
+            setMatch(prev => ({ ...prev, fixtures: newFixtures }))
+        } catch (error) {
+            showMsg('error', 'Error generando encuentros')
+        }
+    }
+
+    const updateFixtures = async (newFixtures) => {
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .update({ fixtures: newFixtures })
+                .eq('id', matchId)
+            if (error) throw error
+            setMatch(prev => ({ ...prev, fixtures: newFixtures }))
+        } catch (error) {
+            showMsg('error', 'Error actualizando el fixture')
+        }
+    }
+
+    const addFinals = async () => {
+        if (!match || !games.length) return
+
+        // Simplified standings calculation
+        const stats = {}
+        const playersPerTeam = match.field?.players_per_team || 5
+        const maxPlayers = match.max_players || (playersPerTeam * 2)
+        const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
+
+        for (let i = 1; i <= numTeams; i++) stats[i] = { id: i, pts: 0, gd: 0 }
+        games.forEach(g => {
+            const t1 = g.team1_id, t2 = g.team2_id
+            if (g.score1 > g.score2) stats[t1].pts += 3
+            else if (g.score1 < g.score2) stats[t2].pts += 3
+            else { stats[t1].pts += 1; stats[t2].pts += 1 }
+            stats[t1].gd += (g.score1 - g.score2)
+            stats[t2].gd += (g.score2 - g.score1)
+        })
+
+        const sorted = Object.values(stats).sort((a, b) => b.pts - a.pts || b.gd - a.gd)
+
+        const finalMatches = []
+        if (numTeams >= 4) {
+            finalMatches.push({
+                id: 'final-3rd',
+                team1Id: sorted[2].id,
+                team2Id: sorted[3].id,
+                status: 'pending',
+                label: '3er Puesto 🥉'
+            })
+        }
+        finalMatches.push({
+            id: 'final-gold',
+            team1Id: sorted[0].id,
+            team2Id: sorted[1].id,
+            status: 'pending',
+            label: '¡Gran Final! 🏆'
+        })
+
+        const nextFixtures = [...(match.fixtures || []), ...finalMatches]
+        await updateFixtures(nextFixtures)
+        showMsg('success', 'Finales generadas')
     }
 
     const updateMatchCapacity = async (newMaxPlayers, newCost, newTeamConfigs = null) => {
@@ -399,6 +513,9 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         movePlayer,
         addGameResult,
         updateMatchMode,
+        generateFixtures,
+        updateFixtures,
+        addFinals,
         updateMatchCapacity,
         cancelMatch,
         updateMatch,
