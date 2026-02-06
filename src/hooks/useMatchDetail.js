@@ -174,7 +174,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 .filter(e => e.is_present && e.paid && e.team_assignment === gameData.team2Id)
                 .map(e => e.player_id)
 
-            const { error } = await supabase
+            const { data: gameDataRes, error } = await supabase
                 .from('games')
                 .insert([{
                     score1: finalScore1,
@@ -184,16 +184,45 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     team1_players: team1Players,
                     team2_players: team2Players,
                     match_day_id: matchId,
-                    goals: gameData.goals || []
+                    goals: gameData.goals || [],
+                    fixture_id: fixtureId
                 }])
+                .select()
 
             if (error) throw error
+            const newGame = gameDataRes[0]
 
             // Update fixture status if linked
             if (fixtureId && match.fixtures) {
                 const nextFixtures = (match.fixtures || []).map(f =>
-                    f.id === fixtureId ? { ...f, status: 'completed' } : f
+                    f.id === fixtureId ? { ...f, status: 'completed', score1: finalScore1, score2: finalScore2, gameId: newGame.id } : f
                 )
+
+                // Winner Stays auto-generation
+                if (match.match_mode === 'winner_stays') {
+                    const winnerId = finalScore1 > finalScore2 ? gameData.team1Id : gameData.team2Id
+
+                    // Logic to find next challenger (T3, then T4... then T1)
+                    const playersPerTeam = match.field?.players_per_team || 5
+                    const maxPlayers = match.max_players || (playersPerTeam * 2)
+                    const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
+
+                    // Find the last used team ID that isn't the winner
+                    const lastOpponentId = finalScore1 > finalScore2 ? gameData.team2Id : gameData.team1Id
+                    let nextChallengerId = (lastOpponentId % numTeams) + 1
+                    if (nextChallengerId === winnerId) {
+                        nextChallengerId = (nextChallengerId % numTeams) + 1
+                    }
+
+                    nextFixtures.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        team1Id: winnerId,
+                        team2Id: nextChallengerId,
+                        status: 'pending',
+                        label: 'Ganador se Queda'
+                    })
+                }
+
                 await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
             }
 
@@ -208,20 +237,23 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const updateMatchMode = async (mode) => {
-        setActionLoading('mode')
+    const deleteGameResult = async (gameId, fixtureId = null) => {
+        setActionLoading('delete-game')
         try {
-            const { error } = await supabase
-                .from('matches')
-                .update({ match_mode: mode })
-                .eq('id', matchId)
-
+            const { error } = await supabase.from('games').delete().eq('id', gameId)
             if (error) throw error
-            setMatch(prev => ({ ...prev, match_mode: mode }))
-            showMsg('success', `Modo cambiado a ${mode}`)
 
-            // Auto-generate fixtures for the new mode if they don't exist
-            if (mode !== 'free') generateFixtures(mode)
+            if (fixtureId && match.fixtures) {
+                const nextFixtures = (match.fixtures || []).map(f =>
+                    f.id === fixtureId ? { ...f, status: 'pending', score1: null, score2: null } : f
+                )
+                // If it was Winner Stays, we might want to remove the auto-generated next match too
+                // But for now, let's just reset the current one.
+                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
+            }
+
+            showMsg('success', 'Partido eliminado')
+            fetchMatchDetails(true)
         } catch (error) {
             showMsg('error', error.message)
         } finally {
@@ -229,10 +261,33 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const generateFixtures = async (mode) => {
-        if (!match) return
+    const updateMatchMode = async (mode) => {
+        setActionLoading('mode')
+        try {
+            const nextFixtures = mode !== 'free' ? generateFixturesHelper(mode) : []
+            const updateData = {
+                match_mode: mode,
+                fixtures: nextFixtures
+            }
 
-        // Logical pairings based on numTeams
+            const { error } = await supabase
+                .from('matches')
+                .update(updateData)
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({ ...prev, ...updateData }))
+            showMsg('success', `Modo cambiado a ${mode}`)
+        } catch (error) {
+            showMsg('error', error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const generateFixturesHelper = (mode) => {
+        if (!match) return []
+
         const playersPerTeam = match.field?.players_per_team || 5
         const maxPlayers = match.max_players || (playersPerTeam * 2)
         const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
@@ -250,7 +305,6 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     })
                 }
             }
-            // Shuffle them initially
             newFixtures.sort(() => Math.random() - 0.5)
         } else if (mode === 'winner_stays') {
             newFixtures.push({
@@ -261,7 +315,11 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 label: 'Partido Inaugural'
             })
         }
+        return newFixtures
+    }
 
+    const generateFixtures = async (mode) => {
+        const newFixtures = generateFixturesHelper(mode)
         try {
             const { error } = await supabase
                 .from('matches')
@@ -512,6 +570,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         togglePresent,
         movePlayer,
         addGameResult,
+        deleteGameResult,
         updateMatchMode,
         generateFixtures,
         updateFixtures,

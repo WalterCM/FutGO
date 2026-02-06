@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { FastForward, Play, GripVertical, CheckCircle2, Circle, Settings2, Trophy } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
+import TeamBadge from './TeamBadge'
 
 const FixtureTimeline = ({
     matchMode,
@@ -38,21 +39,6 @@ const FixtureTimeline = ({
         onReorder(newFixtures)
     }
 
-    const TeamBadge = ({ id }) => (
-        <span style={{
-            background: teamConfigs[id]?.bg || 'rgba(255,255,255,0.05)',
-            color: teamConfigs[id]?.color || 'white',
-            padding: '0.2rem 0.6rem',
-            borderRadius: '6px',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-            border: `1px solid ${teamConfigs[id]?.color || 'transparent'}`,
-            minWidth: '80px',
-            textAlign: 'center'
-        }}>
-            {teamConfigs[id]?.name || `Equipo ${id}`}
-        </span>
-    )
 
     return (
         <div style={{ marginBottom: '2rem' }}>
@@ -116,9 +102,12 @@ const FixtureTimeline = ({
             </div>
 
             {fixtures.length === 0 ? (
-                <Card style={{ textAlign: 'center', padding: '2rem' }} hover={false}>
+                <Card style={{ textAlign: 'center', padding: '2.5rem', background: 'rgba(255,255,255,0.02)' }} hover={false}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.3 }}>⚽</div>
                     <p style={{ color: 'var(--text-dim)', margin: 0 }}>
-                        {canManage ? 'Selecciona un modo para generar el fixture.' : 'Esperando a que el organizador defina el modo.'}
+                        {matchMode === 'free'
+                            ? 'Modo Libre activo. Registra los encuentros manualmente usando el botón de abajo.'
+                            : canManage ? 'Selecciona un modo arriba para generar el fixture.' : 'Esperando a que el organizador defina el modo.'}
                     </p>
                 </Card>
             ) : (
@@ -160,9 +149,21 @@ const FixtureTimeline = ({
 
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'center' }}>
-                                    <TeamBadge id={fixture.team1Id} />
-                                    <span style={{ fontSize: '0.8rem', opacity: 0.4, fontWeight: 'bold' }}>VS</span>
-                                    <TeamBadge id={fixture.team2Id} />
+                                    <TeamBadge id={fixture.team1Id} teamConfigs={teamConfigs} />
+                                    {fixture.status === 'completed' ? (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                            background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem',
+                                            borderRadius: '12px', minWidth: '60px', justifyContent: 'center'
+                                        }}>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{fixture.score1}</span>
+                                            <span style={{ opacity: 0.3 }}>-</span>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{fixture.score2}</span>
+                                        </div>
+                                    ) : (
+                                        <span style={{ fontSize: '0.8rem', opacity: 0.4, fontWeight: 'bold' }}>VS</span>
+                                    )}
+                                    <TeamBadge id={fixture.team2Id} teamConfigs={teamConfigs} />
                                 </div>
                                 {fixture.label && <div style={{ fontSize: '0.7rem', opacity: 0.6, fontStyle: 'italic' }}>{fixture.label}</div>}
                             </div>

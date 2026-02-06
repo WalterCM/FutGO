@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Trophy, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -10,6 +11,7 @@ import StatusMessage from '../../components/ui/StatusMessage'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
 
 // Sub-components
 import MatchHeader from './MatchHeader'
@@ -19,6 +21,7 @@ import FieldTab from './FieldTab'
 import GameResultForm from './GameResultForm'
 import FixtureTimeline from './FixtureTimeline'
 import KitPicker from './KitPicker'
+import TeamBadge from './TeamBadge'
 import { BENCH_KIT, DEFAULT_KIT, KIT_LIBRARY } from './constants'
 
 export default function MatchDetail({ profile: authProfile, onBack }) {
@@ -40,6 +43,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         togglePresent,
         movePlayer,
         addGameResult,
+        deleteGameResult,
         updateMatchMode,
         generateFixtures,
         updateFixtures,
@@ -53,6 +57,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     // Local UI State
     const [activeTab, setActiveTab] = useState('admin')
     const [showGameForm, setShowGameForm] = useState(false)
+    const [showHistory, setShowHistory] = useState(false)
 
     // Sync activeTab with URL hash
     useEffect(() => {
@@ -335,6 +340,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         onUpdateMode={updateMatchMode}
                         onReorder={updateFixtures}
                         onAddFinals={addFinals}
+                        onUndoMatch={deleteGameResult}
                         games={games}
                     />
                     <GameResultForm
@@ -350,7 +356,70 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         actionLoading={actionLoading}
                         isLocked={match.is_locked}
                         enrollments={enrollments}
+                        matchMode={match?.match_mode || 'free'}
+                        onUndoMatch={deleteGameResult}
                     />
+
+                    {/* Master Match History - Collapsible and High Contrast */}
+                    {games.length > 0 && (
+                        <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>
+                            <div
+                                onClick={() => setShowHistory(!showHistory)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    marginBottom: '1.2rem', cursor: 'pointer', padding: '0.5rem',
+                                    borderRadius: '8px', transition: 'background 0.2s',
+                                    background: showHistory ? 'rgba(255,255,255,0.05)' : 'transparent'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = showHistory ? 'rgba(255,255,255,0.05)' : 'transparent'}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', opacity: 0.6 }}>
+                                    <Trophy size={18} />
+                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        Historial Completo del Día
+                                    </span>
+                                </div>
+                                {showHistory ? <ChevronUp size={18} style={{ opacity: 0.4 }} /> : <ChevronDown size={18} style={{ opacity: 0.4 }} />}
+                            </div>
+
+                            {showHistory && (
+                                <div style={{ display: 'grid', gap: '0.8rem' }}>
+                                    {games.map((game) => (
+                                        <Card key={game.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }} hover={false}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <TeamBadge id={game.team1_id} teamConfigs={teamConfigs} />
+                                                </div>
+                                                <div style={{
+                                                    margin: '0 1rem', fontSize: '1.1rem', fontWeight: '800',
+                                                    background: 'rgba(255,255,255,0.1)', color: 'white',
+                                                    padding: '0.2rem 1rem', borderRadius: '12px', minWidth: '70px',
+                                                    textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                                }}>
+                                                    {game.score1} - {game.score2}
+                                                </div>
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <TeamBadge id={game.team2_id} teamConfigs={teamConfigs} />
+                                                </div>
+                                                {canManage && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            confirm('¿Borrar este resultado?') && deleteGameResult(game.id, game.fixture_id)
+                                                        }}
+                                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', marginLeft: '0.5rem', color: 'var(--error)', opacity: 0.4 }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
 
