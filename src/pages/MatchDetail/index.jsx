@@ -17,6 +17,7 @@ import TabsNavigation from './TabsNavigation'
 import AdminTab from './AdminTab'
 import FieldTab from './FieldTab'
 import GameResultForm from './GameResultForm'
+import FixtureSuggester from './FixtureSuggester'
 import KitPicker from './KitPicker'
 import { BENCH_KIT, DEFAULT_KIT, KIT_LIBRARY } from './constants'
 
@@ -39,6 +40,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         togglePresent,
         movePlayer,
         addGameResult,
+        updateMatchMode,
         updateMatchCapacity,
         cancelMatch,
         updateMatch,
@@ -48,7 +50,27 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     // Local UI State
     const [activeTab, setActiveTab] = useState('admin')
     const [showGameForm, setShowGameForm] = useState(false)
-    const [gameData, setGameData] = useState({ score1: 0, score2: 0, team1Id: 1, team2Id: 2 })
+
+    // Sync activeTab with URL hash
+    useEffect(() => {
+        const syncTab = () => {
+            const hash = window.location.hash.replace('#', '')
+            if (['admin', 'field', 'results'].includes(hash)) {
+                setActiveTab(hash)
+            }
+        }
+
+        syncTab()
+        window.addEventListener('hashchange', syncTab)
+        return () => window.removeEventListener('hashchange', syncTab)
+    }, [])
+
+    // Update URL hash when activeTab changes
+    const handleTabChange = (tab) => {
+        setActiveTab(tab)
+        window.location.hash = tab
+    }
+    const [gameData, setGameData] = useState({ score1: 0, score2: 0, team1Id: 1, team2Id: 2, goals: [] })
     const [confirmingLeave, setConfirmingLeave] = useState(false)
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null })
@@ -199,6 +221,16 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         if (success) setShowGameForm(false)
     }
 
+    const handleStartMatch = (team1Id, team2Id) => {
+        setGameData({
+            ...gameData,
+            team1Id,
+            team2Id,
+            goals: []
+        })
+        setShowGameForm(true)
+    }
+
     if (loading) return (
         <div className="flex-center" style={{ minHeight: '60vh', flexDirection: 'column', gap: '1rem' }}>
             <Spinner size={40} />
@@ -231,9 +263,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
             />
 
-            <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+            <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
-            {activeTab === 'admin' ? (
+            {activeTab === 'admin' && (
                 <AdminTab
                     enrollments={enrollments}
                     totalNeeded={totalNeeded}
@@ -261,9 +293,13 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     })}
                     actionLoading={actionLoading}
                     numTeams={numTeams}
+                    matchMode={match?.match_mode || 'liguilla'}
+                    onUpdateMode={updateMatchMode}
                     getOrdinal={(n) => n === 3 ? '3er' : n === 4 ? '4to' : n === 5 ? '5to' : 'Próximo'}
                 />
-            ) : (
+            )}
+
+            {activeTab === 'field' && (
                 <FieldTab
                     enrollments={enrollments}
                     numTeams={numTeams}
@@ -283,19 +319,33 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 />
             )}
 
-            <GameResultForm
-                showForm={showGameForm}
-                setShowForm={setShowGameForm}
-                gameData={gameData}
-                setGameData={setGameData}
-                onAddGame={handleAddGame}
-                games={games}
-                teamConfigs={teamConfigs}
-                numTeams={numTeams}
-                canManage={canManage}
-                actionLoading={actionLoading}
-                isLocked={match.is_locked}
-            />
+            {activeTab === 'results' && (
+                <>
+                    <FixtureSuggester
+                        matchMode={match?.match_mode || 'liguilla'}
+                        numTeams={numTeams}
+                        games={games}
+                        teamConfigs={teamConfigs}
+                        onStartMatch={handleStartMatch}
+                        canManage={canManage}
+                        onUpdateMode={updateMatchMode}
+                    />
+                    <GameResultForm
+                        showForm={showGameForm}
+                        setShowForm={setShowGameForm}
+                        gameData={gameData}
+                        setGameData={setGameData}
+                        onAddGame={handleAddGame}
+                        games={games}
+                        teamConfigs={teamConfigs}
+                        numTeams={numTeams}
+                        canManage={canManage}
+                        actionLoading={actionLoading}
+                        isLocked={match.is_locked}
+                        enrollments={enrollments}
+                    />
+                </>
+            )}
 
             {/* Modals */}
             <ConfirmModal

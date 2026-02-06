@@ -84,31 +84,31 @@ BEGIN
 END $$;
 
 -- 4. Partidos (Matches)
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players)
+INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000001', 
     '00000000-0000-0000-0000-f00000000001', 
     CURRENT_DATE + 1, '20:00:00', 'open', 120.0, 
     '00000000-0000-0000-0000-100000000001', 
-    10
+    10, 'liguilla'
 ) ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players)
+INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000002', 
     '00000000-0000-0000-0000-f00000000003', 
     CURRENT_DATE + 2, '21:00:00', 'open', 180.0, 
     '00000000-0000-0000-0000-100000000001', 
-    18
+    18, 'tournament'
 ) ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players)
+INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000003', 
     '00000000-0000-0000-0000-f00000000002', 
     CURRENT_DATE + 3, '19:00:00', 'open', 180.0, 
     '00000000-0000-0000-0000-300000000001', 
-    14
+    14, 'winner_stays'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- 5. Inscripciones (Enrollments)
@@ -133,3 +133,17 @@ INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assi
 SELECT '00000000-0000-0000-0000-e00000000003', id, true, true, (row_number() over () % 2) + 1, now()
 FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 25 LIMIT 14) p
 ON CONFLICT (match_id, player_id) DO NOTHING;
+
+-- 6. Resultados de Juegos (Games) con Goles
+-- Partido 1 (Liguilla)
+INSERT INTO public.games (match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, goals)
+SELECT 
+    '00000000-0000-0000-0000-e00000000001', 1, 2, 2, 1, 
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 1),
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 2),
+    '[
+        {"player_id": "00000000-0000-0000-0000-100000000001", "team_id": 1, "player_name": "Walter Admin"},
+        {"player_id": "00000000-0000-0000-0000-200000000001", "team_id": 1, "player_name": "Tester"},
+        {"player_id": "00000000-0000-0000-0000-300000000001", "team_id": 2, "player_name": "Admin", "is_own_goal": false}
+    ]'::jsonb
+ON CONFLICT DO NOTHING;

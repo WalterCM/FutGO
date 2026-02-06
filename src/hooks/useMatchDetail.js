@@ -48,7 +48,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             setEnrollments(enrollData)
 
             // Fetch games
-            const { data: gamesData, error: gamesError } = await supabase
+            const { data: gamesData, error: gamesErr } = await supabase
                 .from('games')
                 .select('*')
                 .eq('match_day_id', matchId)
@@ -156,14 +156,35 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     const addGameResult = async (gameData) => {
         setActionLoading('game-form')
         try {
+            // If goals array is provided, calculate scores automatically
+            let finalScore1 = gameData.score1 || 0
+            let finalScore2 = gameData.score2 || 0
+
+            if (gameData.goals && gameData.goals.length > 0) {
+                finalScore1 = gameData.goals.filter(g => g.team_id === gameData.team1Id).length
+                finalScore2 = gameData.goals.filter(g => g.team_id === gameData.team2Id).length
+            }
+
+            // Get players for each team (only present and paid)
+            const team1Players = enrollments
+                .filter(e => e.is_present && e.paid && e.team_assignment === gameData.team1Id)
+                .map(e => e.player_id)
+
+            const team2Players = enrollments
+                .filter(e => e.is_present && e.paid && e.team_assignment === gameData.team2Id)
+                .map(e => e.player_id)
+
             const { error } = await supabase
                 .from('games')
                 .insert([{
-                    score1: gameData.score1,
-                    score2: gameData.score2,
+                    score1: finalScore1,
+                    score2: finalScore2,
                     team1_id: gameData.team1Id,
                     team2_id: gameData.team2Id,
-                    match_day_id: matchId
+                    team1_players: team1Players,
+                    team2_players: team2Players,
+                    match_day_id: matchId,
+                    goals: gameData.goals || []
                 }])
 
             if (error) throw error
@@ -173,6 +194,24 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         } catch (error) {
             showMsg('error', error.message)
             return false
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const updateMatchMode = async (mode) => {
+        setActionLoading('mode')
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .update({ match_mode: mode })
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({ ...prev, match_mode: mode }))
+            showMsg('success', `Modo cambiado a ${mode}`)
+        } catch (error) {
+            showMsg('error', error.message)
         } finally {
             setActionLoading(null)
         }
@@ -359,6 +398,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         togglePresent,
         movePlayer,
         addGameResult,
+        updateMatchMode,
         updateMatchCapacity,
         cancelMatch,
         updateMatch,

@@ -12,6 +12,7 @@ const Button = ({
     className = '',
     style = {},
     type = 'button',
+    fullWidth = false,
     ...props
 }) => {
     const getVariantStyles = () => {
@@ -78,6 +79,7 @@ const Button = ({
         opacity: (disabled || loading) ? 0.6 : 1,
         ...getVariantStyles(),
         ...getSizeStyles(),
+        width: fullWidth ? '100%' : 'auto',
         ...style
     }
 
