@@ -261,8 +261,8 @@ describe('Standings Calculation', () => {
 describe('Placeholder Resolution', () => {
     test('resolves Ganador Queda placeholders correctly', () => {
         const fixtures = [
-            { id: 'ws1', label: 'Reto 1', team1Id: 1, team2Id: 2, status: 'completed', score1: 3, score2: 1, phaseId: 'p1' },
-            { id: 'ws2', label: 'Reto 2', team1Id: null, team2Id: 3, placeholder1: 'Ganador Reto 1', phaseId: 'p1' },
+            { id: 'ws1', label: 'Juego 1', team1Id: 1, team2Id: 2, status: 'completed', score1: 3, score2: 1, phaseId: 'p1' },
+            { id: 'ws2', label: 'Juego 2', team1Id: null, team2Id: 3, placeholder1: 'Ganador Juego 1', phaseId: 'p1' },
         ]
 
         // Build winner map
@@ -278,14 +278,14 @@ describe('Placeholder Resolution', () => {
         })
 
         // Resolve placeholder
-        const retoMatch = 'Ganador Reto 1'.match(/Ganador Reto (\d+)/)
+        const retoMatch = 'Ganador Juego 1'.match(/Ganador Juego (\d+)/)
         expect(retoMatch).not.toBeNull()
         const prevRetoNum = parseInt(retoMatch[1])
         const prevFixture = fixtures.find(pf =>
-            pf.label === `Reto ${prevRetoNum}` && pf.phaseId === 'p1'
+            pf.label === `Juego ${prevRetoNum}` && pf.phaseId === 'p1'
         )
 
         expect(prevFixture).toBeDefined()
-        expect(fixtureWinners[prevFixture.id]).toBe(1) // Team 1 won Reto 1
+        expect(fixtureWinners[prevFixture.id]).toBe(1) // Team 1 won Juego 1
     })
 })

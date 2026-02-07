@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import TeamBadge from './TeamBadge'
 import PhaseConfigModal from './PhaseConfigModal'
+import ConfirmModal from '../../components/ConfirmModal'
 
 const FixtureTimeline = ({
     matchId,
@@ -28,6 +29,7 @@ const FixtureTimeline = ({
     const [showConfig, setShowConfig] = useState(false)
     const [manualMatch, setManualMatch] = useState({ show: false, phaseId: null })
     const [expandedStandings, setExpandedStandings] = useState({})
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, phaseId: null })
 
     const handleDragStart = (e, index) => {
         if (!canManage) return
@@ -212,9 +214,7 @@ const FixtureTimeline = ({
                                                     variant="ghost"
                                                     size="sm"
                                                     style={{ color: '#ef4444', opacity: 0.6 }}
-                                                    onClick={() => {
-                                                        if (window.confirm('¿Eliminar esta fase y todos sus partidos?')) onRemovePhase(phase.id)
-                                                    }}
+                                                    onClick={() => setDeleteConfirm({ show: true, phaseId: phase.id })}
                                                 >
                                                     Eliminar
                                                 </Button>
@@ -320,7 +320,7 @@ const FixtureTimeline = ({
                                                     </div>
 
                                                     <div style={{ minWidth: '80px', textAlign: 'right' }}>
-                                                        {fixture.status === 'pending' && canManage && !isReordering && (
+                                                        {fixture.status === 'pending' && canManage && !isReordering && fixture.team1Id && fixture.team2Id && (
                                                             <Button size="sm" onClick={() => onStartMatch(fixture.team1Id, fixture.team2Id, fixture.id)}>
                                                                 Jugar
                                                             </Button>
@@ -359,6 +359,16 @@ const FixtureTimeline = ({
                 teamConfigs={teamConfigs}
                 numTeams={numTeams}
                 phaseId={manualMatch.phaseId}
+            />
+
+            <ConfirmModal
+                isOpen={deleteConfirm.show}
+                onClose={() => setDeleteConfirm({ show: false, phaseId: null })}
+                onConfirm={() => onRemovePhase(deleteConfirm.phaseId)}
+                title="Eliminar Fase"
+                message="¿Eliminar esta fase y todos sus partidos? Esta acción no se puede deshacer."
+                confirmText="Eliminar"
+                variant="danger"
             />
         </div>
     )

@@ -217,11 +217,11 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                         ? nextFixtures.filter(f => f.phaseId === phaseId)
                         : nextFixtures
 
-                    // Count completed fixtures to determine next Reto number
+                    // Count completed fixtures to determine next Juego number
                     const completedFixtures = phaseFixtures.filter(f => f.status === 'completed')
                     const pendingFixtures = phaseFixtures.filter(f => f.status === 'pending')
                     const highestRetoNum = phaseFixtures.reduce((max, f) => {
-                        const num = parseInt(f.label?.match(/Reto (\d+)/)?.[1] || '0')
+                        const num = parseInt(f.label?.match(/Juego (\d+)/)?.[1] || '0')
                         return num > max ? num : max
                     }, 0)
 
@@ -237,8 +237,8 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                             team1Id: null,
                             team2Id: loserId,
                             status: 'pending',
-                            label: `Reto ${nextRetoNum}`,
-                            placeholder1: `Ganador Reto ${highestRetoNum}`,
+                            label: `Juego ${nextRetoNum}`,
+                            placeholder1: `Ganador Juego ${highestRetoNum}`,
                             phaseId: phaseId || undefined
                         })
                     }
@@ -357,7 +357,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 team1Id: 1,
                 team2Id: 2,
                 status: 'pending',
-                label: 'Reto 1',
+                label: 'Juego 1',
                 phaseId: phase.id
             })
 
@@ -368,8 +368,8 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     team1Id: null, // Winner stays
                     team2Id: i,
                     status: 'pending',
-                    label: `Reto ${i - 1}`,
-                    placeholder1: `Ganador Reto ${i - 2}`,
+                    label: `Juego ${i - 1}`,
+                    placeholder1: `Ganador Juego ${i - 2}`,
                     phaseId: phase.id
                 })
             }
@@ -782,12 +782,12 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             }
 
             // Resolve Ganador Queda placeholders (winner of previous match)
-            if (f.placeholder1 && f.placeholder1.startsWith('Ganador Reto') && !f.team1Id) {
-                const retoMatch = f.placeholder1.match(/Ganador Reto (\d+)/)
+            if (f.placeholder1 && f.placeholder1.startsWith('Ganador Juego') && !f.team1Id) {
+                const retoMatch = f.placeholder1.match(/Ganador Juego (\d+)/)
                 if (retoMatch) {
                     const prevRetoNum = parseInt(retoMatch[1])
                     const prevFixture = match.fixtures.find(pf =>
-                        pf.label === `Reto ${prevRetoNum}` && pf.phaseId === f.phaseId
+                        pf.label === `Juego ${prevRetoNum}` && pf.phaseId === f.phaseId
                     )
                     if (prevFixture && fixtureWinners[prevFixture.id]) {
                         updated.team1Id = fixtureWinners[prevFixture.id]
