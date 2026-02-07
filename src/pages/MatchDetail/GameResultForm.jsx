@@ -25,7 +25,14 @@ const GameResultForm = ({
 
     const handleAddGoal = (playerId, teamId) => {
         const playerEnrol = enrollments.find(e => e.player_id === playerId)
-        const isOwnGoal = playerEnrol && playerEnrol.team_assignment !== teamId
+
+        // Determine player's current match team
+        let currentPlayerTeam = playerEnrol?.team_assignment
+        if (gameData.team1_players?.includes(playerId)) currentPlayerTeam = gameData.team1Id
+        else if (gameData.team2_players?.includes(playerId)) currentPlayerTeam = gameData.team2Id
+
+        // It's an own goal if the team that got the goal (teamId) is NOT the player's current match team
+        const isOwnGoal = currentPlayerTeam !== teamId
 
         const newGoal = {
             id: Date.now(),
@@ -85,55 +92,117 @@ const GameResultForm = ({
             {showForm && (
                 <Card style={{ marginBottom: '2rem', background: 'rgba(255,255,255,0.05)', padding: '1.5rem' }} hover={false}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                        {/* Team 1 Selector & Score */}
+                        {/* Team 1 Section */}
                         <div style={{ textAlign: 'center' }}>
                             <div style={{
-                                padding: '0.8rem', borderRadius: '8px',
+                                padding: '1rem', borderRadius: '12px',
                                 background: teamConfigs[gameData.team1Id]?.bg || 'rgba(255,255,255,0.05)',
-                                color: 'white', marginBottom: '0.8rem',
-                                position: 'relative'
+                                border: `2px solid ${teamConfigs[gameData.team1Id]?.border || 'transparent'}`,
+                                color: teamConfigs[gameData.team1Id]?.color || 'white',
+                                marginBottom: '1rem',
+                                position: 'relative',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                             }}>
-                                <TeamBadge id={gameData.team1Id} teamConfigs={teamConfigs} />
+                                {matchMode === 'free' ? (
+                                    <select
+                                        value={gameData.team1Id}
+                                        onChange={(e) => setGameData({ ...gameData, team1Id: parseInt(e.target.value) })}
+                                        style={{
+                                            background: 'transparent', color: 'inherit', border: 'none',
+                                            fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer',
+                                            appearance: 'none', textAlign: 'center', width: '100%'
+                                        }}
+                                    >
+                                        {[...Array(numTeams)].map((_, i) => (
+                                            <option key={i + 1} value={i + 1} style={{ background: 'var(--bg-card)', color: 'white' }}>
+                                                EQUIPO {i + 1}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <div style={{ fontWeight: '900', fontSize: '1.1rem', textTransform: 'uppercase' }}>
+                                        {teamConfigs[gameData.team1Id]?.name || `Equipo ${gameData.team1Id}`}
+                                    </div>
+                                )}
+
                                 {gameData.team1_players && (
-                                    <div style={{ fontSize: '0.65rem', marginTop: '0.4rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                        Alineación Personalizada ({gameData.team1_players.length})
+                                    <div style={{
+                                        fontSize: '0.6rem', padding: '0.2rem 0.5rem',
+                                        background: 'rgba(0,0,0,0.3)', borderRadius: '4px',
+                                        color: 'white', fontWeight: 'bold', textTransform: 'uppercase'
+                                    }}>
+                                        Alineación Custom
                                     </div>
                                 )}
                             </div>
-                            <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore1}</div>
+                            <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, marginBottom: '1rem' }}>
+                                {currentScore1}
+                            </div>
                             <Button
                                 size="sm" variant="ghost"
                                 style={{ marginTop: '0.5rem', width: '100%' }}
                                 onClick={() => setRecordingForTeam(gameData.team1Id)}
                             >
-                                + Gol
+                                + GOL
                             </Button>
                         </div>
 
-                        <div style={{ fontSize: '1.5rem', opacity: 0.3, fontWeight: 'bold' }}>VS</div>
+                        <div style={{ fontSize: '1.5rem', opacity: 0.3, fontWeight: '900' }}>VS</div>
 
-                        {/* Team 2 Selector & Score */}
+                        {/* Team 2 Section */}
                         <div style={{ textAlign: 'center' }}>
                             <div style={{
-                                padding: '0.8rem', borderRadius: '8px',
+                                padding: '1rem', borderRadius: '12px',
                                 background: teamConfigs[gameData.team2Id]?.bg || 'rgba(255,255,255,0.05)',
-                                color: 'white', marginBottom: '0.8rem',
-                                position: 'relative'
+                                border: `2px solid ${teamConfigs[gameData.team2Id]?.border || 'transparent'}`,
+                                color: teamConfigs[gameData.team2Id]?.color || 'white',
+                                marginBottom: '1rem',
+                                position: 'relative',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                             }}>
-                                <TeamBadge id={gameData.team2Id} teamConfigs={teamConfigs} />
+                                {matchMode === 'free' ? (
+                                    <select
+                                        value={gameData.team2Id}
+                                        onChange={(e) => setGameData({ ...gameData, team2Id: parseInt(e.target.value) })}
+                                        style={{
+                                            background: 'transparent', color: 'inherit', border: 'none',
+                                            fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer',
+                                            appearance: 'none', textAlign: 'center', width: '100%'
+                                        }}
+                                    >
+                                        {[...Array(numTeams)].map((_, i) => (
+                                            <option key={i + 1} value={i + 1} style={{ background: 'var(--bg-card)', color: 'white' }}>
+                                                EQUIPO {i + 1}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <div style={{ fontWeight: '900', fontSize: '1.1rem', textTransform: 'uppercase' }}>
+                                        {teamConfigs[gameData.team2Id]?.name || `Equipo ${gameData.team2Id}`}
+                                    </div>
+                                )}
+
                                 {gameData.team2_players && (
-                                    <div style={{ fontSize: '0.65rem', marginTop: '0.4rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                        Alineación Personalizada ({gameData.team2_players.length})
+                                    <div style={{
+                                        fontSize: '0.6rem', padding: '0.2rem 0.5rem',
+                                        background: 'rgba(0,0,0,0.3)', borderRadius: '4px',
+                                        color: 'white', fontWeight: 'bold', textTransform: 'uppercase'
+                                    }}>
+                                        Alineación Custom
                                     </div>
                                 )}
                             </div>
-                            <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore2}</div>
+                            <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, marginBottom: '1rem' }}>
+                                {currentScore2}
+                            </div>
                             <Button
                                 size="sm" variant="ghost"
                                 style={{ marginTop: '0.5rem', width: '100%' }}
                                 onClick={() => setRecordingForTeam(gameData.team2Id)}
                             >
-                                + Gol
+                                + GOL
                             </Button>
                         </div>
                     </div>
@@ -161,44 +230,53 @@ const GameResultForm = ({
                         }}>
                             <div className="premium-card" style={{
                                 width: '100%', maxWidth: '400px', padding: '2rem',
-                                background: 'var(--bg-card)', border: '1px solid var(--border)'
+                                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                                maxHeight: '80vh', overflowY: 'auto'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Gol para Equipo {recordingForTeam}</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                        <Trophy size={20} color="var(--primary)" />
+                                        <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Registrar Gol</h3>
+                                    </div>
                                     <Button variant="ghost" onClick={() => setRecordingForTeam(null)} icon={X} />
                                 </div>
 
-                                <div style={{ display: 'grid', gap: '0.5rem' }}>
-                                    {getParticipantsForTeam(recordingForTeam).map(enrol => (
-                                        <button
-                                            key={enrol.id}
-                                            onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
-                                            style={{
-                                                padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
-                                                border: '1px solid var(--border)', borderRadius: '8px',
-                                                color: 'white', cursor: 'pointer', textAlign: 'left',
-                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                            }}
-                                        >
-                                            <span>{enrol.player?.full_name}</span>
-                                            {enrol.team_assignment !== recordingForTeam && (
-                                                <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>Refuerzo</span>
-                                            )}
-                                        </button>
+                                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                    {/* Iterar sobre los dos equipos, poniendo el que "metió" el gol primero */}
+                                    {[recordingForTeam, recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id].map((teamId) => (
+                                        <div key={teamId}>
+                                            <div style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <TeamBadge id={teamId} teamConfigs={teamConfigs} />
+                                                {teamId !== recordingForTeam && (
+                                                    <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                        Autogol
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'grid', gap: '0.4rem' }}>
+                                                {getParticipantsForTeam(teamId).map(enrol => (
+                                                    <button
+                                                        key={enrol.id}
+                                                        onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
+                                                        style={{
+                                                            padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
+                                                            border: '1px solid var(--border)', borderRadius: '8px',
+                                                            color: 'white', cursor: 'pointer', textAlign: 'left',
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                    >
+                                                        <span style={{ fontSize: '0.9rem' }}>{enrol.player?.full_name}</span>
+                                                        {enrol.team_assignment !== teamId && (
+                                                            <span style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     ))}
-
-                                    {/* Handle Own Goals / Others */}
-                                    <div style={{ height: '1px', background: 'var(--border)', margin: '1rem 0' }} />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            const otherTeam = recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id;
-                                            setRecordingForTeam(otherTeam); // Toggle to other team for own goal selection
-                                        }}
-                                    >
-                                        Registrar Autogol
-                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -241,9 +319,10 @@ const GameResultForm = ({
                         Guardar Resultado
                     </Button>
                 </Card>
-            )}
+            )
+            }
 
-        </div>
+        </div >
     )
 }
 
