@@ -58,9 +58,7 @@ export default function MatchHistory({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (window.confirm('¿Borrar este resultado?')) {
-                                                onDeleteGame(game.id, game.fixture_id)
-                                            }
+                                            onDeleteGame(game.id, game.fixture_id)
                                         }}
                                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', marginLeft: '0.5rem', color: 'var(--error)', opacity: 0.4 }}
                                     >

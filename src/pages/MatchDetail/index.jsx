@@ -70,8 +70,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
 
     const syncTab = () => {
         const hash = window.location.hash.replace('#', '')
-        if (['admin', 'field', 'fixtures', 'games', 'results'].includes(hash)) {
-            setActiveTab(hash === 'results' ? 'games' : hash)
+        if (['admin', 'field', 'results'].includes(hash)) {
+            setActiveTab(hash)
         }
     }
 
@@ -83,7 +83,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
 
     const handleTabChange = (tab) => {
         window.location.hash = tab
-        setActiveTab(tab === 'results' ? 'games' : tab)
+        setActiveTab(tab)
     }
 
     const handleJoin = async () => {
@@ -145,7 +145,10 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const handleStartMatch = (team1Id, team2Id, fixtureId) => {
         setGameData({ team1Id, team2Id, goals: [], fixtureId })
         setShowForm(true)
-        handleTabChange('games')
+        setTimeout(() => {
+            const formElement = document.getElementById('game-result-form')
+            if (formElement) formElement.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
     }
 
     const handleSaveGame = async () => {
@@ -154,6 +157,34 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             setShowForm(false)
             setGameData({ team1Id: 1, team2Id: 2, goals: [] })
         }
+    }
+
+    const handleCancelMatchRequest = () => {
+        setConfirmModal({
+            show: true,
+            title: 'Cancelar Encuentro',
+            message: '¿Estás seguro de que deseas cancelar este encuentro? Esta acción marcará el partido como cancelado y no se podrán realizar más cambios.',
+            onConfirm: async () => {
+                await cancelMatch()
+                setConfirmModal({ show: false, title: '', message: '', onConfirm: () => { } })
+            }
+        })
+    }
+
+    const handleDeleteGameRequest = (gameId, fixtureId) => {
+        setConfirmModal({
+            show: true,
+            title: 'Eliminar Resultado',
+            message: '¿Estás seguro de que deseas eliminar este resultado? Si el partido venía de un fixture, volverá a estar pendiente.',
+            onConfirm: async () => {
+                await deleteGameResult(gameId, fixtureId)
+                setConfirmModal({ show: false, title: '', message: '', onConfirm: () => { } })
+            }
+        })
+    }
+
+    const handleUndoMatchRequest = (gameId, fixtureId) => {
+        handleDeleteGameRequest(gameId, fixtureId)
     }
 
     if (loading) return (
@@ -213,10 +244,6 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             />
 
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                    <span>Cuota: S/ {suggestedQuota}</span>
-                </div>
-
                 <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
                 {activeTab === 'admin' && (
@@ -229,7 +256,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         onTogglePresent={togglePresent}
                         onExpand={() => setExpansionData({ show: true, mode: 'expand', newCost: (match.fixed_cost || 120) + suggestedQuota * playersPerTeam })}
                         onShrink={() => setExpansionData({ show: true, mode: 'shrink', newCost: (match.fixed_cost || 120) - suggestedQuota * playersPerTeam })}
-                        onCancel={cancelMatch}
+                        onCancel={handleCancelMatchRequest}
                         actionLoading={actionLoading}
                         numTeams={numTeams}
                         totalNeeded={totalNeeded}
@@ -268,40 +295,40 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     />
                 )}
 
-                {activeTab === 'fixtures' && (
-                    <FixtureTimeline
-                        matchMode={match?.match_mode || 'free'}
-                        numTeams={numTeams}
-                        fixtures={match?.fixtures}
-                        teamConfigs={teamConfigs}
-                        onStartMatch={handleStartMatch}
-                        onUpdateMode={updateMatchMode}
-                        onReorder={updateFixtures}
-                        onAddFinals={addFinals}
-                        onGenerateFixtures={generateFixtures}
-                        canManage={canManage}
-                        games={games}
-                    />
-                )}
-
-                {activeTab === 'games' && (
-                    <>
-                        <GameResultForm
-                            showForm={showForm}
-                            setShowForm={setShowForm}
-                            gameData={gameData}
-                            setGameData={setGameData}
-                            onAddGame={handleSaveGame}
-                            games={games}
-                            teamConfigs={teamConfigs}
-                            numTeams={numTeams}
-                            canManage={canManage}
-                            actionLoading={actionLoading}
-                            isLocked={match.is_locked}
-                            enrollments={enrollments}
+                {activeTab === 'results' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        <FixtureTimeline
                             matchMode={match?.match_mode || 'free'}
-                            onUndoMatch={deleteGameResult}
+                            numTeams={numTeams}
+                            fixtures={match?.fixtures}
+                            teamConfigs={teamConfigs}
+                            onStartMatch={handleStartMatch}
+                            onUpdateMode={updateMatchMode}
+                            onReorder={updateFixtures}
+                            onAddFinals={addFinals}
+                            onGenerateFixtures={generateFixtures}
+                            canManage={canManage}
+                            games={games}
                         />
+
+                        <div id="game-result-form">
+                            <GameResultForm
+                                showForm={showForm}
+                                setShowForm={setShowForm}
+                                gameData={gameData}
+                                setGameData={setGameData}
+                                onAddGame={handleSaveGame}
+                                games={games}
+                                teamConfigs={teamConfigs}
+                                numTeams={numTeams}
+                                canManage={canManage}
+                                actionLoading={actionLoading}
+                                isLocked={match.is_locked}
+                                enrollments={enrollments}
+                                matchMode={match?.match_mode || 'free'}
+                                onUndoMatch={handleUndoMatchRequest}
+                            />
+                        </div>
 
                         <MatchHistory
                             showHistory={showHistory}
@@ -309,9 +336,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                             games={games}
                             teamConfigs={teamConfigs}
                             canManage={canManage}
-                            onDeleteGame={deleteGameResult}
+                            onDeleteGame={handleDeleteGameRequest}
                         />
-                    </>
+                    </div>
                 )}
             </div>
 

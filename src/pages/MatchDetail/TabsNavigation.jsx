@@ -1,14 +1,11 @@
 import React from 'react'
-import { CheckCircle, MapPin, Trophy, Calendar } from 'lucide-react'
+import { CheckCircle, MapPin, Trophy } from 'lucide-react'
 
 const TabsNavigation = ({ activeTab, onTabChange }) => {
-    // Map internal 'games' or 'fixtures' to 'results' if needed, 
-    // but here we use distinct IDs for clarity.
     const tabs = [
         { id: 'admin', label: 'Admin', icon: CheckCircle },
         { id: 'field', label: 'Equipos', icon: MapPin },
-        { id: 'fixtures', label: 'Fixture', icon: Calendar },
-        { id: 'games', label: 'Resultados', icon: Trophy }
+        { id: 'results', label: 'Encuentros', icon: Trophy }
     ]
 
     return (
@@ -19,8 +16,7 @@ const TabsNavigation = ({ activeTab, onTabChange }) => {
             borderRadius: '12px',
             marginBottom: '2rem',
             border: '1px solid var(--border)',
-            gap: '0.2rem',
-            overflowX: 'auto'
+            gap: '0.2rem'
         }}>
             {tabs.map(tab => (
                 <button
@@ -42,11 +38,11 @@ const TabsNavigation = ({ activeTab, onTabChange }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.3rem',
-                        minWidth: '70px'
+                        minWidth: 0
                     }}
                 >
                     <tab.icon size={18} />
-                    <span style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
                         {tab.label}
                     </span>
                 </button>
