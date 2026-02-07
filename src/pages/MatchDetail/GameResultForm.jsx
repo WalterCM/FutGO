@@ -50,7 +50,17 @@ const GameResultForm = ({
     const currentScore1 = gameData.goals?.filter(g => g.team_id === gameData.team1Id).length || 0
     const currentScore2 = gameData.goals?.filter(g => g.team_id === gameData.team2Id).length || 0
 
-    const presentPlayers = enrollments.filter(e => e.is_present && e.paid)
+    // Filter players based on verified lineup if available
+    const getParticipantsForTeam = (teamId) => {
+        const participantIds = teamId === gameData.team1Id ? gameData.team1_players : gameData.team2_players
+
+        if (participantIds) {
+            return enrollments.filter(e => participantIds.includes(e.player_id))
+        }
+
+        // Fallback to official assignments if no manual lineup was passed
+        return enrollments.filter(e => e.is_present && e.paid && e.team_assignment === teamId)
+    }
 
     return (
         <div>
@@ -75,24 +85,9 @@ const GameResultForm = ({
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                         {/* Team 1 Selector & Score */}
                         <div style={{ textAlign: 'center' }}>
-                            <select
-                                value={gameData.team1Id}
-                                disabled={matchMode !== 'free'}
-                                onChange={(e) => setGameData({ ...gameData, team1Id: parseInt(e.target.value), goals: [] })}
-                                style={{
-                                    background: teamConfigs[gameData.team1Id]?.bg || 'transparent',
-                                    color: teamConfigs[gameData.team1Id]?.color || 'white',
-                                    border: `1px solid ${teamConfigs[gameData.team1Id]?.color || 'var(--border)'}`,
-                                    padding: '0.4rem', borderRadius: '6px', marginBottom: '0.8rem', width: '100%', fontWeight: 'bold',
-                                    opacity: matchMode !== 'free' ? 0.8 : 1
-                                }}
-                            >
-                                {Array.from({ length: numTeams }, (_, i) => i + 1).map(id => (
-                                    <option key={id} value={id} style={{ background: 'var(--bg-card)', color: 'white' }}>
-                                        {teamConfigs[id]?.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div style={{ padding: '0.8rem', borderRadius: '8px', background: teamConfigs[gameData.team1Id]?.bg || 'rgba(255,255,255,0.05)', color: 'white', marginBottom: '0.8rem' }}>
+                                <TeamBadge id={gameData.team1Id} teamConfigs={teamConfigs} />
+                            </div>
                             <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore1}</div>
                             <Button
                                 size="sm" variant="ghost"
@@ -107,24 +102,9 @@ const GameResultForm = ({
 
                         {/* Team 2 Selector & Score */}
                         <div style={{ textAlign: 'center' }}>
-                            <select
-                                value={gameData.team2Id}
-                                disabled={matchMode !== 'free'}
-                                onChange={(e) => setGameData({ ...gameData, team2Id: parseInt(e.target.value), goals: [] })}
-                                style={{
-                                    background: teamConfigs[gameData.team2Id]?.bg || 'transparent',
-                                    color: teamConfigs[gameData.team2Id]?.color || 'white',
-                                    border: `1px solid ${teamConfigs[gameData.team2Id]?.color || 'var(--border)'}`,
-                                    padding: '0.4rem', borderRadius: '6px', marginBottom: '0.8rem', width: '100%', fontWeight: 'bold',
-                                    opacity: matchMode !== 'free' ? 0.8 : 1
-                                }}
-                            >
-                                {Array.from({ length: numTeams }, (_, i) => i + 1).map(id => (
-                                    <option key={id} value={id} style={{ background: 'var(--bg-card)', color: 'white' }}>
-                                        {teamConfigs[id]?.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div style={{ padding: '0.8rem', borderRadius: '8px', background: teamConfigs[gameData.team2Id]?.bg || 'rgba(255,255,255,0.05)', color: 'white', marginBottom: '0.8rem' }}>
+                                <TeamBadge id={gameData.team2Id} teamConfigs={teamConfigs} />
+                            </div>
                             <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore2}</div>
                             <Button
                                 size="sm" variant="ghost"
@@ -136,79 +116,54 @@ const GameResultForm = ({
                         </div>
                     </div>
 
-                    {/* Goal Scorer Selection Modal (Modernized) */}
+                    {/* Goal Scorer Selection Modal */}
                     {recordingForTeam && (
                         <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100,
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1400,
                             background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                         }}>
                             <div className="premium-card" style={{
                                 width: '100%', maxWidth: '400px', padding: '2rem',
-                                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                                background: 'var(--bg-card)', border: '1px solid var(--border)'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        Gol para <TeamBadge id={recordingForTeam} teamConfigs={teamConfigs} style={{ minWidth: 'auto' }} />
-                                    </h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Gol para Equipo {recordingForTeam}</h3>
                                     <Button variant="ghost" onClick={() => setRecordingForTeam(null)} icon={X} />
                                 </div>
 
-                                <div style={{ display: 'grid', gap: '1.5rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                                    {[gameData.team1Id, gameData.team2Id].map(tId => {
-                                        const teamPlayers = presentPlayers.filter(e => e.team_assignment === tId)
-                                        if (teamPlayers.length === 0) return null
+                                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                                    {getParticipantsForTeam(recordingForTeam).map(enrol => (
+                                        <button
+                                            key={enrol.id}
+                                            onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
+                                            style={{
+                                                padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid var(--border)', borderRadius: '8px',
+                                                color: 'white', cursor: 'pointer', textAlign: 'left',
+                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                            }}
+                                        >
+                                            <span>{enrol.player?.full_name}</span>
+                                            {enrol.team_assignment !== recordingForTeam && (
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>Refuerzo</span>
+                                            )}
+                                        </button>
+                                    ))}
 
-                                        const isOwnGoalTeam = tId !== recordingForTeam
-
-                                        return (
-                                            <div key={tId}>
-                                                <div style={{
-                                                    marginBottom: '0.8rem',
-                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                                }}>
-                                                    <TeamBadge id={tId} teamConfigs={teamConfigs} style={{ minWidth: 'auto', fontSize: '0.7rem' }} />
-                                                    {isOwnGoalTeam && <span style={{ color: 'var(--error)', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Autogol</span>}
-                                                </div>
-                                                <div style={{ display: 'grid', gap: '0.4rem' }}>
-                                                    {teamPlayers.map(enrol => (
-                                                        <div
-                                                            key={enrol.id}
-                                                            onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
-                                                            className="clickable-item"
-                                                            style={{
-                                                                background: teamConfigs[tId]?.bg || 'rgba(255,255,255,0.05)',
-                                                                color: teamConfigs[tId]?.color || 'white',
-                                                                padding: '0.8rem 1rem',
-                                                                borderRadius: '8px',
-                                                                cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                border: `1px solid ${teamConfigs[tId]?.color}33`,
-                                                                transition: 'all 0.2s ease',
-                                                                textAlign: 'center',
-                                                                fontWeight: '600',
-                                                                fontSize: '0.9rem'
-                                                            }}
-                                                        >
-                                                            {enrol.player?.full_name}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                    {/* Handle Own Goals / Others */}
+                                    <div style={{ height: '1px', background: 'var(--border)', margin: '1rem 0' }} />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const otherTeam = recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id;
+                                            setRecordingForTeam(otherTeam); // Toggle to other team for own goal selection
+                                        }}
+                                    >
+                                        Registrar Autogol
+                                    </Button>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    fullWidth
-                                    style={{ marginTop: '2rem' }}
-                                    onClick={() => setRecordingForTeam(null)}
-                                >
-                                    Cancelar
-                                </Button>
                             </div>
                         </div>
                     )}

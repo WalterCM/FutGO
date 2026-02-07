@@ -165,12 +165,12 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 finalScore2 = gameData.goals.filter(g => g.team_id === gameData.team2Id).length
             }
 
-            // Get players for each team (only present and paid)
-            const team1Players = enrollments
+            // Get players for each team (prioritize passed lists, fallback to official assignments)
+            const team1Players = gameData.team1_players || enrollments
                 .filter(e => e.is_present && e.paid && e.team_assignment === gameData.team1Id)
                 .map(e => e.player_id)
 
-            const team2Players = enrollments
+            const team2Players = gameData.team2_players || enrollments
                 .filter(e => e.is_present && e.paid && e.team_assignment === gameData.team2Id)
                 .map(e => e.player_id)
 

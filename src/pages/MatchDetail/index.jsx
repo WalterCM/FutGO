@@ -17,6 +17,7 @@ import GameResultForm from './GameResultForm'
 import FixtureTimeline from './FixtureTimeline'
 import MatchModals from './MatchModals'
 import MatchHistory from './MatchHistory'
+import LineupVerificationModal from './LineupVerificationModal'
 import { KIT_LIBRARY, BENCH_KIT, DEFAULT_KIT } from './constants'
 
 export default function MatchDetail({ profile: authProfile, onBack }) {
@@ -57,7 +58,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
 
     // Form States
     const [showForm, setShowForm] = useState(false)
-    const [gameData, setGameData] = useState({ team1Id: 1, team2Id: 2, goals: [] })
+    const [gameData, setGameData] = useState({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
 
     // Field Tab Selection/Drag State
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
@@ -67,6 +68,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: () => { } })
     const [expansionData, setExpansionData] = useState({ show: false, mode: '', newCost: 0 })
     const [kitPicker, setKitPicker] = useState({ show: false, teamId: null })
+    const [lineupModal, setLineupModal] = useState({ show: false, fixture: null })
 
     const syncTab = () => {
         const hash = window.location.hash.replace('#', '')
@@ -143,7 +145,24 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     }
 
     const handleStartMatch = (team1Id, team2Id, fixtureId) => {
-        setGameData({ team1Id, team2Id, goals: [], fixtureId })
+        // First, verify lineup
+        setLineupModal({
+            show: true,
+            fixture: { id: fixtureId, team1Id, team2Id }
+        })
+    }
+
+    const handleConfirmLineup = (team1PlayerIds, team2PlayerIds) => {
+        const { fixture } = lineupModal
+        setGameData({
+            team1Id: fixture.team1Id,
+            team2Id: fixture.team2Id,
+            goals: [],
+            fixtureId: fixture.id,
+            team1_players: team1PlayerIds,
+            team2_players: team2PlayerIds
+        })
+        setLineupModal({ show: false, fixture: null })
         setShowForm(true)
         setTimeout(() => {
             const formElement = document.getElementById('game-result-form')
@@ -155,7 +174,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         const success = await addGameResult(gameData, gameData.fixtureId)
         if (success) {
             setShowForm(false)
-            setGameData({ team1Id: 1, team2Id: 2, goals: [] })
+            setGameData({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
         }
     }
 
@@ -244,6 +263,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             />
 
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
                 <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
                 {activeTab === 'admin' && (
@@ -359,6 +379,16 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 cancelMatch={cancelMatch}
                 actionLoading={actionLoading}
                 KIT_LIBRARY={KIT_LIBRARY}
+            />
+
+            <LineupVerificationModal
+                show={lineupModal.show}
+                onClose={() => setLineupModal({ show: false, fixture: null })}
+                onConfirm={handleConfirmLineup}
+                fixture={lineupModal.fixture}
+                teamConfigs={teamConfigs}
+                enrollments={enrollments}
+                playersPerTeam={playersPerTeam}
             />
 
             <StatusMessage type={statusMsg.type} text={statusMsg.text} />
