@@ -52,8 +52,8 @@ const FixtureTimeline = ({
     // Check if there's a liguilla phase (for standings-based elimination)
     const hasPreviousLiguilla = phases.some(p => p.type === 'liguilla')
 
-    // Get standings for display
-    const standings = getStandings ? getStandings() : []
+    // Get global standings (all liguilla phases) for PhaseConfigModal
+    const globalStandings = getStandings ? getStandings() : []
 
     const toggleStandings = (phaseId) => {
         setExpandedStandings(prev => ({
@@ -144,6 +144,8 @@ const FixtureTimeline = ({
                             const phaseFixtures = getPhaseFixtures(phase.id)
                             const isGenerated = phaseFixtures.length > 0
                             const isLiguilla = phase.type === 'liguilla'
+                            // Get standings for THIS specific phase
+                            const standings = isLiguilla && getStandings ? getStandings(phase.id) : []
                             const showStandingsButton = isLiguilla && standings.length > 0
                             const hasUnresolvedPlaceholders = phaseFixtures.some(f =>
                                 (f.placeholder1 && !f.team1Id) || (f.placeholder2 && !f.team2Id)
@@ -347,7 +349,7 @@ const FixtureTimeline = ({
                 show={showConfig}
                 onClose={() => setShowConfig(false)}
                 onAdd={onAddPhase}
-                standingsCount={standings.length}
+                standingsCount={globalStandings.length}
                 numTeams={numTeams}
                 hasPreviousLiguilla={hasPreviousLiguilla}
             />

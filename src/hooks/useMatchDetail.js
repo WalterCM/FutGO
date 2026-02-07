@@ -456,15 +456,26 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
         setActionLoading('phase')
         try {
+            const currentPhases = Array.isArray(match.phases) ? match.phases : []
+
+            // For tournament_standings, find the last liguilla phase to use as source
+            let sourcePhaseId = null
+            if (type === 'tournament_standings') {
+                const liguillaPhases = currentPhases.filter(p => p.type === 'liguilla')
+                if (liguillaPhases.length > 0) {
+                    sourcePhaseId = liguillaPhases[liguillaPhases.length - 1].id
+                }
+            }
+
             const newPhase = {
                 id: Math.random().toString(36).substr(2, 9),
                 type,
                 name: name || (type === 'liguilla' ? 'Liguilla' : type === 'tournament' ? 'Fase de Grupos' : type === 'winner_stays' ? 'Ganador Queda' : 'Fase Libre'),
                 status: 'pending',
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                ...(sourcePhaseId && { sourcePhaseId }) // Reference to which liguilla's standings to use
             }
 
-            const currentPhases = Array.isArray(match.phases) ? match.phases : []
             const nextPhases = [...currentPhases, newPhase]
 
             const { error } = await supabase
@@ -529,6 +540,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 phases: updatedPhases
             }))
             showMsg('success', 'Encuentros generados')
+            // Resolution happens automatically via useEffect when totalFixtureCount changes
         } catch (error) {
             showMsg('error', 'Error generando encuentros')
         } finally {
@@ -577,7 +589,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const getStandings = useCallback(() => {
+    const getStandings = useCallback((phaseId = null) => {
         if (!match || !games.length) return []
 
         const stats = {}
@@ -590,26 +602,32 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             stats[i] = { teamId: i, points: 0, goalDiff: 0, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }
         }
 
-        // Get liguilla phase IDs (only count games from round-robin phases)
-        const liguillaPhaseIds = (match.phases || [])
-            .filter(p => p.type === 'liguilla')
-            .map(p => p.id)
+        // If phaseId provided, filter to that phase only. Otherwise, get all liguilla phases.
+        let targetPhaseIds
+        if (phaseId) {
+            targetPhaseIds = [phaseId]
+        } else {
+            // Legacy: get all liguilla phases
+            targetPhaseIds = (match.phases || [])
+                .filter(p => p.type === 'liguilla')
+                .map(p => p.id)
+        }
 
-        // Get liguilla fixture IDs for filtering
-        const liguillaFixtureIds = new Set(
+        // Get fixture IDs for the target phase(s)
+        const phaseFixtureIds = new Set(
             (match.fixtures || [])
-                .filter(f => liguillaPhaseIds.includes(f.phaseId))
+                .filter(f => targetPhaseIds.includes(f.phaseId))
                 .map(f => f.id)
         )
 
-        // Only count games that are linked to liguilla fixtures
-        // Or games without a fixture_id (legacy games)
-        const liguillaGames = games.filter(g =>
-            !g.fixture_id || liguillaFixtureIds.has(g.fixture_id)
+        // Only count games that are linked to target phase fixtures
+        // Or games without a fixture_id (legacy games) - only if no phaseId filter
+        const phaseGames = games.filter(g =>
+            phaseFixtureIds.has(g.fixture_id) || (!phaseId && !g.fixture_id)
         )
 
-        // Accumulate stats from liguilla games only
-        liguillaGames.forEach(g => {
+        // Accumulate stats from phase games only
+        phaseGames.forEach(g => {
             const t1 = g.team1_id, t2 = g.team2_id
             if (!stats[t1] || !stats[t2]) return
 
@@ -728,30 +746,62 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     const resolveEliminationPlaceholders = useCallback(async () => {
         if (!match?.fixtures?.length || !match?.phases?.length) return
 
+        console.log('[DEBUG] resolveEliminationPlaceholders called')
+        console.log('[DEBUG] phases:', match.phases.map(p => ({ id: p.id, type: p.type, sourcePhaseId: p.sourcePhaseId })))
+
         let hasChanges = false
         let updatedFixtures = [...match.fixtures]
 
-        // Check if liguilla phase is complete
-        const liguillaPhases = match.phases.filter(p => p.type === 'liguilla')
-        let liguillaComplete = false
+        // Build a map of source phaseId -> standings for tournament_standings phases
+        // Each tournament_standings phase references a specific liguilla via sourcePhaseId
+        const phaseStandingsMap = {}
+        const liguillaCompleteMap = {}
 
+        // For each tournament_standings phase, check if its source liguilla is complete
+        match.phases.filter(p => p.type === 'tournament_standings' && p.sourcePhaseId).forEach(phase => {
+            const sourceId = phase.sourcePhaseId
+            console.log('[DEBUG] Processing tournament_standings phase:', phase.id, 'sourcePhaseId:', sourceId)
+            if (liguillaCompleteMap[sourceId] !== undefined) return // Already checked
+
+            // Find fixtures for this specific liguilla
+            const liguillaFixtures = match.fixtures.filter(f => f.phaseId === sourceId)
+            const completedFixtures = liguillaFixtures.filter(f => f.status === 'completed')
+            const isComplete = liguillaFixtures.length > 0 && completedFixtures.length === liguillaFixtures.length
+            liguillaCompleteMap[sourceId] = isComplete
+            console.log('[DEBUG] Source liguilla complete?', isComplete, `(${completedFixtures.length}/${liguillaFixtures.length})`)
+
+            if (isComplete) {
+                const standings = getStandings(sourceId)
+                console.log('[DEBUG] Standings for', sourceId, ':', standings.map(s => ({ teamId: s.teamId, points: s.points })))
+                phaseStandingsMap[sourceId] = {
+                    '1º de Liguilla': standings[0]?.teamId,
+                    '2º de Liguilla': standings[1]?.teamId,
+                    '3º de Liguilla': standings[2]?.teamId,
+                    '4º de Liguilla': standings[3]?.teamId
+                }
+            }
+        })
+
+        console.log('[DEBUG] phaseStandingsMap:', phaseStandingsMap)
+
+        // Fallback for legacy phases without sourcePhaseId - check if ANY liguilla is complete
+        const liguillaPhases = match.phases.filter(p => p.type === 'liguilla')
+        let legacyPositionMap = {}
         if (liguillaPhases.length > 0) {
             const liguillaFixtures = match.fixtures.filter(f =>
                 liguillaPhases.some(p => p.id === f.phaseId)
             )
             const completedLiguillaFixtures = liguillaFixtures.filter(f => f.status === 'completed')
-            liguillaComplete = liguillaFixtures.length > 0 &&
+            const liguillaComplete = liguillaFixtures.length > 0 &&
                 completedLiguillaFixtures.length === liguillaFixtures.length
-        }
 
-        // Only build standings map if liguilla is complete
-        const positionMap = {}
-        if (liguillaComplete) {
-            const standings = getStandings()
-            if (standings[0]) positionMap['1º de Liguilla'] = standings[0].teamId
-            if (standings[1]) positionMap['2º de Liguilla'] = standings[1].teamId
-            if (standings[2]) positionMap['3º de Liguilla'] = standings[2].teamId
-            if (standings[3]) positionMap['4º de Liguilla'] = standings[3].teamId
+            if (liguillaComplete) {
+                const standings = getStandings() // Combined standings for legacy
+                if (standings[0]) legacyPositionMap['1º de Liguilla'] = standings[0].teamId
+                if (standings[1]) legacyPositionMap['2º de Liguilla'] = standings[1].teamId
+                if (standings[2]) legacyPositionMap['3º de Liguilla'] = standings[2].teamId
+                if (standings[3]) legacyPositionMap['4º de Liguilla'] = standings[3].teamId
+            }
         }
 
         // Build a map of fixture IDs to their winners (from completed fixtures)
@@ -769,15 +819,37 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         updatedFixtures = updatedFixtures.map((f) => {
             const updated = { ...f }
 
-            // Resolve position placeholders (only if liguilla is complete)
-            if (liguillaComplete) {
-                if (f.placeholder1 && positionMap[f.placeholder1] && !f.team1Id) {
+            // Resolve position placeholders (e.g., "1º de Liguilla")
+            if (f.placeholder1 && f.placeholder1.includes('de Liguilla') && !f.team1Id) {
+                // Find the phase for this fixture
+                const fixturePhase = match.phases.find(p => p.id === f.phaseId)
+                const sourceId = fixturePhase?.sourcePhaseId
+                console.log('[DEBUG] Fixture', f.id, 'phaseId:', f.phaseId, 'fixturePhase found:', !!fixturePhase, 'sourceId:', sourceId)
+
+                // Use phase-specific standings if available, otherwise fallback to legacy
+                const positionMap = sourceId && phaseStandingsMap[sourceId]
+                    ? phaseStandingsMap[sourceId]
+                    : legacyPositionMap
+                console.log('[DEBUG] positionMap for', f.placeholder1, ':', positionMap[f.placeholder1])
+
+                if (positionMap[f.placeholder1]) {
                     updated.team1Id = positionMap[f.placeholder1]
                     hasChanges = true
+                    console.log('[DEBUG] Resolved team1Id to', updated.team1Id)
                 }
-                if (f.placeholder2 && positionMap[f.placeholder2] && !f.team2Id) {
+            }
+            if (f.placeholder2 && f.placeholder2.includes('de Liguilla') && !f.team2Id) {
+                const fixturePhase = match.phases.find(p => p.id === f.phaseId)
+                const sourceId = fixturePhase?.sourcePhaseId
+                const positionMap = sourceId && phaseStandingsMap[sourceId]
+                    ? phaseStandingsMap[sourceId]
+                    : legacyPositionMap
+                console.log('[DEBUG] positionMap for', f.placeholder2, ':', positionMap[f.placeholder2])
+
+                if (positionMap[f.placeholder2]) {
                     updated.team2Id = positionMap[f.placeholder2]
                     hasChanges = true
+                    console.log('[DEBUG] Resolved team2Id to', updated.team2Id)
                 }
             }
 
@@ -830,13 +902,14 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }, [match, matchId, getStandings])
 
-    // Auto-resolve placeholders whenever fixture statuses change
+    // Auto-resolve placeholders whenever fixture statuses change OR when fixtures are added
     const completedFixtureCount = match?.fixtures?.filter(f => f.status === 'completed').length || 0
+    const totalFixtureCount = match?.fixtures?.length || 0
     useEffect(() => {
-        if (completedFixtureCount > 0 && match?.fixtures?.length > 0) {
+        if (match?.fixtures?.length > 0) {
             resolveEliminationPlaceholders()
         }
-    }, [completedFixtureCount])
+    }, [completedFixtureCount, totalFixtureCount])
 
     const updateMatchCapacity = async (newMaxPlayers, newCost, newTeamConfigs = null) => {
         setActionLoading('capacity')
