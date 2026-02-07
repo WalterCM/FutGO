@@ -145,29 +145,54 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     }
 
     const handleStartMatch = (team1Id, team2Id, fixtureId) => {
-        // First, verify lineup
-        setLineupModal({
-            show: true,
-            fixture: { id: fixtureId, team1Id, team2Id }
-        })
-    }
-
-    const handleConfirmLineup = (team1PlayerIds, team2PlayerIds) => {
-        const { fixture } = lineupModal
         setGameData({
-            team1Id: fixture.team1Id,
-            team2Id: fixture.team2Id,
+            team1Id,
+            team2Id,
             goals: [],
-            fixtureId: fixture.id,
-            team1_players: team1PlayerIds,
-            team2_players: team2PlayerIds
+            fixtureId,
+            team1_players: null,
+            team2_players: null
         })
-        setLineupModal({ show: false, fixture: null })
         setShowForm(true)
         setTimeout(() => {
             const formElement = document.getElementById('game-result-form')
             if (formElement) formElement.scrollIntoView({ behavior: 'smooth' })
         }, 100)
+    }
+
+    const handleOpenLineup = () => {
+        setLineupModal({
+            show: true,
+            fixture: { id: gameData.fixtureId, team1Id: gameData.team1Id, team2Id: gameData.team2Id }
+        })
+    }
+
+    const handleConfirmLineup = (team1PlayerIds, team2PlayerIds) => {
+        const { fixture } = lineupModal
+
+        // Calculate official lineup IDs for comparison
+        const official1 = enrollments
+            .filter(e => e.team_assignment === fixture.team1Id && e.is_present && e.paid)
+            .map(e => e.player_id)
+            .sort()
+
+        const official2 = enrollments
+            .filter(e => e.team_assignment === fixture.team2Id && e.is_present && e.paid)
+            .map(e => e.player_id)
+            .sort()
+
+        const sortedT1 = [...team1PlayerIds].sort()
+        const sortedT2 = [...team2PlayerIds].sort()
+
+        const isSame1 = JSON.stringify(official1) === JSON.stringify(sortedT1)
+        const isSame2 = JSON.stringify(official2) === JSON.stringify(sortedT2)
+
+        setGameData(prev => ({
+            ...prev,
+            team1_players: isSame1 ? null : team1PlayerIds,
+            team2_players: isSame2 ? null : team2PlayerIds
+        }))
+        setLineupModal({ show: false, fixture: null })
     }
 
     const handleSaveGame = async () => {
@@ -347,6 +372,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                                 enrollments={enrollments}
                                 matchMode={match?.match_mode || 'free'}
                                 onUndoMatch={handleUndoMatchRequest}
+                                onOpenLineup={handleOpenLineup}
                             />
                         </div>
 
@@ -389,6 +415,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 teamConfigs={teamConfigs}
                 enrollments={enrollments}
                 playersPerTeam={playersPerTeam}
+                currentLineup1={gameData.team1_players}
+                currentLineup2={gameData.team2_players}
             />
 
             <StatusMessage type={statusMsg.type} text={statusMsg.text} />

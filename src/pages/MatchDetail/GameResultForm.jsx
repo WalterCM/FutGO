@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Trophy, Plus, X, Trash2, User, RotateCcw } from 'lucide-react'
+import { Trophy, Plus, X, Trash2, User, Users, RotateCcw } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import TeamBadge from './TeamBadge'
@@ -17,7 +17,9 @@ const GameResultForm = ({
     actionLoading,
     isLocked,
     enrollments,
-    matchMode
+    matchMode,
+    onUndoMatch,
+    onOpenLineup
 }) => {
     const [recordingForTeam, setRecordingForTeam] = useState(null)
 
@@ -85,8 +87,18 @@ const GameResultForm = ({
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                         {/* Team 1 Selector & Score */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ padding: '0.8rem', borderRadius: '8px', background: teamConfigs[gameData.team1Id]?.bg || 'rgba(255,255,255,0.05)', color: 'white', marginBottom: '0.8rem' }}>
+                            <div style={{
+                                padding: '0.8rem', borderRadius: '8px',
+                                background: teamConfigs[gameData.team1Id]?.bg || 'rgba(255,255,255,0.05)',
+                                color: 'white', marginBottom: '0.8rem',
+                                position: 'relative'
+                            }}>
                                 <TeamBadge id={gameData.team1Id} teamConfigs={teamConfigs} />
+                                {gameData.team1_players && (
+                                    <div style={{ fontSize: '0.65rem', marginTop: '0.4rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                                        Alineación Personalizada ({gameData.team1_players.length})
+                                    </div>
+                                )}
                             </div>
                             <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore1}</div>
                             <Button
@@ -102,8 +114,18 @@ const GameResultForm = ({
 
                         {/* Team 2 Selector & Score */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ padding: '0.8rem', borderRadius: '8px', background: teamConfigs[gameData.team2Id]?.bg || 'rgba(255,255,255,0.05)', color: 'white', marginBottom: '0.8rem' }}>
+                            <div style={{
+                                padding: '0.8rem', borderRadius: '8px',
+                                background: teamConfigs[gameData.team2Id]?.bg || 'rgba(255,255,255,0.05)',
+                                color: 'white', marginBottom: '0.8rem',
+                                position: 'relative'
+                            }}>
                                 <TeamBadge id={gameData.team2Id} teamConfigs={teamConfigs} />
+                                {gameData.team2_players && (
+                                    <div style={{ fontSize: '0.65rem', marginTop: '0.4rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                                        Alineación Personalizada ({gameData.team2_players.length})
+                                    </div>
+                                )}
                             </div>
                             <div style={{ fontSize: '3.5rem', fontWeight: 'bold' }}>{currentScore2}</div>
                             <Button
@@ -115,6 +137,20 @@ const GameResultForm = ({
                             </Button>
                         </div>
                     </div>
+
+                    {canManage && (
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onOpenLineup}
+                                icon={Users}
+                                style={{ fontSize: '0.8rem', opacity: 0.8 }}
+                            >
+                                {(gameData.team1_players || gameData.team2_players) ? 'Editar Alineación' : 'Ajustar Alineación / Préstamos'}
+                            </Button>
+                        </div>
+                    )}
 
                     {/* Goal Scorer Selection Modal */}
                     {recordingForTeam && (

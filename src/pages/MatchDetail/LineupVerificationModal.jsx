@@ -10,7 +10,9 @@ const LineupVerificationModal = ({
     fixture,
     teamConfigs,
     enrollments,
-    playersPerTeam
+    playersPerTeam,
+    currentLineup1,
+    currentLineup2
 }) => {
     const [lineup1, setLineup1] = useState([])
     const [lineup2, setLineup2] = useState([])
@@ -19,14 +21,30 @@ const LineupVerificationModal = ({
 
     useEffect(() => {
         if (show && fixture) {
-            // Initial lineups based on official team assignments
-            const t1 = enrollments
-                .filter(e => e.team_assignment === fixture.team1Id && e.is_present && e.paid)
-                .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team1Id }))
+            const getPlayerInfo = (id) => {
+                const e = enrollments.find(env => env.player_id === id)
+                return { id, name: e?.player?.full_name || 'Desconocido', officialTeam: e?.team_assignment }
+            }
 
-            const t2 = enrollments
-                .filter(e => e.team_assignment === fixture.team2Id && e.is_present && e.paid)
-                .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team2Id }))
+            // Team 1 Initial state
+            let t1;
+            if (currentLineup1) {
+                t1 = currentLineup1.map(getPlayerInfo)
+            } else {
+                t1 = enrollments
+                    .filter(e => e.team_assignment === fixture.team1Id && e.is_present && e.paid)
+                    .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team1Id }))
+            }
+
+            // Team 2 Initial state
+            let t2;
+            if (currentLineup2) {
+                t2 = currentLineup2.map(getPlayerInfo)
+            } else {
+                t2 = enrollments
+                    .filter(e => e.team_assignment === fixture.team2Id && e.is_present && e.paid)
+                    .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team2Id }))
+            }
 
             // Available players: everyone present/paid NOT in the current teams
             const currentLineupIds = [...t1, ...t2].map(p => p.id)
@@ -38,7 +56,7 @@ const LineupVerificationModal = ({
             setLineup2(t2)
             setAvailablePlayers(available)
         }
-    }, [show, fixture, enrollments])
+    }, [show, fixture, enrollments, currentLineup1, currentLineup2])
 
     if (!show || !fixture) return null
 
