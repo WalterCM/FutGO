@@ -206,13 +206,10 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 const isWinnerStaysPhase = currentFixture &&
                     match.phases?.find(p => p.id === currentFixture.phaseId)?.type === 'winner_stays'
 
-                // Winner Stays: add next fixture dynamically
+                // Winner Stays: add next fixture for the loser to come back
                 if (match.match_mode === 'winner_stays' || isWinnerStaysPhase) {
                     const winnerId = finalScore1 > finalScore2 ? gameData.team1Id : gameData.team2Id
                     const loserId = finalScore1 > finalScore2 ? gameData.team2Id : gameData.team1Id
-                    const playersPerTeam = match.field?.players_per_team || 5
-                    const maxPlayers = match.max_players || (playersPerTeam * 2)
-                    const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
 
                     // Get phase fixtures
                     const phaseId = currentFixture?.phaseId
@@ -220,57 +217,30 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                         ? nextFixtures.filter(f => f.phaseId === phaseId)
                         : nextFixtures
 
-                    // Check if there's already a pending fixture (pre-generated with placeholder)
-                    const hasPendingFixture = phaseFixtures.some(f =>
-                        f.status === 'pending' && (f.team1Id || f.placeholder1)
-                    )
+                    // Count completed fixtures to determine next Reto number
+                    const completedFixtures = phaseFixtures.filter(f => f.status === 'completed')
+                    const pendingFixtures = phaseFixtures.filter(f => f.status === 'pending')
+                    const highestRetoNum = phaseFixtures.reduce((max, f) => {
+                        const num = parseInt(f.label?.match(/Reto (\d+)/)?.[1] || '0')
+                        return num > max ? num : max
+                    }, 0)
 
-                    // Only add new fixture if there's no pending one already
-                    if (!hasPendingFixture) {
-                        // Build loser queue: list of losers in order they lost
-                        const completedFixtures = phaseFixtures
-                            .filter(f => f.status === 'completed' && f.score1 !== undefined)
-                            .sort((a, b) => {
-                                // Sort by Reto number if available
-                                const aNum = parseInt(a.label?.match(/Reto (\d+)/)?.[1] || '0')
-                                const bNum = parseInt(b.label?.match(/Reto (\d+)/)?.[1] || '0')
-                                return aNum - bNum
-                            })
+                    // Always add new fixture for the loser to come back
+                    // The loser will challenge the winner of the last pending fixture
+                    const nextRetoNum = highestRetoNum + 1
+                    const lastPendingFixture = pendingFixtures[pendingFixtures.length - 1]
 
-                        // Track who is currently "in" (the winner who stays)
-                        // Build queue of losers waiting to come back
-                        const loserQueue = []
-                        completedFixtures.forEach(f => {
-                            const fixtureLoser = f.score1 > f.score2 ? f.team2Id : f.team1Id
-                            // Add loser to queue (they're now waiting)
-                            loserQueue.push(fixtureLoser)
+                    if (lastPendingFixture) {
+                        // Create new fixture: Winner of last pending vs Loser of current game
+                        nextFixtures.push({
+                            id: Math.random().toString(36).substr(2, 9),
+                            team1Id: null,
+                            team2Id: loserId,
+                            status: 'pending',
+                            label: `Reto ${nextRetoNum}`,
+                            placeholder1: `Ganador Reto ${highestRetoNum}`,
+                            phaseId: phaseId || undefined
                         })
-
-                        // Add current game's loser to the queue
-                        loserQueue.push(loserId)
-
-                        // The next challenger is the first person in queue who isn't the winner
-                        // (oldest loser who's been waiting longest)
-                        let nextChallengerId = null
-                        for (const teamId of loserQueue) {
-                            if (teamId !== winnerId) {
-                                nextChallengerId = teamId
-                                break
-                            }
-                        }
-
-                        // Only add if we found a valid challenger
-                        if (nextChallengerId) {
-                            const nextRetoNum = completedFixtures.length + 1
-                            nextFixtures.push({
-                                id: Math.random().toString(36).substr(2, 9),
-                                team1Id: winnerId,
-                                team2Id: nextChallengerId,
-                                status: 'pending',
-                                label: `Reto ${nextRetoNum}`,
-                                phaseId: phaseId || undefined
-                            })
-                        }
                     }
                 }
 
