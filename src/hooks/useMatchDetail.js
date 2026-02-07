@@ -745,10 +745,6 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     // Also resolves Ganador Queda placeholders based on game results
     const resolveEliminationPlaceholders = useCallback(async () => {
         if (!match?.fixtures?.length || !match?.phases?.length) return
-
-        console.log('[DEBUG] resolveEliminationPlaceholders called')
-        console.log('[DEBUG] phases:', match.phases.map(p => ({ id: p.id, type: p.type, sourcePhaseId: p.sourcePhaseId })))
-
         let hasChanges = false
         let updatedFixtures = [...match.fixtures]
 
@@ -760,7 +756,6 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         // For each tournament_standings phase, check if its source liguilla is complete
         match.phases.filter(p => p.type === 'tournament_standings' && p.sourcePhaseId).forEach(phase => {
             const sourceId = phase.sourcePhaseId
-            console.log('[DEBUG] Processing tournament_standings phase:', phase.id, 'sourcePhaseId:', sourceId)
             if (liguillaCompleteMap[sourceId] !== undefined) return // Already checked
 
             // Find fixtures for this specific liguilla
@@ -768,11 +763,9 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const completedFixtures = liguillaFixtures.filter(f => f.status === 'completed')
             const isComplete = liguillaFixtures.length > 0 && completedFixtures.length === liguillaFixtures.length
             liguillaCompleteMap[sourceId] = isComplete
-            console.log('[DEBUG] Source liguilla complete?', isComplete, `(${completedFixtures.length}/${liguillaFixtures.length})`)
 
             if (isComplete) {
                 const standings = getStandings(sourceId)
-                console.log('[DEBUG] Standings for', sourceId, ':', standings.map(s => ({ teamId: s.teamId, points: s.points })))
                 phaseStandingsMap[sourceId] = {
                     '1º de Liguilla': standings[0]?.teamId,
                     '2º de Liguilla': standings[1]?.teamId,
@@ -781,8 +774,6 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 }
             }
         })
-
-        console.log('[DEBUG] phaseStandingsMap:', phaseStandingsMap)
 
         // Fallback for legacy phases without sourcePhaseId - check if ANY liguilla is complete
         const liguillaPhases = match.phases.filter(p => p.type === 'liguilla')
@@ -824,18 +815,15 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 // Find the phase for this fixture
                 const fixturePhase = match.phases.find(p => p.id === f.phaseId)
                 const sourceId = fixturePhase?.sourcePhaseId
-                console.log('[DEBUG] Fixture', f.id, 'phaseId:', f.phaseId, 'fixturePhase found:', !!fixturePhase, 'sourceId:', sourceId)
 
                 // Use phase-specific standings if available, otherwise fallback to legacy
                 const positionMap = sourceId && phaseStandingsMap[sourceId]
                     ? phaseStandingsMap[sourceId]
                     : legacyPositionMap
-                console.log('[DEBUG] positionMap for', f.placeholder1, ':', positionMap[f.placeholder1])
 
                 if (positionMap[f.placeholder1]) {
                     updated.team1Id = positionMap[f.placeholder1]
                     hasChanges = true
-                    console.log('[DEBUG] Resolved team1Id to', updated.team1Id)
                 }
             }
             if (f.placeholder2 && f.placeholder2.includes('de Liguilla') && !f.team2Id) {
@@ -844,12 +832,10 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 const positionMap = sourceId && phaseStandingsMap[sourceId]
                     ? phaseStandingsMap[sourceId]
                     : legacyPositionMap
-                console.log('[DEBUG] positionMap for', f.placeholder2, ':', positionMap[f.placeholder2])
 
                 if (positionMap[f.placeholder2]) {
                     updated.team2Id = positionMap[f.placeholder2]
                     hasChanges = true
-                    console.log('[DEBUG] Resolved team2Id to', updated.team2Id)
                 }
             }
 
