@@ -43,8 +43,13 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         updateMatchMode,
         generateFixtures,
         updateFixtures,
-        addFinals,
+        addKnockoutPhase,
+        getStandings,
+        resolveEliminationPlaceholders,
         updateMatchCapacity,
+        addPhase,
+        removePhase,
+        addManualFixture,
         cancelMatch,
         updateMatch,
         randomizeTeams
@@ -69,6 +74,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const [expansionData, setExpansionData] = useState({ show: false, mode: '', newCost: 0 })
     const [kitPicker, setKitPicker] = useState({ show: false, teamId: null })
     const [lineupModal, setLineupModal] = useState({ show: false, fixture: null })
+    const [phaseModal, setPhaseModal] = useState({ show: false })
 
     const syncTab = () => {
         const hash = window.location.hash.replace('#', '')
@@ -343,16 +349,20 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 {activeTab === 'results' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         <FixtureTimeline
-                            matchMode={match?.match_mode || 'free'}
-                            numTeams={numTeams}
+                            matchId={matchId}
+                            phases={match?.phases}
                             fixtures={match?.fixtures}
                             teamConfigs={teamConfigs}
                             onStartMatch={handleStartMatch}
-                            onUpdateMode={updateMatchMode}
-                            onReorder={updateFixtures}
-                            onAddFinals={addFinals}
+                            onAddPhase={addPhase}
+                            onRemovePhase={removePhase}
+                            onUpdateFixtures={updateFixtures}
                             onGenerateFixtures={generateFixtures}
+                            onAddManualFixture={addManualFixture}
+                            onResolvePlaceholders={resolveEliminationPlaceholders}
                             canManage={canManage}
+                            getStandings={getStandings}
+                            numTeams={numTeams}
                             games={games}
                         />
 
@@ -418,6 +428,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 currentLineup1={gameData.team1_players}
                 currentLineup2={gameData.team2_players}
             />
+
 
             <StatusMessage type={statusMsg.type} text={statusMsg.text} />
         </div>

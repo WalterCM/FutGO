@@ -58,6 +58,9 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             // but MatchDetail uses it. Let's stick to what works.
             setGames(gamesData || [])
 
+            // After fetching games, resolve any pending placeholders in elimination fixtures
+            // This is handled inline here since we have direct access to standings computation
+
         } catch (error) {
             console.error('Error fetching match details:', error)
             showMsg('error', error.message)
@@ -194,33 +197,81 @@ export const useMatchDetail = (matchId, profile, onBack) => {
 
             // Update fixture status if linked
             if (fixtureId && match.fixtures) {
-                const nextFixtures = (match.fixtures || []).map(f =>
+                const currentFixture = match.fixtures.find(f => f.id === fixtureId)
+                let nextFixtures = (match.fixtures || []).map(f =>
                     f.id === fixtureId ? { ...f, status: 'completed', score1: finalScore1, score2: finalScore2, gameId: newGame.id } : f
                 )
 
-                // Winner Stays auto-generation
-                if (match.match_mode === 'winner_stays') {
-                    const winnerId = finalScore1 > finalScore2 ? gameData.team1Id : gameData.team2Id
+                // Check if this is a winner_stays phase
+                const isWinnerStaysPhase = currentFixture &&
+                    match.phases?.find(p => p.id === currentFixture.phaseId)?.type === 'winner_stays'
 
-                    // Logic to find next challenger (T3, then T4... then T1)
+                // Winner Stays: add next fixture dynamically
+                if (match.match_mode === 'winner_stays' || isWinnerStaysPhase) {
+                    const winnerId = finalScore1 > finalScore2 ? gameData.team1Id : gameData.team2Id
+                    const loserId = finalScore1 > finalScore2 ? gameData.team2Id : gameData.team1Id
                     const playersPerTeam = match.field?.players_per_team || 5
                     const maxPlayers = match.max_players || (playersPerTeam * 2)
                     const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
 
-                    // Find the last used team ID that isn't the winner
-                    const lastOpponentId = finalScore1 > finalScore2 ? gameData.team2Id : gameData.team1Id
-                    let nextChallengerId = (lastOpponentId % numTeams) + 1
-                    if (nextChallengerId === winnerId) {
-                        nextChallengerId = (nextChallengerId % numTeams) + 1
-                    }
+                    // Get phase fixtures
+                    const phaseId = currentFixture?.phaseId
+                    const phaseFixtures = phaseId
+                        ? nextFixtures.filter(f => f.phaseId === phaseId)
+                        : nextFixtures
 
-                    nextFixtures.push({
-                        id: Math.random().toString(36).substr(2, 9),
-                        team1Id: winnerId,
-                        team2Id: nextChallengerId,
-                        status: 'pending',
-                        label: 'Ganador se Queda'
-                    })
+                    // Check if there's already a pending fixture (pre-generated with placeholder)
+                    const hasPendingFixture = phaseFixtures.some(f =>
+                        f.status === 'pending' && (f.team1Id || f.placeholder1)
+                    )
+
+                    // Only add new fixture if there's no pending one already
+                    if (!hasPendingFixture) {
+                        // Build loser queue: list of losers in order they lost
+                        const completedFixtures = phaseFixtures
+                            .filter(f => f.status === 'completed' && f.score1 !== undefined)
+                            .sort((a, b) => {
+                                // Sort by Reto number if available
+                                const aNum = parseInt(a.label?.match(/Reto (\d+)/)?.[1] || '0')
+                                const bNum = parseInt(b.label?.match(/Reto (\d+)/)?.[1] || '0')
+                                return aNum - bNum
+                            })
+
+                        // Track who is currently "in" (the winner who stays)
+                        // Build queue of losers waiting to come back
+                        const loserQueue = []
+                        completedFixtures.forEach(f => {
+                            const fixtureLoser = f.score1 > f.score2 ? f.team2Id : f.team1Id
+                            // Add loser to queue (they're now waiting)
+                            loserQueue.push(fixtureLoser)
+                        })
+
+                        // Add current game's loser to the queue
+                        loserQueue.push(loserId)
+
+                        // The next challenger is the first person in queue who isn't the winner
+                        // (oldest loser who's been waiting longest)
+                        let nextChallengerId = null
+                        for (const teamId of loserQueue) {
+                            if (teamId !== winnerId) {
+                                nextChallengerId = teamId
+                                break
+                            }
+                        }
+
+                        // Only add if we found a valid challenger
+                        if (nextChallengerId) {
+                            const nextRetoNum = completedFixtures.length + 1
+                            nextFixtures.push({
+                                id: Math.random().toString(36).substr(2, 9),
+                                team1Id: winnerId,
+                                team2Id: nextChallengerId,
+                                status: 'pending',
+                                label: `Reto ${nextRetoNum}`,
+                                phaseId: phaseId || undefined
+                            })
+                        }
+                    }
                 }
 
                 await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
@@ -264,10 +315,9 @@ export const useMatchDetail = (matchId, profile, onBack) => {
     const updateMatchMode = async (mode) => {
         setActionLoading('mode')
         try {
-            const nextFixtures = mode !== 'free' ? generateFixturesHelper(mode) : []
             const updateData = {
-                match_mode: mode,
-                fixtures: nextFixtures
+                match_mode: mode
+                // No automatically generated fixtures here anymore
             }
 
             const { error } = await supabase
@@ -285,15 +335,15 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const generateFixturesHelper = (mode) => {
+    const generatePhaseFixtures = (phase) => {
         if (!match) return []
-
+        const { type } = phase
         const playersPerTeam = match.field?.players_per_team || 5
         const maxPlayers = match.max_players || (playersPerTeam * 2)
         const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
 
         const newFixtures = []
-        if (mode === 'liguilla' || mode === 'tournament') {
+        if (type === 'liguilla') {
             for (let i = 1; i <= numTeams; i++) {
                 for (let j = i + 1; j <= numTeams; j++) {
                     newFixtures.push({
@@ -301,34 +351,246 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                         team1Id: i,
                         team2Id: j,
                         status: 'pending',
-                        label: 'Fase de Grupos'
+                        label: phase.name || 'Liguilla',
+                        phaseId: phase.id
                     })
                 }
             }
             newFixtures.sort(() => Math.random() - 0.5)
-        } else if (mode === 'winner_stays') {
+        } else if (type === 'tournament') {
+            // Basic Elimination Bracket (1 vs 4, 2 vs 3, etc.)
+            // If it's the first phase, we use team numbers. If not, we might use placeholders.
+            // For now, let's assume it's an initial bracket if it's the only phase or first.
+            const rounds = Math.ceil(Math.log2(numTeams))
+            const totalSlots = Math.pow(2, rounds)
+
+            // Simple 1st round generation
+            for (let i = 0; i < totalSlots / 2; i++) {
+                const t1 = i + 1
+                const t2 = totalSlots - i
+
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: t1 <= numTeams ? t1 : null,
+                    team2Id: t2 <= numTeams ? t2 : null,
+                    status: 'pending',
+                    label: totalSlots === 4 ? 'Semifinal' : totalSlots === 2 ? 'Final' : `Ronda 1`,
+                    phaseId: phase.id,
+                    placeholder1: t1 > numTeams ? 'BYE' : null,
+                    placeholder2: t2 > numTeams ? 'BYE' : null
+                })
+            }
+        } else if (type === 'winner_stays') {
+            // M1: T1 vs T2
             newFixtures.push({
-                id: Math.random().toString(36).substr(2, 9),
+                id: `ws-1-${Math.random().toString(36).substr(2, 5)}`,
                 team1Id: 1,
                 team2Id: 2,
                 status: 'pending',
-                label: 'Partido Inaugural'
+                label: 'Reto 1',
+                phaseId: phase.id
             })
+
+            // Placeholder matches for the rest of the teams
+            for (let i = 3; i <= numTeams; i++) {
+                newFixtures.push({
+                    id: `ws-${i - 1}-${Math.random().toString(36).substr(2, 5)}`,
+                    team1Id: null, // Winner stays
+                    team2Id: i,
+                    status: 'pending',
+                    label: `Reto ${i - 1}`,
+                    placeholder1: `Ganador Reto ${i - 2}`,
+                    phaseId: phase.id
+                })
+            }
+        } else if (type === 'tournament_random') {
+            // Shuffle team IDs for random pairings
+            const teamIds = Array.from({ length: numTeams }, (_, i) => i + 1)
+            for (let i = teamIds.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [teamIds[i], teamIds[j]] = [teamIds[j], teamIds[i]]
+            }
+
+            // Create matches from shuffled pairs
+            for (let i = 0; i < teamIds.length; i += 2) {
+                if (teamIds[i + 1]) {
+                    newFixtures.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        team1Id: teamIds[i],
+                        team2Id: teamIds[i + 1],
+                        status: 'pending',
+                        label: numTeams <= 4 ? 'Semifinal' : `Ronda 1`,
+                        phaseId: phase.id
+                    })
+                }
+            }
+        } else if (type === 'tournament_standings') {
+            // Generate placeholders based on standings positions
+            // For 4 teams: 1º vs 4º, 2º vs 3º
+            // For 2 teams: 1º vs 2º (final)
+            if (numTeams >= 4) {
+                // Semifinals: 1v4, 2v3
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Semifinal 1',
+                    placeholder1: '1º de Liguilla',
+                    placeholder2: '4º de Liguilla',
+                    phaseId: phase.id
+                })
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Semifinal 2',
+                    placeholder1: '2º de Liguilla',
+                    placeholder2: '3º de Liguilla',
+                    phaseId: phase.id
+                })
+                // Final placeholder
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Gran Final',
+                    placeholder1: 'Ganador SF1',
+                    placeholder2: 'Ganador SF2',
+                    phaseId: phase.id
+                })
+            } else {
+                // Just a final: 1º vs 2º
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Gran Final',
+                    placeholder1: '1º de Liguilla',
+                    placeholder2: '2º de Liguilla',
+                    phaseId: phase.id
+                })
+            }
+        } else if (type === 'tournament_manual') {
+            // No auto-generation. User adds fixtures manually.
         }
         return newFixtures
     }
 
-    const generateFixtures = async (mode) => {
-        const newFixtures = generateFixturesHelper(mode)
+    const addPhase = async (type, name) => {
+        if (type === 'semis' || type === 'finals') {
+            return addKnockoutPhase(type)
+        }
+        setActionLoading('phase')
+        try {
+            const newPhase = {
+                id: Math.random().toString(36).substr(2, 9),
+                type,
+                name: name || (type === 'liguilla' ? 'Liguilla' : type === 'tournament' ? 'Fase de Grupos' : type === 'winner_stays' ? 'Ganador Queda' : 'Fase Libre'),
+                status: 'pending',
+                created_at: new Date().toISOString()
+            }
+
+            const currentPhases = Array.isArray(match.phases) ? match.phases : []
+            const nextPhases = [...currentPhases, newPhase]
+
+            const { error } = await supabase
+                .from('matches')
+                .update({ phases: nextPhases })
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({ ...prev, phases: nextPhases }))
+            showMsg('success', 'Fase añadida')
+        } catch (error) {
+            showMsg('error', 'Error al añadir fase')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const removePhase = async (phaseId) => {
+        setActionLoading('phase')
+        try {
+            const nextPhases = match.phases.filter(p => p.id !== phaseId)
+            const nextFixtures = (match.fixtures || []).filter(f => f.phaseId !== phaseId)
+
+            const { error } = await supabase
+                .from('matches')
+                .update({ phases: nextPhases, fixtures: nextFixtures })
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({ ...prev, phases: nextPhases, fixtures: nextFixtures }))
+            showMsg('success', 'Fase eliminada')
+        } catch (error) {
+            showMsg('error', 'Error al eliminar fase')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const generateFixtures = async (phaseId) => {
+        setActionLoading('fixtures')
+        const phase = match.phases.find(p => p.id === phaseId)
+        if (!phase) return
+
+        const newFixtures = generatePhaseFixtures(phase)
+        const updatedPhases = match.phases.map(p =>
+            p.id === phaseId ? { ...p, status: 'in_progress' } : p
+        )
+
         try {
             const { error } = await supabase
                 .from('matches')
-                .update({ fixtures: newFixtures })
+                .update({
+                    fixtures: [...(match.fixtures || []), ...newFixtures],
+                    phases: updatedPhases
+                })
                 .eq('id', matchId)
+
             if (error) throw error
-            setMatch(prev => ({ ...prev, fixtures: newFixtures }))
+            setMatch(prev => ({
+                ...prev,
+                fixtures: [...(prev.fixtures || []), ...newFixtures],
+                phases: updatedPhases
+            }))
+            showMsg('success', 'Encuentros generados')
         } catch (error) {
             showMsg('error', 'Error generando encuentros')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const addManualFixture = async (phaseId, team1Id, team2Id, label = 'Partido') => {
+        const newFixture = {
+            id: Math.random().toString(36).substr(2, 9),
+            team1Id: team1Id || null,
+            team2Id: team2Id || null,
+            status: 'pending',
+            label,
+            phaseId
+        }
+
+        setActionLoading('fixtures')
+        try {
+            const nextFixtures = [...(match.fixtures || []), newFixture]
+            const { error } = await supabase
+                .from('matches')
+                .update({ fixtures: nextFixtures })
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({ ...prev, fixtures: nextFixtures }))
+            showMsg('success', 'Encuentro añadido')
+        } catch (error) {
+            showMsg('error', 'Error al añadir encuentro')
+        } finally {
+            setActionLoading(null)
         }
     }
 
@@ -345,49 +607,266 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
-    const addFinals = async () => {
-        if (!match || !games.length) return
+    const getStandings = useCallback(() => {
+        if (!match || !games.length) return []
 
-        // Simplified standings calculation
         const stats = {}
         const playersPerTeam = match.field?.players_per_team || 5
         const maxPlayers = match.max_players || (playersPerTeam * 2)
         const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
 
-        for (let i = 1; i <= numTeams; i++) stats[i] = { id: i, pts: 0, gd: 0 }
-        games.forEach(g => {
+        // Initialize all teams
+        for (let i = 1; i <= numTeams; i++) {
+            stats[i] = { teamId: i, points: 0, goalDiff: 0, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }
+        }
+
+        // Get liguilla phase IDs (only count games from round-robin phases)
+        const liguillaPhaseIds = (match.phases || [])
+            .filter(p => p.type === 'liguilla')
+            .map(p => p.id)
+
+        // Get liguilla fixture IDs for filtering
+        const liguillaFixtureIds = new Set(
+            (match.fixtures || [])
+                .filter(f => liguillaPhaseIds.includes(f.phaseId))
+                .map(f => f.id)
+        )
+
+        // Only count games that are linked to liguilla fixtures
+        // Or games without a fixture_id (legacy games)
+        const liguillaGames = games.filter(g =>
+            !g.fixture_id || liguillaFixtureIds.has(g.fixture_id)
+        )
+
+        // Accumulate stats from liguilla games only
+        liguillaGames.forEach(g => {
             const t1 = g.team1_id, t2 = g.team2_id
-            if (g.score1 > g.score2) stats[t1].pts += 3
-            else if (g.score1 < g.score2) stats[t2].pts += 3
-            else { stats[t1].pts += 1; stats[t2].pts += 1 }
-            stats[t1].gd += (g.score1 - g.score2)
-            stats[t2].gd += (g.score2 - g.score1)
+            if (!stats[t1] || !stats[t2]) return
+
+            stats[t1].played++
+            stats[t2].played++
+            stats[t1].goalsFor += g.score1
+            stats[t1].goalsAgainst += g.score2
+            stats[t2].goalsFor += g.score2
+            stats[t2].goalsAgainst += g.score1
+            stats[t1].goalDiff += (g.score1 - g.score2)
+            stats[t2].goalDiff += (g.score2 - g.score1)
+
+            if (g.score1 > g.score2) {
+                stats[t1].points += 3
+                stats[t1].wins++
+                stats[t2].losses++
+            } else if (g.score1 < g.score2) {
+                stats[t2].points += 3
+                stats[t2].wins++
+                stats[t1].losses++
+            } else {
+                stats[t1].points += 1
+                stats[t2].points += 1
+                stats[t1].draws++
+                stats[t2].draws++
+            }
         })
 
-        const sorted = Object.values(stats).sort((a, b) => b.pts - a.pts || b.gd - a.gd)
+        return Object.values(stats).sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff)
+    }, [match, games])
 
-        const finalMatches = []
-        if (numTeams >= 4) {
-            finalMatches.push({
-                id: 'final-3rd',
-                team1Id: sorted[2].id,
-                team2Id: sorted[3].id,
+    const addKnockoutPhase = async (type) => {
+        const sorted = getStandings()
+        if (sorted.length < 2) return
+
+        const phaseId = Math.random().toString(36).substr(2, 9)
+        const knockoutMatches = []
+
+        if (type === 'semis' && sorted.length >= 4) {
+            knockoutMatches.push({
+                id: `semi-1-${Date.now()}`,
+                team1Id: sorted[0].teamId, // 1st
+                team2Id: sorted[3].teamId, // 4th
                 status: 'pending',
-                label: '3er Puesto 🥉'
+                label: 'Semifinal 1',
+                phaseId
+            })
+            knockoutMatches.push({
+                id: `semi-2-${Date.now()}`,
+                team1Id: sorted[1].teamId, // 2nd
+                team2Id: sorted[2].teamId, // 3rd
+                status: 'pending',
+                label: 'Semifinal 2',
+                phaseId
+            })
+        } else {
+            // Default to Finals (can be called directly or after semis)
+            if (sorted.length >= 4) {
+                knockoutMatches.push({
+                    id: `final-3rd-${Date.now()}`,
+                    team1Id: sorted[2].teamId,
+                    team2Id: sorted[3].teamId,
+                    status: 'pending',
+                    label: '3er Puesto 🥉',
+                    phaseId
+                })
+            }
+            knockoutMatches.push({
+                id: `final-gold-${Date.now()}`,
+                team1Id: sorted[0].teamId,
+                team2Id: sorted[1].teamId,
+                status: 'pending',
+                label: '¡Gran Final! 🏆',
+                phaseId
             })
         }
-        finalMatches.push({
-            id: 'final-gold',
-            team1Id: sorted[0].id,
-            team2Id: sorted[1].id,
-            status: 'pending',
-            label: '¡Gran Final! 🏆'
+
+        const newPhase = {
+            id: phaseId,
+            type: 'knockout',
+            name: type === 'semis' ? 'Semifinales' : 'Gran Final 🏆',
+            status: 'in_progress',
+            created_at: new Date().toISOString()
+        }
+
+        const currentPhases = Array.isArray(match.phases) ? match.phases : []
+        const nextPhases = [...currentPhases, newPhase]
+        const nextFixtures = [...(match.fixtures || []), ...knockoutMatches]
+
+        try {
+            setActionLoading('phase')
+            const { error } = await supabase
+                .from('matches')
+                .update({
+                    phases: nextPhases,
+                    fixtures: nextFixtures
+                })
+                .eq('id', matchId)
+
+            if (error) throw error
+            setMatch(prev => ({
+                ...prev,
+                phases: nextPhases,
+                fixtures: nextFixtures
+            }))
+            showMsg('success', type === 'semis' ? 'Semifinales generadas' : 'Finales generadas')
+        } catch (error) {
+            showMsg('error', 'Error al generar fase')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Resolve placeholders in elimination fixtures based on standings
+    // Also resolves Ganador Queda placeholders based on game results
+    const resolveEliminationPlaceholders = useCallback(async () => {
+        if (!match?.fixtures?.length || !match?.phases?.length) return
+
+        let hasChanges = false
+        let updatedFixtures = [...match.fixtures]
+
+        // Check if liguilla phase is complete
+        const liguillaPhases = match.phases.filter(p => p.type === 'liguilla')
+        let liguillaComplete = false
+
+        if (liguillaPhases.length > 0) {
+            const liguillaFixtures = match.fixtures.filter(f =>
+                liguillaPhases.some(p => p.id === f.phaseId)
+            )
+            const completedLiguillaFixtures = liguillaFixtures.filter(f => f.status === 'completed')
+            liguillaComplete = liguillaFixtures.length > 0 &&
+                completedLiguillaFixtures.length === liguillaFixtures.length
+        }
+
+        // Only build standings map if liguilla is complete
+        const positionMap = {}
+        if (liguillaComplete) {
+            const standings = getStandings()
+            if (standings[0]) positionMap['1º de Liguilla'] = standings[0].teamId
+            if (standings[1]) positionMap['2º de Liguilla'] = standings[1].teamId
+            if (standings[2]) positionMap['3º de Liguilla'] = standings[2].teamId
+            if (standings[3]) positionMap['4º de Liguilla'] = standings[3].teamId
+        }
+
+        // Build a map of fixture IDs to their winners (from completed fixtures)
+        const fixtureWinners = {}
+        match.fixtures.forEach(f => {
+            if (f.status === 'completed' && f.score1 !== undefined && f.score2 !== undefined) {
+                if (f.score1 > f.score2) {
+                    fixtureWinners[f.id] = f.team1Id
+                } else if (f.score2 > f.score1) {
+                    fixtureWinners[f.id] = f.team2Id
+                }
+            }
         })
 
-        const nextFixtures = [...(match.fixtures || []), ...finalMatches]
-        await updateFixtures(nextFixtures)
-        showMsg('success', 'Finales generadas')
-    }
+        updatedFixtures = updatedFixtures.map((f) => {
+            const updated = { ...f }
+
+            // Resolve position placeholders (only if liguilla is complete)
+            if (liguillaComplete) {
+                if (f.placeholder1 && positionMap[f.placeholder1] && !f.team1Id) {
+                    updated.team1Id = positionMap[f.placeholder1]
+                    hasChanges = true
+                }
+                if (f.placeholder2 && positionMap[f.placeholder2] && !f.team2Id) {
+                    updated.team2Id = positionMap[f.placeholder2]
+                    hasChanges = true
+                }
+            }
+
+            // Resolve Ganador Queda placeholders (winner of previous match)
+            if (f.placeholder1 && f.placeholder1.startsWith('Ganador Reto') && !f.team1Id) {
+                const retoMatch = f.placeholder1.match(/Ganador Reto (\d+)/)
+                if (retoMatch) {
+                    const prevRetoNum = parseInt(retoMatch[1])
+                    const prevFixture = match.fixtures.find(pf =>
+                        pf.label === `Reto ${prevRetoNum}` && pf.phaseId === f.phaseId
+                    )
+                    if (prevFixture && fixtureWinners[prevFixture.id]) {
+                        updated.team1Id = fixtureWinners[prevFixture.id]
+                        hasChanges = true
+                    }
+                }
+            }
+
+            // Resolve semifinal winner placeholders for finals
+            if (f.placeholder1 === 'Ganador SF1' && !f.team1Id) {
+                const sf1 = match.fixtures.find(x => x.label === 'Semifinal 1' && x.phaseId === f.phaseId)
+                if (sf1 && fixtureWinners[sf1.id]) {
+                    updated.team1Id = fixtureWinners[sf1.id]
+                    hasChanges = true
+                }
+            }
+            if (f.placeholder2 === 'Ganador SF2' && !f.team2Id) {
+                const sf2 = match.fixtures.find(x => x.label === 'Semifinal 2' && x.phaseId === f.phaseId)
+                if (sf2 && fixtureWinners[sf2.id]) {
+                    updated.team2Id = fixtureWinners[sf2.id]
+                    hasChanges = true
+                }
+            }
+
+            return updated
+        })
+
+        if (hasChanges) {
+            try {
+                const { error } = await supabase
+                    .from('matches')
+                    .update({ fixtures: updatedFixtures })
+                    .eq('id', matchId)
+
+                if (error) throw error
+                setMatch(prev => ({ ...prev, fixtures: updatedFixtures }))
+            } catch (error) {
+                console.error('Error resolving placeholders:', error)
+            }
+        }
+    }, [match, matchId, getStandings])
+
+    // Auto-resolve placeholders whenever fixture statuses change
+    const completedFixtureCount = match?.fixtures?.filter(f => f.status === 'completed').length || 0
+    useEffect(() => {
+        if (completedFixtureCount > 0 && match?.fixtures?.length > 0) {
+            resolveEliminationPlaceholders()
+        }
+    }, [completedFixtureCount])
 
     const updateMatchCapacity = async (newMaxPlayers, newCost, newTeamConfigs = null) => {
         setActionLoading('capacity')
@@ -574,7 +1053,13 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         updateMatchMode,
         generateFixtures,
         updateFixtures,
-        addFinals,
+        addPhase,
+        removePhase,
+        addManualFixture,
+        addFinals: addKnockoutPhase,
+        addKnockoutPhase,
+        getStandings,
+        resolveEliminationPlaceholders,
         updateMatchCapacity,
         cancelMatch,
         updateMatch,
