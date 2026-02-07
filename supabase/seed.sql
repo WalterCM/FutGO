@@ -112,44 +112,48 @@ END $$;
 -- ====================
 
 -- Case 1: 5v5, 4 teams (20 players), complete - everyone paid & arrived
+-- 20 players x 10 soles = 200 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000001', 
-    '00000000-0000-0000-0000-f00000000001',  -- 5v5 field, 100 soles
-    CURRENT_DATE + 1, '20:00:00', 'open', 100.0, 
+    '00000000-0000-0000-0000-f00000000001',  -- 5v5 field
+    CURRENT_DATE + 1, '20:00:00', 'open', 200.0, 
     '00000000-0000-0000-0000-100000000001', 
     20,  -- 4 teams x 5 players = 20
     'liguilla'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Case 2: 5v5, 4 teams (20 players), with no-shows - 3 didn't arrive
+-- 20 players x 10 soles = 200 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000002', 
     '00000000-0000-0000-0000-f00000000005',  -- Another 5v5 field
-    CURRENT_DATE + 2, '18:00:00', 'open', 100.0, 
+    CURRENT_DATE + 2, '18:00:00', 'open', 200.0, 
     '00000000-0000-0000-0000-100000000001', 
     20,  -- 4 teams but 3 no-shows
     'tournament'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Case 3: 5v5, 3 teams (15 players)
+-- 15 players x 10 soles = 150 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000003', 
     '00000000-0000-0000-0000-f00000000001',
-    CURRENT_DATE + 3, '19:00:00', 'open', 100.0, 
+    CURRENT_DATE + 3, '19:00:00', 'open', 150.0, 
     '00000000-0000-0000-0000-300000000001', 
     15,  -- 3 teams x 5 players = 15
     'winner_stays'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Case 4: 5v5, 5 teams (25 players) - larger tournament
+-- 25 players x 10 soles = 250 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000004', 
     '00000000-0000-0000-0000-f00000000005',
-    CURRENT_DATE + 4, '17:00:00', 'open', 100.0, 
+    CURRENT_DATE + 4, '17:00:00', 'open', 250.0, 
     '00000000-0000-0000-0000-100000000001', 
     25,  -- 5 teams x 5 players = 25
     'liguilla'
@@ -167,11 +171,12 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Case 6: 6v6, 3 teams (18 players) - tournament
+-- 18 players x 10 soles = 180 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000006', 
     '00000000-0000-0000-0000-f00000000006',
-    CURRENT_DATE + 6, '19:00:00', 'open', 120.0, 
+    CURRENT_DATE + 6, '19:00:00', 'open', 180.0, 
     '00000000-0000-0000-0000-300000000001', 
     18,  -- 3 teams x 6 players = 18
     'liguilla'
@@ -189,11 +194,12 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Case 8: 7v7, 4 teams (28 players) - big tournament
+-- 28 players x 10 soles = 280 soles target
 INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
 VALUES (
     '00000000-0000-0000-0000-e00000000008', 
     '00000000-0000-0000-0000-f00000000007',
-    CURRENT_DATE + 8, '18:00:00', 'open', 140.0, 
+    CURRENT_DATE + 8, '18:00:00', 'open', 280.0, 
     '00000000-0000-0000-0000-100000000001', 
     28,  -- 4 teams x 7 players = 28
     'tournament'

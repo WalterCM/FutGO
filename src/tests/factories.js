@@ -62,6 +62,7 @@ export function createMockEnrollment(overrides = {}) {
         paid: false,
         paid_at: null,
         is_present: false,
+        is_excluded: false,
         is_waitlist: false,
         team_assignment: null,
         created_at: new Date().toISOString(),

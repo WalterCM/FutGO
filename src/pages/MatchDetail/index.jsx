@@ -35,6 +35,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         statusMsg,
         joinMatch,
         leaveMatch,
+        removePlayer,
+        restorePlayer,
         togglePaid,
         togglePresent,
         movePlayer,
@@ -305,6 +307,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         onLeave={handleLeave}
                         onTogglePaid={togglePaid}
                         onTogglePresent={togglePresent}
+                        onRemovePlayer={(enrol) => removePlayer(enrol.id)}
+                        onRestorePlayer={(enrol) => restorePlayer(enrol.id)}
                         onExpand={() => setExpansionData({ show: true, mode: 'expand', newCost: (match.fixed_cost || 120) + suggestedQuota * playersPerTeam })}
                         onShrink={() => setExpansionData({ show: true, mode: 'shrink', newCost: (match.fixed_cost || 120) - suggestedQuota * playersPerTeam })}
                         onCancel={handleCancelMatchRequest}

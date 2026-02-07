@@ -3,7 +3,7 @@ import { CheckCircle, MapPin, Trophy } from 'lucide-react'
 
 const TabsNavigation = ({ activeTab, onTabChange }) => {
     const tabs = [
-        { id: 'admin', label: 'Admin', icon: CheckCircle },
+        { id: 'admin', label: 'Asistencias', icon: CheckCircle },
         { id: 'field', label: 'Equipos', icon: MapPin },
         { id: 'results', label: 'Encuentros', icon: Trophy }
     ]

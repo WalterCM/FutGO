@@ -122,6 +122,56 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
+    // Admin function to exclude a player from the match (logical removal)
+    // Used when a player cancels in advance - they are marked as excluded
+    // ONLY UNPAID players can be excluded (paid players already have their spot)
+    // This prevents re-signup and preserves the history
+    // Exclusion CAN be undone by admin using restorePlayer
+    const removePlayer = async (enrolId) => {
+        setActionLoading('remove')
+        try {
+            await Promise.all([
+                supabase
+                    .from('enrollments')
+                    .update({ is_excluded: true })
+                    .eq('id', enrolId),
+                wait(300)
+            ]).then(([res]) => {
+                if (res.error) throw res.error
+            })
+            showMsg('success', 'Jugador retirado del partido')
+            await fetchMatchDetails(true)
+        } catch (error) {
+            showMsg('error', error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    // Admin function to restore an excluded player
+    // Reverts the exclusion - player is back in the signup list
+    // Used when there's coordination with the player to re-include them
+    const restorePlayer = async (enrolId) => {
+        setActionLoading('restore')
+        try {
+            await Promise.all([
+                supabase
+                    .from('enrollments')
+                    .update({ is_excluded: false })
+                    .eq('id', enrolId),
+                wait(300)
+            ]).then(([res]) => {
+                if (res.error) throw res.error
+            })
+            showMsg('success', 'Jugador restaurado al partido')
+            await fetchMatchDetails(true)
+        } catch (error) {
+            showMsg('error', error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
     const updateEnrollment = async (enrolId, updates) => {
         try {
             const { error } = await supabase
@@ -1074,6 +1124,8 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         showMsg,
         joinMatch,
         leaveMatch,
+        removePlayer,
+        restorePlayer,
         togglePaid,
         togglePresent,
         movePlayer,
