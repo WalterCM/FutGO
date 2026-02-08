@@ -12,7 +12,8 @@ const TeamSection = ({
     onKitPicker,
     onRandomizeKit,
     selectedPlayerId,
-    onPlayerClick
+    onPlayerClick,
+    showArrivalOrder = false
 }) => {
     return (
         <div
@@ -115,13 +116,14 @@ const TeamSection = ({
                         Vacío
                     </div>
                 ) : (
-                    players.map((p) => (
+                    players.map((p, index) => (
                         <PlayerCard
                             key={p.id}
                             registration={p}
                             isSelected={selectedPlayerId === p.id}
                             isBench={teamId === 0}
                             config={config}
+                            arrivalOrder={showArrivalOrder ? index + 1 : null}
                             onClick={() => onPlayerClick(p.id, teamId)}
                             onDragStart={(e) => {
                                 e.dataTransfer.setData('enrolId', p.id)

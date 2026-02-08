@@ -7,9 +7,18 @@ const PlayerCard = ({
     onClick,
     onDragStart,
     isBench = false,
-    config = {}
+    config = {},
+    arrivalOrder = null
 }) => {
     const { player } = registration
+
+    // Format arrival order with ordinal suffix
+    const getOrdinal = (n) => {
+        if (n === 1) return '1º'
+        if (n === 2) return '2º'
+        if (n === 3) return '3º'
+        return `${n}º`
+    }
 
     return (
         <Card
@@ -34,11 +43,21 @@ const PlayerCard = ({
             <div>
                 <div style={{ fontWeight: 'bold' }}>{player?.full_name}</div>
             </div>
-            {isBench && (
-                <div style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 'bold' }}>LISTO</div>
+            {isBench && arrivalOrder && (
+                <div style={{
+                    fontSize: '0.65rem',
+                    color: 'var(--text-dim)',
+                    fontWeight: 'bold',
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '4px'
+                }}>
+                    {getOrdinal(arrivalOrder)}
+                </div>
             )}
         </Card>
     )
 }
 
 export default PlayerCard
+
