@@ -261,7 +261,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const enrolledCount = enrollments.length
     const isEnrolled = enrollments.some(e => e.player_id === profile?.id)
     const suggestedQuota = Math.ceil((match.field?.price_per_hour || 120) / (2 * playersPerTeam))
-    const canManage = profile?.is_admin || profile?.is_super_admin || match?.creator_id === profile?.id
+    const canManage = profile?.is_super_admin || match?.creator_id === profile?.id
 
     // Ensure robust teamConfigs with defaults
     const teamConfigs = {
@@ -329,7 +329,10 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         teamConfigs={teamConfigs}
                         canManage={canManage}
                         selectedPlayerId={selectedPlayerId}
-                        onPlayerClick={(id) => setSelectedPlayerId(selectedPlayerId === id ? null : id)}
+                        onPlayerClick={(id) => {
+                            if (!canManage) return
+                            setSelectedPlayerId(selectedPlayerId === id ? null : id)
+                        }}
                         onMobileMove={(teamId) => {
                             if (selectedPlayerId) {
                                 movePlayer(selectedPlayerId, teamId)

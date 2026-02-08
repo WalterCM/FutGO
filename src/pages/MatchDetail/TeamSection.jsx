@@ -17,8 +17,8 @@ const TeamSection = ({
 }) => {
     return (
         <div
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, teamId)}
+            onDragOver={canManage ? onDragOver : null}
+            onDrop={canManage ? (e) => onDrop(e, teamId) : null}
             style={{
                 minHeight: '200px',
                 padding: '1rem',
@@ -125,9 +125,9 @@ const TeamSection = ({
                             config={config}
                             arrivalOrder={showArrivalOrder ? index + 1 : null}
                             onClick={() => onPlayerClick(p.id, teamId)}
-                            onDragStart={(e) => {
+                            onDragStart={canManage ? (e) => {
                                 e.dataTransfer.setData('enrolId', p.id)
-                            }}
+                            } : null}
                         />
                     ))
                 )}
