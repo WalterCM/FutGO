@@ -62,7 +62,10 @@ const FieldTab = ({
     selectedPlayerId,
     onPlayerClick,
     onMobileMove,
-    actionLoading
+    actionLoading,
+    viewerId,
+    viewerIsSuperAdmin,
+    matchCreatorId
 }) => {
     // Confirmation modal state for shuffle
     const [showShuffleConfirm, setShowShuffleConfirm] = useState(false)
@@ -166,7 +169,12 @@ const FieldTab = ({
 
             {!hasPresent && (
                 <Card style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem', border: '2px dashed var(--border)' }} hover={false}>
-                    <p style={{ color: 'var(--text-dim)' }}>No hay nadie "Presente". Marca quién llegó en la pestaña de Asistencias.</p>
+                    <p style={{ color: 'var(--text-dim)', margin: 0 }}>
+                        {canManage
+                            ? 'No hay nadie "Presente". Marca quién llegó en la pestaña de Asistencias.'
+                            : 'Aún no han llegado jugadores. Esperando a que el organizador marque las asistencias...'
+                        }
+                    </p>
                 </Card>
             )}
 
@@ -210,6 +218,9 @@ const FieldTab = ({
                         selectedPlayerId={selectedPlayerId}
                         onPlayerClick={onPlayerClick}
                         showArrivalOrder={true}
+                        viewerId={viewerId}
+                        viewerIsSuperAdmin={viewerIsSuperAdmin}
+                        matchCreatorId={matchCreatorId}
                     />
 
                     {/* Teams Loop */}
@@ -226,6 +237,9 @@ const FieldTab = ({
                             onRandomizeKit={onRandomizeKit}
                             selectedPlayerId={selectedPlayerId}
                             onPlayerClick={onPlayerClick}
+                            viewerId={viewerId}
+                            viewerIsSuperAdmin={viewerIsSuperAdmin}
+                            matchCreatorId={matchCreatorId}
                         />
                     ))}
                 </div>

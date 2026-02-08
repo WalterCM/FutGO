@@ -137,7 +137,7 @@ function MainContent() {
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="user-info-desktop" style={{ textAlign: 'right', marginRight: '1rem' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{getDisplayName(profile)}</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{getDisplayName(profile, profile?.id, null, profile?.is_super_admin)}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_super_admin ? '(Owner)' : (profile?.is_admin && '(Admin)')}</div>
           </div>
           <button className="btn-primary" onClick={signOut} style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -159,7 +159,7 @@ function MainContent() {
             </div>
 
             <div style={{ padding: '1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{getDisplayName(profile)}</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{getDisplayName(profile, profile?.id, null, profile?.is_super_admin)}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{user?.email}</div>
             </div>
 
@@ -186,7 +186,7 @@ function MainContent() {
           <Route path="/partidos" element={<Matches profile={profile} onMatchClick={handleMatchClick} />} />
           <Route path="/canchas" element={<Fields profile={profile} />} />
           <Route path="/usuarios" element={<Users profile={profile} />} />
-          <Route path="/lideres" element={<Stats />} />
+          <Route path="/lideres" element={<Stats viewerId={profile?.id} viewerIsSuperAdmin={profile?.is_super_admin} />} />
           <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={handleBack} />} />
           <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
         </Routes>

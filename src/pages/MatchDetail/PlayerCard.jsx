@@ -9,7 +9,10 @@ const PlayerCard = ({
     onDragStart,
     isBench = false,
     config = {},
-    arrivalOrder = null
+    arrivalOrder = null,
+    viewerId,
+    viewerIsSuperAdmin,
+    matchCreatorId
 }) => {
     const { player } = registration
 
@@ -42,7 +45,7 @@ const PlayerCard = ({
             hover={!onDragStart} // Only hover if not draggable to avoid weirdness
         >
             <div>
-                <div style={{ fontWeight: 'bold' }}>{getDisplayName(player)}</div>
+                <div style={{ fontWeight: 'bold' }}>{getDisplayName(player, viewerId, matchCreatorId, viewerIsSuperAdmin)}</div>
             </div>
             {isBench && arrivalOrder && (
                 <div style={{

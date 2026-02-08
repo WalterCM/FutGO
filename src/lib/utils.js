@@ -26,12 +26,23 @@ export function getRating(elo, maxElo = 2000) {
 }
 
 /**
- * Returns the display name for a player.
- * Uses nickname if set, otherwise falls back to full_name.
- * @param {object} profile - Profile object with full_name and optional nickname
+ * Returns the display name for a player with privacy awareness.
+ * @param {object} profile - Profile object with full_name and nickname
+ * @param {string} viewerId - ID of the logged-in user
+ * @param {string} matchCreatorId - ID of the match organizer (if applicable)
+ * @param {boolean} viewerIsSuperAdmin - Whether the viewer has god-mode permissions
  * @returns {string} - The display name to show
  */
-export function getDisplayName(profile) {
+export function getDisplayName(profile, viewerId, matchCreatorId, viewerIsSuperAdmin) {
     if (!profile) return 'Jugador'
+
+    // Real name is only shared with SuperAdmins and the specific Match Organizer
+    // Even the player themselves should see their nickname in lists to reassure them of their privacy
+    const canSeeRealName = viewerIsSuperAdmin || (matchCreatorId && viewerId === matchCreatorId)
+
+    if (canSeeRealName) {
+        return profile.full_name || profile.nickname || 'Jugador'
+    }
+
     return profile.nickname || profile.full_name || 'Jugador'
 }

@@ -72,7 +72,9 @@ const AdminTab = ({
     onCancel,
     actionLoading,
     numTeams,
-    getOrdinal
+    getOrdinal,
+    viewerId,
+    viewerIsSuperAdmin
 }) => {
     // Modal state for removal confirmation
     const [removeConfirm, setRemoveConfirm] = useState({ show: false, enrol: null })
@@ -151,7 +153,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={removeConfirm.show}
                 title="Retirar Jugador"
-                message={`¿Estás seguro de retirar a ${getDisplayName(removeConfirm.enrol?.player)} (${removeConfirm.enrol?.player?.full_name}) del partido? El jugador no podrá volver a inscribirse por su cuenta, pero puedes restaurarlo manualmente.`}
+                message={`¿Estás seguro de retirar a ${getDisplayName(removeConfirm.enrol?.player, viewerId, match?.creator_id, viewerIsSuperAdmin)} del partido?`}
                 confirmText="Sí, Retirar"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmRemove}
@@ -163,7 +165,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={unpaidConfirm.show}
                 title="Quitar Pago"
-                message={`¿Estás seguro de quitar el pago de ${getDisplayName(unpaidConfirm.enrol?.player)} (${unpaidConfirm.enrol?.player?.full_name})? El jugador perderá su cupo de titular.`}
+                message={`¿Estás seguro de quitar el pago de ${getDisplayName(unpaidConfirm.enrol?.player, viewerId, match?.creator_id, viewerIsSuperAdmin)}? El jugador perderá su cupo de titular.`}
                 confirmText="Sí, Quitar Pago"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmUnpaid}
@@ -175,7 +177,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={absentConfirm.show}
                 title="Marcar Ausente"
-                message={`¿Estás seguro de marcar a ${getDisplayName(absentConfirm.enrol?.player)} (${absentConfirm.enrol?.player?.full_name}) como ausente?`}
+                message={`¿Estás seguro de marcar a ${getDisplayName(absentConfirm.enrol?.player, viewerId, match?.creator_id, viewerIsSuperAdmin)} como ausente?`}
                 confirmText="Sí, Marcar Ausente"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmAbsent}
@@ -272,8 +274,8 @@ const AdminTab = ({
                                             textDecoration: enrol.is_excluded || isNoShow ? 'line-through' : 'none'
                                         }}>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span>{getDisplayName(enrol.player)}</span>
-                                                {enrol.player?.nickname && (
+                                                <span>{getDisplayName(enrol.player, viewerId, match?.creator_id, viewerIsSuperAdmin)}</span>
+                                                {(viewerIsSuperAdmin || viewerId === match?.creator_id) && enrol.player?.nickname && (
                                                     <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>
                                                         ({enrol.player.full_name})
                                                     </span>

@@ -1,336 +1,169 @@
--- Semilla de datos (Fixtures) para FutGO v3.0 (Extended Test Cases)
--- Includes: Multiple field types, team sizes, payment/attendance scenarios
+-- Semilla de datos (Fixtures) para FutGO v3.0 (Fixed Lifecycle)
+-- Matches are designed to show a clear progression from Stage 1 to Stage 10
 
 -- ====================
 -- 1. CAMPOS (Fields)
 -- ====================
--- Different field sizes with 10 soles per player pricing
-INSERT INTO public.fields (id, name, players_per_team, price_per_hour, address, google_maps_url, phone)
+INSERT INTO public.fields (id, name, players_per_team, price_per_hour, address)
 VALUES 
-    -- 5v5 fields (10 players * 10 soles = 100 soles)
-    ('00000000-0000-0000-0000-f00000000001', 'Campo 5v5 - La Cantera', 5, 100.00, 'Av. Brasil 123, Magdalena', 'https://www.google.com/maps/search/?api=1&query=La+Cantera+Magdalena', '987654321'),
-    ('00000000-0000-0000-0000-f00000000005', 'Grass Sintético Pro 5v5', 5, 100.00, 'Jirón Tacna 456, Cercado', 'https://www.google.com/maps/search/?api=1&query=Grass+Sintetico+Pro', '911222333'),
-    
-    -- 6v6 fields (12 players * 10 soles = 120 soles)
-    ('00000000-0000-0000-0000-f00000000003', 'Complejo Deportivo 6v6', 6, 120.00, 'Av. Miraflores 789, San Isidro', 'https://www.google.com/maps/search/?api=1&query=Complejo+Deportivo+6v6', '945678123'),
-    ('00000000-0000-0000-0000-f00000000006', 'Estadio Municipal 6v6', 6, 120.00, 'Av. Arequipa 1234, Lince', 'https://www.google.com/maps/search/?api=1&query=Estadio+Municipal', '922333444'),
-    
-    -- 7v7 fields (14 players * 10 soles = 140 soles)
-    ('00000000-0000-0000-0000-f00000000002', 'La Bombonera 7v7', 7, 140.00, 'Calle Las Flores 456, Surco', 'https://www.google.com/maps/search/?api=1&query=La+Bombonera+7v7', '912345678'),
-    ('00000000-0000-0000-0000-f00000000007', 'Arena Fútbol 7', 7, 140.00, 'Av. La Marina 567, San Miguel', 'https://www.google.com/maps/search/?api=1&query=Arena+Futbol+7', '933444555'),
-    
-    -- 8v8 field (16 players * 10 soles = 160 soles)
-    ('00000000-0000-0000-0000-f00000000004', 'Estadio FutGO XL 8v8', 8, 160.00, 'Jr. Lima 890, Cercado de Lima', 'https://www.google.com/maps/search/?api=1&query=Estadio+FutGO+XL', '999888777')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, players_per_team = EXCLUDED.players_per_team, price_per_hour = EXCLUDED.price_per_hour;
+    ('00000000-0000-0000-0000-f00000000001', 'Cancha 5v5 - La Cantera', 5, 100.00, 'Av. Brasil 123'),
+    ('00000000-0000-0000-0000-f00000000002', 'Cancha 6v6 - Pro', 6, 120.00, 'Jirón Tacna 456'),
+    ('00000000-0000-0000-0000-f00000000003', 'Estadio 7v7 - FutGO', 7, 140.00, 'Av. Arequipa 789')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- ====================
--- 2. AUTH USERS
+-- 2. AUTH & PROFILES
 -- ====================
-INSERT INTO auth.users (
-    instance_id, id, aud, role, email, encrypted_password, 
-    email_confirmed_at, recovery_token, confirmation_token, 
-    email_change_token_new, email_change, raw_app_meta_data, 
-    raw_user_meta_data, is_super_admin, created_at, updated_at, 
-    phone_change, phone_change_token, 
-    email_change_token_current, email_change_confirm_status, 
-    is_sso_user, is_anonymous
-)
+INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, aud, role)
 VALUES
-  (
-    '00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-100000000001', 'authenticated', 'authenticated', 'walter@futgo.com', extensions.crypt('tester123', extensions.gen_salt('bf')), now(),
-    '', '', '', '', '{"provider": "email", "providers": ["email"]}', 
-    format('{"sub": "%s", "email": "%s", "full_name": "Walter Admin", "email_verified": true, "phone_verified": false}', '00000000-0000-0000-0000-100000000001', 'walter@futgo.com')::jsonb,
-    false, now(), now(), '', '', '', 0, false, false
-  ),
-  (
-    '00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-200000000001', 'authenticated', 'authenticated', 'tester@futgo.com', extensions.crypt('tester123', extensions.gen_salt('bf')), now(),
-    '', '', '', '', '{"provider": "email", "providers": ["email"]}', 
-    format('{"sub": "%s", "email": "%s", "full_name": "Tester", "email_verified": true, "phone_verified": false}', '00000000-0000-0000-0000-200000000001', 'tester@futgo.com')::jsonb,
-    false, now(), now(), '', '', '', 0, false, false
-  ),
-  (
-    '00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-300000000001', 'authenticated', 'authenticated', 'admin@futgo.com', extensions.crypt('tester123', extensions.gen_salt('bf')), now(),
-    '', '', '', '', '{"provider": "email", "providers": ["email"]}', 
-    format('{"sub": "%s", "email": "%s", "full_name": "Admin", "email_verified": true, "phone_verified": false}', '00000000-0000-0000-0000-300000000001', 'admin@futgo.com')::jsonb,
-    false, now(), now(), '', '', '', 0, false, false
-  )
+  ('00000000-0000-0000-0000-100000000001', 'walter@futgo.com', extensions.crypt('tester123', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Walter Admin"}', 'authenticated', 'authenticated')
 ON CONFLICT (id) DO NOTHING;
 
--- Auth identities
-INSERT INTO auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at, provider_id)
-VALUES
-  (gen_random_uuid(), '00000000-0000-0000-0000-100000000001', format('{"sub": "%s", "email": "%s", "email_verified": true}', '00000000-0000-0000-0000-100000000001', 'walter@futgo.com')::jsonb, 'email', now(), now(), now(), '00000000-0000-0000-0000-100000000001'),
-  (gen_random_uuid(), '00000000-0000-0000-0000-200000000001', format('{"sub": "%s", "email": "%s", "email_verified": true}', '00000000-0000-0000-0000-200000000001', 'tester@futgo.com')::jsonb, 'email', now(), now(), now(), '00000000-0000-0000-0000-200000000001'),
-  (gen_random_uuid(), '00000000-0000-0000-0000-300000000001', format('{"sub": "%s", "email": "%s", "email_verified": true}', '00000000-0000-0000-0000-300000000001', 'admin@futgo.com')::jsonb, 'email', now(), now(), now(), '00000000-0000-0000-0000-300000000001')
-ON CONFLICT (provider, provider_id) DO NOTHING;
-
--- ====================
--- 3. PROFILES
--- ====================
--- Admin users
 INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin)
-VALUES 
-    ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true),
-    ('00000000-0000-0000-0000-200000000001', 'Tester', 1200, false, false),
-    ('00000000-0000-0000-0000-300000000001', 'Admin', 1350, true, false)
-ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, is_admin = EXCLUDED.is_admin, is_super_admin = EXCLUDED.is_super_admin;
+VALUES ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true)
+ON CONFLICT (id) DO UPDATE SET is_super_admin = true;
 
--- Pool of 50 Star Players (enough for all test cases)
+-- Pool of 100 Players to avoid offset issues
 DO $$
-DECLARE
-    names text[] := ARRAY[
-        -- Peruvian Stars
-        'Paolo Guerrero', 'Gianluca Lapadula', 'André Carrillo', 'Luis Advíncula', 'Renato Tapia',
-        'Piero Quispe', 'Joao Grimaldo', 'Bryan Reyna', 'Yoshimar Yotún', 'Edison Flores',
-        'Andy Polo', 'Alex Valera', 'Hernán Barcos', 'Jefferson Farfán', 'Claudio Pizarro',
-        'Pedro Gallese', 'Alexander Callens', 'Carlos Zambrano', 'Miguel Trauco', 'Wilder Cartagena',
-        -- World Stars
-        'Lionel Messi', 'Cristiano Ronaldo', 'Kylian Mbappé', 'Erling Haaland', 'Jude Bellingham', 
-        'Vinícius Júnior', 'Kevin De Bruyne', 'Mohamed Salah', 'Robert Lewandowski', 'Neymar Jr', 
-        'Harry Kane', 'Luka Modric', 'Antoine Griezmann', 'Bukayo Saka', 'Pedri', 
-        'Gavi', 'Rodri', 'Lautaro Martínez', 'Paulo Dybala', 'Julián Álvarez',
-        -- More players
-        'Sergio Ramos', 'Virgil van Dijk', 'Trent Alexander-Arnold', 'João Cancelo', 'Alphonso Davies',
-        'Joshua Kimmich', 'Toni Kroos', 'Casemiro', 'Bruno Fernandes', 'Phil Foden',
-        'Marcus Rashford', 'Jamal Musiala', 'Florian Wirtz', 'Cole Palmer', 'Alejandro Garnacho'
-    ];
+DECLARE names text[] := ARRAY['Lionel Messi','Cristiano Ronaldo','Kylian Mbappe','Erling Haaland','Jude Bellingham','Vinicius Jr','Kevin De Bruyne','Mohamed Salah','Robert Lewandowski','Neymar Jr','Harry Kane','Luka Modric','Gianluca Lapadula','Paolo Guerrero','Luis Advíncula','Renato Tapia','Pedro Gallese','Yoshimar Yotún','Edison Flores','André Carrillo','Carlos Zambrano','Miguel Trauco','Piero Quispe','Andy Polo','Alex Valera','Hernán Barcos','Jefferson Farfán','Claudio Pizarro','Alexander Callens','Joao Grimaldo','Bryan Reyna'];
+DECLARE nicknames text[] := ARRAY['La Pulga','El Bicho','Donatello','Androide','Belligoat','Vini','KDB','The King',NULL,'Ney',NULL,NULL,'Lapa','Depredador','Rayo','Capitán',NULL,NULL,'Orejas','Culebra','Kaiser',NULL,NULL,NULL,NULL,'Pirata','Foquita','Bombardero',NULL,NULL,NULL];
 BEGIN
     FOR i IN 1..cardinality(names) LOOP
-        INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin)
-        VALUES (
-            gen_random_uuid(),
-            names[i],
-            1000 + (random() * 800)::int,
-            false,
-            false
-        ) ON CONFLICT (id) DO NOTHING;
+        INSERT INTO public.profiles (id, full_name, nickname, elo_rating)
+        VALUES (gen_random_uuid(), names[i], nicknames[i], 1000 + (random()*800)::int) ON CONFLICT DO NOTHING;
     END LOOP;
 END $$;
 
 -- ====================
--- 4. MATCHES (Match Days)
+-- 3. MATCHES (Stages 1-10)
+-- Dates are set so they appear in order (Stages in future -> Stages in past)
 -- ====================
 
--- Case 1: 5v5, 4 teams (20 players), complete - everyone paid & arrived
--- 20 players x 10 soles = 200 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000001', 
-    '00000000-0000-0000-0000-f00000000001',  -- 5v5 field
-    CURRENT_DATE + 1, '20:00:00', 'open', 200.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    20,  -- 4 teams x 5 players = 20
-    'liguilla'
-) ON CONFLICT (id) DO NOTHING;
+-- #1: [EMPTY] 5v5 - Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players)
+VALUES ('e0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE, '20:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10);
 
--- Case 2: 5v5, 4 teams (20 players), with no-shows - 3 didn't arrive
--- 20 players x 10 soles = 200 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000002', 
-    '00000000-0000-0000-0000-f00000000005',  -- Another 5v5 field
-    CURRENT_DATE + 2, '18:00:00', 'open', 200.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    20,  -- 4 teams but 3 no-shows
-    'tournament'
-) ON CONFLICT (id) DO NOTHING;
+-- #2: [PARTIAL] 5v5 (6/10) - Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players)
+VALUES ('e0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 1, '21:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10);
 
--- Case 3: 5v5, 3 teams (15 players)
--- 15 players x 10 soles = 150 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000003', 
-    '00000000-0000-0000-0000-f00000000001',
-    CURRENT_DATE + 3, '19:00:00', 'open', 150.0, 
-    '00000000-0000-0000-0000-300000000001', 
-    15,  -- 3 teams x 5 players = 15
-    'winner_stays'
-) ON CONFLICT (id) DO NOTHING;
+-- #3: [FULL - NO TEAMS] 5v5 (10/10) - Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players)
+VALUES ('e0000003-0000-0000-0000-000000000003', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 2, '19:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10);
 
--- Case 4: 5v5, 5 teams (25 players) - larger tournament
--- 25 players x 10 soles = 250 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000004', 
-    '00000000-0000-0000-0000-f00000000005',
-    CURRENT_DATE + 4, '17:00:00', 'open', 250.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    25,  -- 5 teams x 5 players = 25
-    'liguilla'
-) ON CONFLICT (id) DO NOTHING;
+-- #4: [TEAM CONFIGS - 3 TEAMS formed] 6v6 - Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players)
+VALUES ('e0000004-0000-0000-0000-000000000004', '00000000-0000-0000-0000-f00000000002', CURRENT_DATE + 3, '18:00:00', 'open', '00000000-0000-0000-0000-100000000001', 18);
 
--- Case 5: 6v6, 2 teams (12 players) - simple match
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000005', 
-    '00000000-0000-0000-0000-f00000000003',  -- 6v6 field, 120 soles
-    CURRENT_DATE + 5, '20:00:00', 'open', 120.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    12,  -- 2 teams x 6 players = 12
-    'free'
-) ON CONFLICT (id) DO NOTHING;
+-- #5: [PHASE CREATED - No Fixtures] 6v6 - Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases)
+VALUES ('e0000005-0000-0000-0000-000000000005', '00000000-0000-0000-0000-f00000000002', CURRENT_DATE + 4, '17:00:00', 'open', '00000000-0000-0000-0000-100000000001', 12,
+'[{"id":"p5","name":"Liguilla Prueba","type":"liguilla"}]'::jsonb);
 
--- Case 6: 6v6, 3 teams (18 players) - tournament
--- 18 players x 10 soles = 180 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000006', 
-    '00000000-0000-0000-0000-f00000000006',
-    CURRENT_DATE + 6, '19:00:00', 'open', 180.0, 
-    '00000000-0000-0000-0000-300000000001', 
-    18,  -- 3 teams x 6 players = 18
-    'liguilla'
-) ON CONFLICT (id) DO NOTHING;
+-- #6: [FIXTURES READY - All Pending] 5v5 - Near Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases, fixtures)
+VALUES ('e0000006-0000-0000-0000-000000000006', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 5, '22:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10,
+'[{"id":"p6","name":"Torneo Martes","type":"liguilla"}]'::jsonb,
+'[{"id":"f61","phaseId":"p6","team1Id":1,"team2Id":2,"status":"pending"}]'::jsonb);
 
--- Case 7: 7v7, 2 teams (14 players)
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000007', 
-    '00000000-0000-0000-0000-f00000000002',  -- 7v7 field, 140 soles
-    CURRENT_DATE + 7, '21:00:00', 'open', 140.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    14,  -- 2 teams x 7 players = 14
-    'winner_stays'
-) ON CONFLICT (id) DO NOTHING;
+-- #7: [LIVE - First Game Played] 5v5 - Near Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases, fixtures)
+VALUES ('e0000007-0000-0000-0000-000000000007', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 6, '20:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10,
+'[{"id":"p7","name":"Reto ELO","type":"liguilla"}]'::jsonb,
+'[{"id":"00000000-0000-0000-0000-000000000007","phaseId":"p7","team1Id":1,"team2Id":2,"status":"completed","score1":1,"score2":0}]'::jsonb);
 
--- Case 8: 7v7, 4 teams (28 players) - big tournament
--- 28 players x 10 soles = 280 soles target
-INSERT INTO public.matches (id, field_id, date, time, status, fixed_cost, creator_id, max_players, match_mode)
-VALUES (
-    '00000000-0000-0000-0000-e00000000008', 
-    '00000000-0000-0000-0000-f00000000007',
-    CURRENT_DATE + 8, '18:00:00', 'open', 280.0, 
-    '00000000-0000-0000-0000-100000000001', 
-    28,  -- 4 teams x 7 players = 28
-    'tournament'
-) ON CONFLICT (id) DO NOTHING;
+-- #8: [LIVE - First Game Played] 7v7 - Very Near Future
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases, fixtures)
+VALUES ('e0000008-0000-0000-0000-000000000008', '00000000-0000-0000-0000-f00000000003', CURRENT_DATE + 7, '21:00:00', 'open', '00000000-0000-0000-0000-100000000001', 14,
+'[{"id":"p8","name":"Liga de Barrio","type":"liguilla"}]'::jsonb,
+'[{"id":"00000000-0000-0000-0000-000000000081","phaseId":"p8","team1Id":1,"team2Id":2,"status":"completed","score1":4,"score2":2},
+  {"id":"00000000-0000-0000-0000-000000000082","phaseId":"p8","team1Id":1,"team2Id":2,"status":"pending"}]'::jsonb);
+
+-- #9: [COMPLETED - NOT LOCKED] 5v5 - Future Far
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases, fixtures)
+VALUES ('e0000009-0000-0000-0000-000000000009', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 8, '18:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10,
+'[{"id":"p9","name":"Final del Siglo","type":"liguilla"}]'::jsonb,
+'[{"id":"00000000-0000-0000-0000-000000000009","phaseId":"p9","team1Id":1,"team2Id":2,"status":"completed","score1":2,"score2":2}]'::jsonb);
+
+-- #10: [ARCHIVED - LOCKED] 5v5 - Furthest Future (to appear last in ASC)
+INSERT INTO public.matches (id, field_id, date, time, status, creator_id, max_players, phases, fixtures)
+VALUES ('e0000010-0000-0000-0000-000000000010', '00000000-0000-0000-0000-f00000000001', CURRENT_DATE + 15, '20:00:00', 'open', '00000000-0000-0000-0000-100000000001', 10,
+'[{"id":"p10","name":"Leyendas Urbanas","type":"liguilla"}]'::jsonb,
+'[{"id":"00000000-0000-0000-0000-000000000010","phaseId":"p10","team1Id":1,"team2Id":2,"status":"completed","score1":5,"score2":3}]'::jsonb);
 
 -- ====================
--- 5. ENROLLMENTS
+-- 4. ENROLLMENTS & TEAMS (Fixed Offsets)
 -- ====================
 
--- Case 1: 5v5, 4 teams, ALL 20 players paid and arrived
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000001', id, true, true, 
-    CASE 
-        WHEN row_number() over () <= 5 THEN 1
-        WHEN row_number() over () <= 10 THEN 2
-        WHEN row_number() over () <= 15 THEN 3
-        ELSE 4
-    END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') LIMIT 20) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
+-- #2 (Partial: Only 6 players)
+INSERT INTO public.enrollments (match_id, player_id, paid, paid_at)
+SELECT 'e0000002-0000-0000-0000-000000000002', id, row_number() over() <= 3, now()
+FROM (SELECT id FROM public.profiles WHERE id != '00000000-0000-0000-0000-100000000001' LIMIT 6) p;
 
--- Case 2: 5v5, 4 teams, 20 signups but 3 didn't arrive (17 arrived)
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000002', id, true, 
-    CASE WHEN row_number() over () <= 17 THEN true ELSE false END,  -- Last 3 didn't arrive
-    CASE 
-        WHEN row_number() over () <= 5 THEN 1
-        WHEN row_number() over () <= 10 THEN 2
-        WHEN row_number() over () <= 15 THEN 3
-        ELSE 4
-    END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') LIMIT 20) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
+-- #3 (Full - No Teams: 10 players)
+INSERT INTO public.enrollments (match_id, player_id, paid, is_present, paid_at)
+SELECT 'e0000003-0000-0000-0000-000000000003', id, true, true, now()
+FROM (SELECT id FROM public.profiles WHERE id != '00000000-0000-0000-0000-100000000001' OFFSET 6 LIMIT 10) p;
 
--- Case 3: 5v5, 3 teams (15 players) - all paid and arrived
+-- #4 (3 Teams Formed: 18 players)
 INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000003', id, true, true, 
-    CASE 
-        WHEN row_number() over () <= 5 THEN 1
-        WHEN row_number() over () <= 10 THEN 2
-        ELSE 3
-    END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 5 LIMIT 15) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
+SELECT 'e0000004-0000-0000-0000-000000000004', id, true, true, 
+    CASE WHEN row_number() over() <= 6 THEN 1 WHEN row_number() over() <= 12 THEN 2 ELSE 3 END, now()
+FROM (SELECT id FROM public.profiles WHERE id != '00000000-0000-0000-0000-100000000001' OFFSET 16 LIMIT 18) p;
 
--- Case 4: 5v5, 5 teams (25 players) - partial signups (20 so far)
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000004', id, 
-    CASE WHEN row_number() over () <= 15 THEN true ELSE false END,  -- 15 paid, 5 haven't
-    NULL,  -- Not yet arrived (match not started)
-    CASE 
-        WHEN row_number() over () <= 5 THEN 1
-        WHEN row_number() over () <= 10 THEN 2
-        WHEN row_number() over () <= 15 THEN 3
-        WHEN row_number() over () <= 20 THEN 4
-        ELSE 5
-    END, 
-    CASE WHEN row_number() over () <= 15 THEN now() ELSE NULL END
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 10 LIMIT 20) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
-
--- Case 5: 6v6, 2 teams (12 players) - all confirmed
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000005', id, true, true, 
-    CASE WHEN row_number() over () <= 6 THEN 1 ELSE 2 END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 15 LIMIT 12) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
-
--- Case 6: 6v6, 3 teams (18 players) - all confirmed
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000006', id, true, true, 
-    CASE 
-        WHEN row_number() over () <= 6 THEN 1
-        WHEN row_number() over () <= 12 THEN 2
-        ELSE 3
-    END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 20 LIMIT 18) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
-
--- Case 7: 7v7, 2 teams (14 players) - all confirmed
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000007', id, true, true, 
-    CASE WHEN row_number() over () <= 7 THEN 1 ELSE 2 END, 
-    now()
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 25 LIMIT 14) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
-
--- Case 8: 7v7, 4 teams (28 players) - 25 signed up so far, 5 haven't paid
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-SELECT '00000000-0000-0000-0000-e00000000008', id, 
-    CASE WHEN row_number() over () <= 20 THEN true ELSE false END,  -- 20 paid, 5 haven't
-    NULL,  -- Not yet arrived
-    CASE 
-        WHEN row_number() over () <= 7 THEN 1
-        WHEN row_number() over () <= 14 THEN 2
-        WHEN row_number() over () <= 21 THEN 3
-        ELSE 4
-    END, 
-    CASE WHEN row_number() over () <= 20 THEN now() ELSE NULL END
-FROM (SELECT id FROM public.profiles WHERE full_name NOT IN ('Walter Admin', 'Tester', 'Admin') OFFSET 30 LIMIT 25) p
-ON CONFLICT (match_id, player_id) DO NOTHING;
-
--- Add admins to some matches
-INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
-VALUES 
-    ('00000000-0000-0000-0000-e00000000001', '00000000-0000-0000-0000-100000000001', true, true, 1, now()),
-    ('00000000-0000-0000-0000-e00000000002', '00000000-0000-0000-0000-100000000001', true, true, 1, now()),
-    ('00000000-0000-0000-0000-e00000000003', '00000000-0000-0000-0000-300000000001', true, true, 1, now()),
-    ('00000000-0000-0000-0000-e00000000005', '00000000-0000-0000-0000-200000000001', true, true, 2, now())
-ON CONFLICT (match_id, player_id) DO NOTHING;
+-- Loop for 5-10 (Ensure full player coverage)
+DO $$
+DECLARE 
+    m_ids uuid[] := ARRAY[
+        'e0000005-0000-0000-0000-000000000005'::uuid,
+        'e0000006-0000-0000-0000-000000000006'::uuid,
+        'e0000007-0000-0000-0000-000000000007'::uuid,
+        'e0000008-0000-0000-0000-000000000008'::uuid,
+        'e0000009-0000-0000-0000-000000000009'::uuid,
+        'e0000010-0000-0000-0000-000000000010'::uuid
+    ];
+    sizes int[] := ARRAY[25, 12, 10, 14, 10, 10];
+BEGIN
+    FOR i IN 1..6 LOOP
+        INSERT INTO public.enrollments (match_id, player_id, paid, is_present, team_assignment, paid_at)
+        SELECT m_ids[i], id, true, true, 
+               CASE WHEN row_number() over() <= (sizes[i]/2) THEN 1 ELSE 2 END, now()
+        FROM (SELECT id FROM public.profiles WHERE id != '00000000-0000-0000-0000-100000000001' OFFSET 2*i LIMIT sizes[i]) p;
+    END LOOP;
+END $$;
 
 -- ====================
--- 6. SAMPLE GAMES (for Case 1 - complete liguilla)
+-- 5. GAMES
 -- ====================
-INSERT INTO public.games (match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, goals)
-SELECT 
-    '00000000-0000-0000-0000-e00000000001', 1, 2, 3, 1, 
-    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 1 LIMIT 5),
-    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 2 LIMIT 5),
-    '[]'::jsonb
-ON CONFLICT DO NOTHING;
+INSERT INTO public.games (id, match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, is_completed)
+SELECT '00000000-0000-0000-0000-000000000007', 'e0000007-0000-0000-0000-000000000007', 1, 2, 1, 0,
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000007-0000-0000-0000-000000000007' AND team_assignment = 1),
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000007-0000-0000-0000-000000000007' AND team_assignment = 2),
+    true;
 
-INSERT INTO public.games (match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, goals)
-SELECT 
-    '00000000-0000-0000-0000-e00000000001', 3, 4, 2, 2, 
-    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 3 LIMIT 5),
-    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = '00000000-0000-0000-0000-e00000000001' AND team_assignment = 4 LIMIT 5),
-    '[]'::jsonb
-ON CONFLICT DO NOTHING;
+INSERT INTO public.games (id, match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, is_completed)
+SELECT '00000000-0000-0000-0000-000000000081', 'e0000008-0000-0000-0000-000000000008', 1, 2, 4, 2,
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000008-0000-0000-0000-000000000008' AND team_assignment = 1),
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000008-0000-0000-0000-000000000008' AND team_assignment = 2),
+    true;
+
+INSERT INTO public.games (id, match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, is_completed)
+SELECT '00000000-0000-0000-0000-000000000009', 'e0000009-0000-0000-0000-000000000009', 1, 2, 2, 2,
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000009-0000-0000-0000-000000000009' AND team_assignment = 1),
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000009-0000-0000-0000-000000000009' AND team_assignment = 2),
+    true;
+
+INSERT INTO public.games (id, match_day_id, team1_id, team2_id, score1, score2, team1_players, team2_players, is_completed)
+SELECT '00000000-0000-0000-0000-000000000010', 'e0000010-0000-0000-0000-000000000010', 1, 2, 5, 3,
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000010-0000-0000-0000-000000000010' AND team_assignment = 1),
+    ARRAY(SELECT player_id FROM public.enrollments WHERE match_id = 'e0000010-0000-0000-0000-000000000010' AND team_assignment = 2),
+    true;
+
+-- ====================
+-- 6. FINAL LOCKS & ELO
+-- ====================
+-- AWARD ELO TO #10
+UPDATE public.enrollments SET elo_delta = 10 WHERE match_id = 'e0000010-0000-0000-0000-000000000010' AND team_assignment = 1;
+UPDATE public.enrollments SET elo_delta = -10 WHERE match_id = 'e0000010-0000-0000-0000-000000000010' AND team_assignment = 2;
+-- LOCK #10
+UPDATE public.matches SET is_locked = true, status = 'completed' WHERE id = 'e0000010-0000-0000-0000-000000000010';

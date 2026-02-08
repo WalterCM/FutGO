@@ -20,7 +20,10 @@ const GameResultForm = ({
     enrollments,
     matchMode,
     onUndoMatch,
-    onOpenLineup
+    onOpenLineup,
+    viewerId,
+    viewerIsSuperAdmin,
+    matchCreatorId
 }) => {
     const [recordingForTeam, setRecordingForTeam] = useState(null)
 
@@ -40,7 +43,7 @@ const GameResultForm = ({
             player_id: playerId,
             team_id: teamId,
             is_own_goal: isOwnGoal,
-            player_name: getDisplayName(playerEnrol?.player)
+            player_name: getDisplayName(playerEnrol?.player, viewerId, matchCreatorId, viewerIsSuperAdmin)
         }
 
         setGameData({
@@ -269,7 +272,7 @@ const GameResultForm = ({
                                                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                                                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                                     >
-                                                        <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player)}</span>
+                                                        <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player, viewerId, matchCreatorId, viewerIsSuperAdmin)}</span>
                                                         {enrol.team_assignment !== teamId && (
                                                             <span style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>
                                                         )}

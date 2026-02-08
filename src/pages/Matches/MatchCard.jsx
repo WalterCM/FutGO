@@ -96,7 +96,7 @@ export default function MatchCard({
                 </div>
                 {match.creator?.full_name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '500' }}>
-                        <Shield size={16} /> Administrado por {getDisplayName(match.creator)}
+                        <Shield size={16} /> Administrado por {getDisplayName(match.creator, profile?.id, match.creator_id, profile?.is_super_admin)}
                     </div>
                 )}
             </div>

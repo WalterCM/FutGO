@@ -124,7 +124,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     }, [])
 
     const getTeamPlayers = useCallback((teamId) => {
-        return enrollments.filter(e => (e.team_assignment || 0) === teamId)
+        // Only players marked as "Presente" are shown in the formation view
+        // Unenrolled or not-yet-arrived players are hidden to avoid clutter
+        return enrollments.filter(e => (e.team_assignment || 0) === teamId && e.is_present && !e.is_excluded)
     }, [enrollments])
 
     const getOrdinal = (n) => {
@@ -295,6 +297,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 onLeave={handleLeave}
                 actionLoading={actionLoading}
                 confirmingLeave={confirmingLeave}
+                viewerId={profile?.id}
+                viewerIsSuperAdmin={profile?.is_super_admin}
             />
 
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -320,6 +324,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         suggestedQuota={suggestedQuota}
                         canManage={canManage}
                         getOrdinal={getOrdinal}
+                        viewerId={profile?.id}
+                        viewerIsSuperAdmin={profile?.is_super_admin}
                     />
                 )}
 
@@ -380,6 +386,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         onRandomizeAll={() => randomizeTeams(numTeams, KIT_LIBRARY)}
                         onRandomizeKitsAll={handleRandomizeKitsAll}
                         actionLoading={actionLoading}
+                        viewerId={profile?.id}
+                        viewerIsSuperAdmin={profile?.is_super_admin}
+                        matchCreatorId={match?.creator_id}
                     />
                 )}
 
@@ -420,6 +429,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                                 matchMode={match?.match_mode || 'free'}
                                 onUndoMatch={handleUndoMatchRequest}
                                 onOpenLineup={handleOpenLineup}
+                                viewerId={profile?.id}
+                                viewerIsSuperAdmin={profile?.is_super_admin}
+                                matchCreatorId={match?.creator_id}
                             />
                         </div>
 
@@ -464,6 +476,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 playersPerTeam={playersPerTeam}
                 currentLineup1={gameData.team1_players}
                 currentLineup2={gameData.team2_players}
+                viewerId={profile?.id}
+                viewerIsSuperAdmin={profile?.is_super_admin}
+                matchCreatorId={match?.creator_id}
             />
 
 

@@ -35,7 +35,7 @@ export default function UserTable({
                         </div>
                         <div>
                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {getDisplayName(user)}
+                                {getDisplayName(user, profile.id, null, profile.is_super_admin)}
                                 <button
                                     onClick={() => onEditName(user)}
                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.5, padding: '0.2rem' }}

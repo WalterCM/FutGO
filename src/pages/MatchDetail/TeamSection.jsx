@@ -13,7 +13,10 @@ const TeamSection = ({
     onRandomizeKit,
     selectedPlayerId,
     onPlayerClick,
-    showArrivalOrder = false
+    showArrivalOrder = false,
+    viewerId,
+    viewerIsSuperAdmin,
+    matchCreatorId
 }) => {
     return (
         <div
@@ -128,6 +131,9 @@ const TeamSection = ({
                             onDragStart={canManage ? (e) => {
                                 e.dataTransfer.setData('enrolId', p.id)
                             } : null}
+                            viewerId={viewerId}
+                            viewerIsSuperAdmin={viewerIsSuperAdmin}
+                            matchCreatorId={matchCreatorId}
                         />
                     ))
                 )}

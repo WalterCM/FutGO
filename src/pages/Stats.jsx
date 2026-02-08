@@ -4,7 +4,7 @@ import { Trophy, Medal, Goal, Star, Loader2 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import { getRating, getDisplayName } from '../lib/utils'
 
-export default function Stats() {
+export default function Stats({ viewerId, viewerIsSuperAdmin }) {
     const [topPlayers, setTopPlayers] = useState([])
     const [maxElo, setMaxElo] = useState(2000)
     const [loading, setLoading] = useState(true)
@@ -82,7 +82,7 @@ export default function Stats() {
                                                 {rank}
                                             </div>
                                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                                {getDisplayName(player)}
+                                                {getDisplayName(player, viewerId, null, viewerIsSuperAdmin)}
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>

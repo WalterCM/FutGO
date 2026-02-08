@@ -17,7 +17,9 @@ const MatchHeader = ({
     actionLoading,
     confirmingLeave,
     canManage,
-    onEdit
+    onEdit,
+    viewerId,
+    viewerIsSuperAdmin
 }) => {
     if (!match) return null
 
@@ -141,7 +143,7 @@ const MatchHeader = ({
                         {match.creator?.full_name && (
                             <>
                                 <Shield size={18} />
-                                <span>Administrado por {getDisplayName(match.creator)}</span>
+                                <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>
                             </>
                         )}
                     </div>
