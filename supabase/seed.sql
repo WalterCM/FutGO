@@ -68,12 +68,12 @@ ON CONFLICT (provider, provider_id) DO NOTHING;
 -- 3. PROFILES
 -- ====================
 -- Admin users
-INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin, balance)
+INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin)
 VALUES 
-    ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true, 100.0),
-    ('00000000-0000-0000-0000-200000000001', 'Tester', 1200, false, false, 50.0),
-    ('00000000-0000-0000-0000-300000000001', 'Admin', 1350, true, false, 25.0)
-ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, is_admin = EXCLUDED.is_admin, is_super_admin = EXCLUDED.is_super_admin, balance = EXCLUDED.balance;
+    ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true),
+    ('00000000-0000-0000-0000-200000000001', 'Tester', 1200, false, false),
+    ('00000000-0000-0000-0000-300000000001', 'Admin', 1350, true, false)
+ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, is_admin = EXCLUDED.is_admin, is_super_admin = EXCLUDED.is_super_admin;
 
 -- Pool of 50 Star Players (enough for all test cases)
 DO $$

@@ -1113,6 +1113,101 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         }
     }
 
+    const lockMatch = async () => {
+        setActionLoading('lock')
+        try {
+            if (!games || games.length === 0) {
+                // If no games, just lock it
+                await updateMatch({ is_locked: true })
+                showMsg('success', 'Partido finalizado y bloqueado')
+                return
+            }
+
+            // 1. Calculate ELO Deltas for each player based on game results
+            const deltas = {} // player_id -> delta sum
+
+            games.forEach(game => {
+                const { score1, score2, team1_players, team2_players } = game
+                let d1 = 0, d2 = 0
+                if (score1 > score2) { d1 = 10; d2 = -10 }
+                else if (score2 > score1) { d1 = -10; d2 = 10 }
+
+                team1_players.forEach(pid => { deltas[pid] = (deltas[pid] || 0) + d1 })
+                team2_players.forEach(pid => { deltas[pid] = (deltas[pid] || 0) + d2 })
+            })
+
+            // 2. Prepare database updates
+            const profileUpdates = Object.entries(deltas).map(([pid, delta]) => {
+                const currentElo = enrollments.find(e => e.player_id === pid)?.player?.elo_rating || 1000
+                return supabase
+                    .from('profiles')
+                    .update({ elo_rating: currentElo + delta })
+                    .eq('id', pid)
+            })
+
+            const enrollmentUpdates = Object.entries(deltas).map(([pid, delta]) => {
+                const enrol = enrollments.find(e => e.player_id === pid)
+                if (!enrol) return null
+                return supabase
+                    .from('enrollments')
+                    .update({ elo_delta: delta })
+                    .eq('id', enrol.id)
+            }).filter(Boolean)
+
+            // 3. Execute all updates
+            await Promise.all([
+                ...profileUpdates,
+                ...enrollmentUpdates,
+                supabase.from('matches').update({ is_locked: true }).eq('id', matchId),
+                wait(300)
+            ])
+
+            showMsg('success', '¡Partido finalizado! ELO actualizado ⚽🏆')
+            await fetchMatchDetails(true)
+        } catch (error) {
+            showMsg('error', 'Error al finalizar: ' + error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const unlockMatch = async () => {
+        setActionLoading('unlock')
+        try {
+            // "Difference Correction": Reverse the deltas before unlocking
+            const playersWithDelta = enrollments.filter(e => e.elo_delta && e.elo_delta !== 0)
+
+            const profileReversions = playersWithDelta.map(e => {
+                const currentElo = e.player?.elo_rating || 1000
+                return supabase
+                    .from('profiles')
+                    .update({ elo_rating: currentElo - e.elo_delta })
+                    .eq('id', e.player_id)
+            })
+
+            const enrollmentClears = playersWithDelta.map(e => (
+                supabase
+                    .from('enrollments')
+                    .update({ elo_delta: 0 })
+                    .eq('id', e.id)
+            ))
+
+            await Promise.all([
+                ...profileReversions,
+                ...enrollmentClears,
+                supabase.from('matches').update({ is_locked: false }).eq('id', matchId),
+                wait(300)
+            ])
+
+            showMsg('success', 'Partido desbloqueado. ELO revertido temporalmente.')
+            await fetchMatchDetails(true)
+        } catch (error) {
+            showMsg('error', 'Error al desbloquear: ' + error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
     return {
         match,
         enrollments,
@@ -1145,6 +1240,8 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         cancelMatch,
         updateMatch,
         randomizeTeams,
+        lockMatch,
+        unlockMatch,
         refresh: () => fetchMatchDetails(true)
     }
 }

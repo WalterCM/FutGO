@@ -81,25 +81,21 @@ const AdminTab = ({
     // Modal state for absent confirmation (marking as not present)
     const [absentConfirm, setAbsentConfirm] = useState({ show: false, enrol: null })
 
-    // Sort by: paid first (by payment time), then unpaid (by signup time)
-    // This determines who "won" their spot by paying first
-    // Excluded players go to the end
-    const sortedEnrollments = [...enrollments].sort((a, b) => {
-        // Excluded players go to the end
-        if (a.is_excluded && !b.is_excluded) return 1
-        if (!a.is_excluded && b.is_excluded) return -1
-        // Then paid first
-        if (a.paid && !b.paid) return -1
-        if (!a.paid && b.paid) return 1
-        if (a.paid && b.paid) return new Date(a.paid_at) - new Date(b.paid_at)
-        return new Date(a.created_at) - new Date(b.created_at)
-    })
+    // Titulares are the first N players who PAID (by paid_at time)
+    // Reserves are players who PAID after the quota was filled
+    // Interested are players who haven't paid yet
+    const paidEnrollments = enrollments
+        .filter(e => e.paid && !e.is_excluded)
+        .sort((a, b) => new Date(a.paid_at) - new Date(b.paid_at))
 
-    // Financial calculations - exclude excluded players from counts
-    const activeEnrollments = enrollments.filter(e => !e.is_excluded)
-    const collected = activeEnrollments.filter(e => e.paid).length * suggestedQuota
-    const cost = match.fixed_cost || 120
-    const balance = collected - cost
+    const unpaidEnrollments = enrollments
+        .filter(e => !e.paid && !e.is_excluded)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+    const excludedEnrollments = enrollments
+        .filter(e => e.is_excluded)
+
+    const sortedEnrollments = [...paidEnrollments, ...unpaidEnrollments, ...excludedEnrollments]
 
     // Handle removal with confirmation
     const handleRemoveClick = (enrol) => {
@@ -187,46 +183,25 @@ const AdminTab = ({
                 variant="danger"
             />
 
-            {/* ===== CASH STATUS CARD ===== */}
+            {/* ===== MATCH INFO CARD ===== */}
             <Card style={{
                 marginBottom: '2rem',
-                padding: '1.5rem',
-                border: `1px solid ${balance >= 0 ? '#10b981' : 'var(--primary)'}`,
-                background: balance >= 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(var(--primary-rgb), 0.05)'
+                padding: '1.2rem',
+                border: '1px solid var(--border)',
+                background: 'rgba(255, 255, 255, 0.02)'
             }} hover={false}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                        <div>
-                            <h4 style={{ color: balance >= 0 ? '#10b981' : 'var(--primary)', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <CreditCard size={18} /> Estado de la Caja
-                            </h4>
-                            <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>
-                                {balance < 0 ? (
-                                    <>Faltan <span style={{ color: 'var(--danger)' }}>S/ {Math.abs(balance)}</span></>
-                                ) : (
-                                    <span style={{ color: '#10b981' }}>¡Cancha Cubierta!</span>
-                                )}
-                            </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Cuota: S/ {suggestedQuota}</div>
-                            {balance > 0 && <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>Sobra: S/ {balance}</div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Jugadores Titulares</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                            {paidEnrollments.slice(0, totalNeeded).length} / {totalNeeded}
                         </div>
                     </div>
-
-                    {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{
-                            width: `${Math.min(100, (collected / cost) * 100)}%`,
-                            height: '100%',
-                            background: balance >= 0 ? '#10b981' : 'var(--primary)',
-                            transition: 'width 0.4s ease-out'
-                        }} />
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                        <span>Recaudado: S/ {collected}</span>
-                        <span>Meta: S/ {cost}</span>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Reservas Pagados</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                            {Math.max(0, paidEnrollments.length - totalNeeded)}
+                        </div>
                     </div>
                 </div>
             </Card>
@@ -239,12 +214,13 @@ const AdminTab = ({
             <Card style={{ marginBottom: '3rem', padding: '1rem' }} hover={false}>
                 <div style={{ display: 'grid', gap: '0.8rem' }}>
                     {sortedEnrollments.map((enrol, index) => {
-                        // Skip excluded players from ranking count
-                        const activeIndex = sortedEnrollments.filter((e, i) => i <= index && !e.is_excluded).length
-                        const rank = enrol.is_excluded ? '-' : activeIndex
+                        // Find its position in the overall sorted list
+                        const overallIndex = index + 1
 
-                        // Titular = paid player within capacity (first N paid players)
-                        const isTitular = !enrol.is_excluded && activeIndex <= totalNeeded
+                        // Find its position in the PAID list to determine Titular status
+                        const paidIndex = paidEnrollments.findIndex(e => e.id === enrol.id)
+                        const isTitular = enrol.paid && (paidIndex !== -1 && paidIndex < totalNeeded)
+                        const isReserva = enrol.paid && (paidIndex !== -1 && paidIndex >= totalNeeded)
 
                         // Determine player status tag
                         let tagLabel = null
@@ -253,9 +229,8 @@ const AdminTab = ({
                         let tagBorder = ''
 
                         if (enrol.is_excluded) {
-                            // EXCLUDED/WITHDRAWN player
                             tagLabel = 'RETIRADO'
-                            tagColor = '#f97316'  // Orange
+                            tagColor = '#f97316'
                             tagBg = 'rgba(249, 115, 22, 0.15)'
                             tagBorder = '#f97316'
                         } else if (enrol.paid) {
@@ -264,13 +239,18 @@ const AdminTab = ({
                                 tagColor = '#10b981'
                                 tagBg = 'rgba(16, 185, 129, 15%)'
                                 tagBorder = '#10b981'
-                            } else {
-                                // RESERVA = backup player (called if titular gives notice)
+                            } else if (isReserva) {
                                 tagLabel = 'RESERVA'
                                 tagColor = 'var(--text-dim)'
                                 tagBg = 'rgba(255, 255, 255, 0.05)'
                                 tagBorder = 'var(--border)'
                             }
+                        } else {
+                            tagLabel = 'INTERESADO'
+                            tagColor = 'var(--text-dim)'
+                            tagBg = 'rgba(255, 255, 255, 0.02)'
+                            tagBorder = 'var(--border)'
+                            tagBorder = 'rgba(255, 255, 255, 0.1)'
                         }
 
                         // NO-SHOW: paid but didn't come (field day has passed or presence was not marked)
@@ -284,7 +264,7 @@ const AdminTab = ({
                                 opacity: enrol.is_excluded ? 0.5 : 1
                             }}>
                                 <div className="admin-player-info">
-                                    <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{rank}.</span>
+                                    <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{enrol.is_excluded ? '-' : overallIndex}.</span>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{
                                             fontWeight: '600',
@@ -450,7 +430,7 @@ const AdminTab = ({
                         {match.is_canceled ? '✕ Partido Cancelado' : '✓ Partido Finalizado'}
                     </h4>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                        {match.is_canceled ? 'El partido fue cancelado y los saldos devueltos.' : 'La caja ha sido cerrada y los saldos repartidos.'}
+                        {match.is_canceled ? 'El partido fue cancelado.' : 'El partido ha sido finalizado y los resultados guardados.'}
                     </p>
                 </Card>
             )}

@@ -80,30 +80,6 @@ export default function UserTable({
                             {actionLoading === user.id + 'is_admin' ? <Loader2 size={14} className="spin" /> :
                                 (<> <Shield size={14} /> {user.is_admin ? 'Es Admin' : 'Hacer Admin'} </>)}
                         </button>
-
-                        {/* Super Admin Toggle */}
-                        <button
-                            onClick={() => onToggleRole(user, 'is_super_admin')}
-                            disabled={user.id === profile.id || actionLoading === user.id + 'is_super_admin'}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '8px',
-                                border: '1px solid var(--border)',
-                                background: user.is_super_admin ? 'var(--danger)' : 'transparent',
-                                color: user.is_super_admin ? 'white' : 'var(--text-dim)',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                opacity: user.id === profile.id ? 0.5 : 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                minWidth: '110px',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            {actionLoading === user.id + 'is_super_admin' ? <Loader2 size={14} className="spin" /> :
-                                (<> <ShieldCheck size={14} /> {user.is_super_admin ? 'Es Owner' : 'Hacer Owner'} </>)}
-                        </button>
                     </div>
                 </div>
             ))}

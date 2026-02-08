@@ -54,7 +54,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         addManualFixture,
         cancelMatch,
         updateMatch,
-        randomizeTeams
+        randomizeTeams,
+        lockMatch,
+        unlockMatch
     } = useMatchDetail(matchId, profile, onBack)
 
     // Local UI State
@@ -319,6 +321,34 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         canManage={canManage}
                         getOrdinal={getOrdinal}
                     />
+                )}
+
+                {/* Match Finalization Controls */}
+                {canManage && activeTab === 'admin' && (
+                    <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>
+                        {!match.is_locked ? (
+                            <Button
+                                variant="success"
+                                onClick={lockMatch}
+                                loading={actionLoading === 'lock'}
+                                disabled={games.length === 0}
+                                style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
+                            >
+                                Finalizar Encuentro y Cerrar ELO
+                            </Button>
+                        ) : (
+                            profile.is_super_admin && (
+                                <Button
+                                    variant="outline-danger"
+                                    onClick={unlockMatch}
+                                    loading={actionLoading === 'unlock'}
+                                    style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
+                                >
+                                    ⚠️ Desbloquear Partido (Revertir ELO)
+                                </Button>
+                            )
+                        )}
+                    </div>
                 )}
 
                 {activeTab === 'field' && (
