@@ -48,26 +48,29 @@ describe('AuthContext', () => {
         })
     })
 
-    test('provides signIn function that calls supabase', async () => {
+    test('provides signInWithGoogle function that calls supabase OAuth', async () => {
         supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
-        supabase.auth.signInWithPassword.mockResolvedValue({ data: {}, error: null })
+        supabase.auth.signInWithOAuth.mockResolvedValue({ data: {}, error: null })
 
         const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>
         const { result } = renderHook(() => useAuth(), { wrapper })
 
         await waitFor(() => {
-            expect(result.current.signIn).toBeDefined()
+            expect(result.current.signInWithGoogle).toBeDefined()
         })
 
         await act(async () => {
-            await result.current.signIn({ email: 'test@test.com', password: '123456' })
+            await result.current.signInWithGoogle()
         })
 
-        expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-            email: 'test@test.com',
-            password: '123456'
+        expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
         })
     })
+
 
     test('provides signOut function that calls supabase', async () => {
         supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
