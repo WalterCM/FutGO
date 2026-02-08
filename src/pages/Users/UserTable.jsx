@@ -45,9 +45,9 @@ export default function UserTable({
                                 </button>
                                 {user.is_super_admin && <ShieldCheck size={16} style={{ color: 'var(--primary)' }} title="Owner" />}
                             </div>
-                            {user.nickname && (
+                            {user.nickname && (profile.is_super_admin) && (
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                                    Oficial: {user.full_name}
+                                    ({user.full_name})
                                 </div>
                             )}
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '0.3rem' }}>

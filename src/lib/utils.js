@@ -36,13 +36,14 @@ export function getRating(elo, maxElo = 2000) {
 export function getDisplayName(profile, viewerId, matchCreatorId, viewerIsSuperAdmin) {
     if (!profile) return 'Jugador'
 
-    // Real name is only shared with SuperAdmins and the specific Match Organizer
-    // Even the player themselves should see their nickname in lists to reassure them of their privacy
     const canSeeRealName = viewerIsSuperAdmin || (matchCreatorId && viewerId === matchCreatorId)
 
+    // If viewer can see real name, we still prioritize nickname as the "Display" name
+    // but the component will handle showing the real name in parenthesis if needed.
     if (canSeeRealName) {
-        return profile.full_name || profile.nickname || 'Jugador'
+        return profile.nickname || profile.full_name || 'Jugador'
     }
 
+    // For regular users, prioritize nickname. If no nickname, fallback to full name (or could be masked 'Jugador')
     return profile.nickname || profile.full_name || 'Jugador'
 }
