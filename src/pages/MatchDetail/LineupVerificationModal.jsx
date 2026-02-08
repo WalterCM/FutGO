@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, UserPlus, UserMinus, Shield, User, CheckCircle2 } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import TeamBadge from './TeamBadge'
+import { getDisplayName } from '../../lib/utils'
 
 const LineupVerificationModal = ({
     show,
@@ -23,7 +24,7 @@ const LineupVerificationModal = ({
         if (show && fixture) {
             const getPlayerInfo = (id) => {
                 const e = enrollments.find(env => env.player_id === id)
-                return { id, name: e?.player?.full_name || 'Desconocido', officialTeam: e?.team_assignment }
+                return { id, name: getDisplayName(e?.player), officialTeam: e?.team_assignment }
             }
 
             // Team 1 Initial state
@@ -33,7 +34,7 @@ const LineupVerificationModal = ({
             } else {
                 t1 = enrollments
                     .filter(e => e.team_assignment === fixture.team1Id && e.is_present && e.paid)
-                    .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team1Id }))
+                    .map(e => ({ id: e.player_id, name: getDisplayName(e.player), officialTeam: fixture.team1Id }))
             }
 
             // Team 2 Initial state
@@ -43,14 +44,14 @@ const LineupVerificationModal = ({
             } else {
                 t2 = enrollments
                     .filter(e => e.team_assignment === fixture.team2Id && e.is_present && e.paid)
-                    .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: fixture.team2Id }))
+                    .map(e => ({ id: e.player_id, name: getDisplayName(e.player), officialTeam: fixture.team2Id }))
             }
 
             // Available players: everyone present/paid NOT in the current teams
             const currentLineupIds = [...t1, ...t2].map(p => p.id)
             const available = enrollments
                 .filter(e => e.is_present && e.paid && !currentLineupIds.includes(e.player_id))
-                .map(e => ({ id: e.player_id, name: e.player?.full_name, officialTeam: e.team_assignment }))
+                .map(e => ({ id: e.player_id, name: getDisplayName(e.player), officialTeam: e.team_assignment }))
 
             setLineup1(t1)
             setLineup2(t2)

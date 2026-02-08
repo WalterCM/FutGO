@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Trophy, Medal, Goal, Star, Loader2 } from 'lucide-react'
 import Card from '../components/ui/Card'
-import { getRating } from '../lib/utils'
+import { getRating, getDisplayName } from '../lib/utils'
 
 export default function Stats() {
     const [topPlayers, setTopPlayers] = useState([])
@@ -18,7 +18,7 @@ export default function Stats() {
         try {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, full_name, elo_rating')
+                .select('id, full_name, nickname, elo_rating')
                 .order('elo_rating', { ascending: false })
                 .order('full_name', { ascending: true })
                 .limit(5)
@@ -82,7 +82,7 @@ export default function Stats() {
                                                 {rank}
                                             </div>
                                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                                {player.full_name}
+                                                {getDisplayName(player)}
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>

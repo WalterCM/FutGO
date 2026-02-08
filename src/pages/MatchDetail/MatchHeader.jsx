@@ -2,6 +2,7 @@ import React from 'react'
 import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
+import { getDisplayName } from '../../lib/utils'
 
 const MatchHeader = ({
     match,
@@ -140,7 +141,7 @@ const MatchHeader = ({
                         {match.creator?.full_name && (
                             <>
                                 <Shield size={18} />
-                                <span>Administrado por {match.creator.full_name}</span>
+                                <span>Administrado por {getDisplayName(match.creator)}</span>
                             </>
                         )}
                     </div>

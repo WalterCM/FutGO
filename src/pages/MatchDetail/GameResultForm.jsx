@@ -3,6 +3,7 @@ import { Trophy, Plus, X, Trash2, User, Users, RotateCcw } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import TeamBadge from './TeamBadge'
+import { getDisplayName } from '../../lib/utils'
 
 const GameResultForm = ({
     showForm,
@@ -39,7 +40,7 @@ const GameResultForm = ({
             player_id: playerId,
             team_id: teamId,
             is_own_goal: isOwnGoal,
-            player_name: playerEnrol?.player?.full_name || 'Desconocido'
+            player_name: getDisplayName(playerEnrol?.player)
         }
 
         setGameData({
@@ -268,7 +269,7 @@ const GameResultForm = ({
                                                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                                                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                                     >
-                                                        <span style={{ fontSize: '0.9rem' }}>{enrol.player?.full_name}</span>
+                                                        <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player)}</span>
                                                         {enrol.team_assignment !== teamId && (
                                                             <span style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>
                                                         )}

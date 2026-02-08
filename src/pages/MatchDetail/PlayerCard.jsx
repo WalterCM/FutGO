@@ -1,5 +1,6 @@
 import React from 'react'
 import Card from '../../components/ui/Card'
+import { getDisplayName } from '../../lib/utils'
 
 const PlayerCard = ({
     registration,
@@ -41,7 +42,7 @@ const PlayerCard = ({
             hover={!onDragStart} // Only hover if not draggable to avoid weirdness
         >
             <div>
-                <div style={{ fontWeight: 'bold' }}>{player?.full_name}</div>
+                <div style={{ fontWeight: 'bold' }}>{getDisplayName(player)}</div>
             </div>
             {isBench && arrivalOrder && (
                 <div style={{

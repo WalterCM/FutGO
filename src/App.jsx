@@ -12,7 +12,7 @@ import Users from './pages/Users/index'
 import Stats from './pages/Stats'
 import { Trophy } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { getRating } from './lib/utils'
+import { getRating, getDisplayName } from './lib/utils'
 
 
 function MainContent() {
@@ -37,7 +37,7 @@ function MainContent() {
 
   if (user && !profile) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando datos...</div>
   if (!user) return <Auth />
-  if (!profile || !profile.full_name) return <ProfileSetup onComplete={refreshProfile} />
+  if (!profile?.profile_complete) return <ProfileSetup onComplete={refreshProfile} />
 
   const NavLinks = ({ mobile = false }) => (
     <>
@@ -137,7 +137,7 @@ function MainContent() {
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="user-info-desktop" style={{ textAlign: 'right', marginRight: '1rem' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{profile?.full_name}</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{getDisplayName(profile)}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_super_admin ? '(Owner)' : (profile?.is_admin && '(Admin)')}</div>
           </div>
           <button className="btn-primary" onClick={signOut} style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -159,7 +159,7 @@ function MainContent() {
             </div>
 
             <div style={{ padding: '1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{profile?.full_name}</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{getDisplayName(profile)}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{user?.email}</div>
             </div>
 

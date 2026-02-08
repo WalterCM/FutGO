@@ -1,6 +1,7 @@
 import React from 'react'
 import { Calendar, Clock, Users, Trash2, LogOut, Loader2, Pencil, Shield } from 'lucide-react'
 import Button from '../../components/ui/Button'
+import { getDisplayName } from '../../lib/utils'
 
 export default function MatchCard({
     match,
@@ -95,7 +96,7 @@ export default function MatchCard({
                 </div>
                 {match.creator?.full_name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '500' }}>
-                        <Shield size={16} /> Administrado por {match.creator.full_name.split(' ')[0]}
+                        <Shield size={16} /> Administrado por {getDisplayName(match.creator)}
                     </div>
                 )}
             </div>

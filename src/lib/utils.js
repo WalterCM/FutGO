@@ -24,3 +24,14 @@ export function getRating(elo, maxElo = 2000) {
 
     return rating
 }
+
+/**
+ * Returns the display name for a player.
+ * Uses nickname if set, otherwise falls back to full_name.
+ * @param {object} profile - Profile object with full_name and optional nickname
+ * @returns {string} - The display name to show
+ */
+export function getDisplayName(profile) {
+    if (!profile) return 'Jugador'
+    return profile.nickname || profile.full_name || 'Jugador'
+}

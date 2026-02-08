@@ -14,8 +14,8 @@ BEGIN
     split_part(new.email, '@', 1)              -- Fallback to email prefix
   );
   
-  INSERT INTO public.profiles (id, full_name, is_admin, balance, elo_rating)
-  VALUES (new.id, user_name, false, 0, 1000);
+  INSERT INTO public.profiles (id, full_name, is_admin, balance, elo_rating, profile_complete)
+  VALUES (new.id, user_name, false, 0, 1000, false);
   
   RETURN new;
 END;

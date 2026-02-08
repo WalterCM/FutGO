@@ -1,5 +1,6 @@
 import React from 'react'
 import { User, Shield, ShieldCheck, Pencil, Loader2 } from 'lucide-react'
+import { getDisplayName } from '../../lib/utils'
 
 export default function UserTable({
     users,
@@ -34,7 +35,7 @@ export default function UserTable({
                         </div>
                         <div>
                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {user.full_name}
+                                {getDisplayName(user)}
                                 <button
                                     onClick={() => onEditName(user)}
                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', opacity: 0.5, padding: '0.2rem' }}
@@ -44,6 +45,11 @@ export default function UserTable({
                                 </button>
                                 {user.is_super_admin && <ShieldCheck size={16} style={{ color: 'var(--primary)' }} title="Owner" />}
                             </div>
+                            {user.nickname && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                                    Oficial: {user.full_name}
+                                </div>
+                            )}
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '0.3rem' }}>
                                 {user.is_super_admin ? 'Owner' : (user.is_admin ? 'Administrador' : 'Jugador')}
                             </div>

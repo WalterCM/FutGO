@@ -55,6 +55,7 @@ import { CheckCircle, CreditCard, Users, UserMinus, UserPlus } from 'lucide-reac
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import ConfirmModal from '../../components/ui/ConfirmModal'
+import { getDisplayName } from '../../lib/utils'
 
 const AdminTab = ({
     enrollments,
@@ -154,7 +155,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={removeConfirm.show}
                 title="Retirar Jugador"
-                message={`¿Estás seguro de retirar a ${removeConfirm.enrol?.player?.full_name} del partido? El jugador no podrá volver a inscribirse por su cuenta, pero puedes restaurarlo manualmente.`}
+                message={`¿Estás seguro de retirar a ${getDisplayName(removeConfirm.enrol?.player)} (${removeConfirm.enrol?.player?.full_name}) del partido? El jugador no podrá volver a inscribirse por su cuenta, pero puedes restaurarlo manualmente.`}
                 confirmText="Sí, Retirar"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmRemove}
@@ -166,7 +167,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={unpaidConfirm.show}
                 title="Quitar Pago"
-                message={`¿Estás seguro de quitar el pago de ${unpaidConfirm.enrol?.player?.full_name}? El jugador perderá su cupo de titular.`}
+                message={`¿Estás seguro de quitar el pago de ${getDisplayName(unpaidConfirm.enrol?.player)} (${unpaidConfirm.enrol?.player?.full_name})? El jugador perderá su cupo de titular.`}
                 confirmText="Sí, Quitar Pago"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmUnpaid}
@@ -178,7 +179,7 @@ const AdminTab = ({
             <ConfirmModal
                 show={absentConfirm.show}
                 title="Marcar Ausente"
-                message={`¿Estás seguro de marcar a ${absentConfirm.enrol?.player?.full_name} como ausente?`}
+                message={`¿Estás seguro de marcar a ${getDisplayName(absentConfirm.enrol?.player)} (${absentConfirm.enrol?.player?.full_name}) como ausente?`}
                 confirmText="Sí, Marcar Ausente"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmAbsent}
@@ -290,7 +291,14 @@ const AdminTab = ({
                                             color: enrol.is_excluded ? 'var(--text-dim)' : isNoShow ? 'var(--danger)' : enrol.is_present ? 'var(--primary)' : 'white',
                                             textDecoration: enrol.is_excluded || isNoShow ? 'line-through' : 'none'
                                         }}>
-                                            {enrol.player?.full_name}
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span>{getDisplayName(enrol.player)}</span>
+                                                {enrol.player?.nickname && (
+                                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>
+                                                        ({enrol.player.full_name})
+                                                    </span>
+                                                )}
+                                            </div>
                                         </span>
                                         <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
                                             {tagLabel && (
