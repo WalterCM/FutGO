@@ -106,16 +106,26 @@ const FixtureTimeline = ({
             {/* Render Phases */}
             <div style={{ display: 'grid', gap: '2rem' }}>
                 {phases.length === 0 && fixtures.length === 0 ? (
-                    <Card style={{ textAlign: 'center', padding: '3rem 2rem', border: '1px dashed var(--border)', background: 'transparent' }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.2 }}>🏗️</div>
-                        <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>Torneo Vacío</h3>
-                        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            Comienza añadiendo la primera fase de tu torneo (Liguilla, Eliminación, etc.)
-                        </p>
-                        <Button variant="primary" icon={PlusCircle} onClick={() => setShowConfig(true)}>
-                            Crear Primera Fase
-                        </Button>
-                    </Card>
+                    canManage ? (
+                        <Card style={{ textAlign: 'center', padding: '3rem 2rem', border: '1px dashed var(--border)', background: 'transparent' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.2 }}>🏗️</div>
+                            <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>Torneo Vacío</h3>
+                            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                                Comienza añadiendo la primera fase de tu torneo (Liguilla, Eliminación, etc.)
+                            </p>
+                            <Button variant="primary" icon={PlusCircle} onClick={() => setShowConfig(true)}>
+                                Crear Primera Fase
+                            </Button>
+                        </Card>
+                    ) : (
+                        <Card style={{ textAlign: 'center', padding: '3rem 2rem', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '1rem', opacity: 0.3 }}>⏳</div>
+                            <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>Sorteo en Proceso</h3>
+                            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', margin: 0 }}>
+                                El administrador aún no ha generado los encuentros para este partido.
+                            </p>
+                        </Card>
+                    )
                 ) : (
                     <>
                         {/* Fallback for legacy fixtures without phaseId */}
