@@ -113,9 +113,11 @@ const FixtureTimeline = ({
                             <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                                 Comienza añadiendo la primera fase de tu torneo (Liguilla, Eliminación, etc.)
                             </p>
-                            <Button variant="primary" icon={PlusCircle} onClick={() => setShowConfig(true)}>
-                                Crear Primera Fase
-                            </Button>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <Button variant="primary" icon={PlusCircle} onClick={() => setShowConfig(true)}>
+                                    Crear Primera Fase
+                                </Button>
+                            </div>
                         </Card>
                     ) : (
                         <Card style={{ textAlign: 'center', padding: '3rem 2rem', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
