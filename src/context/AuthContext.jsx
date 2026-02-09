@@ -11,61 +11,84 @@ export const AuthProvider = ({ children }) => {
     const fetchProfile = async (userId) => {
         if (!userId) {
             setProfile(null)
-            return
+            return null
         }
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
 
-        if (error || !data) {
-            console.log('Profile not found or error, but staying logged in to allow setup:', error?.message)
+            if (error) {
+                // If it's a 401 or user simply doesn't exist in profiles, 
+                // we treat it as "needs setup" but don't force logout yet 
+                // unless it's a critical auth failure.
+                console.log('Profile fetch notice:', error.message)
+                setProfile(null)
+                return null
+            }
+            setProfile(data)
+            return data
+        } catch (e) {
+            console.error('Unexpected error fetching profile:', e)
             setProfile(null)
-            setLoading(false)
-            return
+            return null
         }
-        setProfile(data)
     }
 
     useEffect(() => {
-        // Check active sessions and sets the user
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            const currentUser = session?.user ?? null
-            setUser(currentUser)
-            if (currentUser) fetchProfile(currentUser.id)
-            setLoading(false)
-        })
+        let isMounted = true
 
-        // Listen for changes on auth state (sign in, sign out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const initializeAuth = async () => {
+            const { data: { session }, error } = await supabase.auth.getSession()
+
+            if (error) {
+                console.error('Session initialization error:', error.message)
+                await supabase.auth.signOut()
+                if (isMounted) setLoading(false)
+                return
+            }
+
             const currentUser = session?.user ?? null
+            if (isMounted) setUser(currentUser)
+
+            if (currentUser) {
+                await fetchProfile(currentUser.id)
+            }
+
+            if (isMounted) setLoading(false)
+        }
+
+        initializeAuth()
+
+        // Listen for changes on auth state
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            const currentUser = session?.user ?? null
+
+            if (event === 'SIGNED_OUT') {
+                setUser(null)
+                setProfile(null)
+                setLoading(false)
+                return
+            }
 
             setUser(prev => {
-                // If it's the same user (e.g. refocus/token refresh), return prev to avoid re-renders
-                if (currentUser?.id === prev?.id) {
-                    return prev
-                }
-
-                // If it's a new user, fetch their profile
-                if (currentUser?.id) {
-                    fetchProfile(currentUser.id)
-                }
+                if (currentUser?.id === prev?.id) return prev
+                if (currentUser?.id) fetchProfile(currentUser.id)
                 return currentUser
             })
 
             if (!currentUser) {
                 setProfile(null)
                 setLoading(false)
-            } else {
-                // If we already have a profile and the user hasn't changed, we don't need to block loading
-                // But on init, we want to wait for the first fetchProfile if possible.
-                // fetchProfile is async, so we depend on its setProfile to trigger the next step.
-                // Actually, fetchProfile(currentUser.id) is called above.
             }
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            isMounted = false
+            subscription.unsubscribe()
+        }
     }, [])
 
     const value = {

@@ -1,5 +1,6 @@
 :root {
   --primary: #00ff88;
+  --primary-rgb: 0, 255, 136;
   --primary-dark: #00cc6d;
   --bg-dark: #0a0e14;
   --bg-card: #161b22;
@@ -521,5 +522,60 @@ body,
 
   to {
     opacity: 1;
+  }
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.match-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  color: var(--text-dim);
+  width: 100%;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-item-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.info-action-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 0.75rem;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.info-action-link:hover {
+  background: rgba(var(--primary-rgb), 0.2);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .info-item-with-action {
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 }

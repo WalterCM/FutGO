@@ -19,7 +19,8 @@ const MatchHeader = ({
     canManage,
     onEdit,
     viewerId,
-    viewerIsSuperAdmin
+    viewerIsSuperAdmin,
+    hasPaid
 }) => {
     const [copied, setCopied] = React.useState(false)
 
@@ -118,29 +119,49 @@ const MatchHeader = ({
 
                 <div style={{ height: '1px', background: 'var(--border)', margin: '1.5rem -1.5rem', width: 'auto' }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-dim)', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="match-info-list">
+                    <div className="info-item">
                         <Calendar size={18} />
                         <span>{new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="info-item">
                         <Clock size={18} /> <span>{match.time.substring(0, 5)} hrs</span>
                     </div>
                     {match.field?.address && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <MapPin size={18} />
-                            <span>{match.field.address}</span>
+                        <div className="info-item-with-action">
+                            <div className="info-item">
+                                <MapPin size={18} />
+                                <span className="text-truncate">{match.field.address}</span>
+                            </div>
+                            {match.field?.google_maps_url && (
+                                <a
+                                    href={match.field.google_maps_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="info-action-link"
+                                >
+                                    <MapPin size={14} /> Mapa
+                                </a>
+                            )}
                         </div>
                     )}
-                    {match.field?.phone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Phone size={18} />
-                            <span>{match.field.phone}</span>
+                    {canManage && match.field?.phone && (
+                        <div className="info-item-with-action">
+                            <div className="info-item">
+                                <Phone size={18} />
+                                <span>{match.field.phone}</span>
+                            </div>
+                            <a
+                                href={`tel:${match.field.phone}`}
+                                className="info-action-link"
+                            >
+                                <Phone size={14} /> Llamar
+                            </a>
                         </div>
                     )}
                 </div>
 
-                {match.creator?.phone && (
+                {match.creator?.phone && !hasPaid && (
                     <div className="payment-info-box">
                         <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             <Shield size={12} /> Información de Pago (Yape/Plin)
@@ -168,7 +189,7 @@ const MatchHeader = ({
                     </div>
                 )}
 
-                <div className="match-header-footer">
+                <div className="match-header-footer" style={{ borderTop: match.creator?.phone && !hasPaid ? 'none' : '1px solid var(--border)', marginTop: match.creator?.phone && !hasPaid ? '0.5rem' : '1.5rem' }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -177,55 +198,8 @@ const MatchHeader = ({
                         fontWeight: '500',
                         fontSize: '0.9rem'
                     }}>
-                        {match.creator?.full_name && !match.creator?.phone && (
-                            <>
-                                <Shield size={18} />
-                                <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="match-header-btn-group">
-                        {match.field?.google_maps_url && (
-                            <a
-                                href={match.field.google_maps_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-primary"
-                                style={{
-                                    padding: '0.4rem 1rem',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    textDecoration: 'none',
-                                    background: 'rgba(var(--primary-rgb), 0.1)',
-                                    border: '1px solid var(--primary)',
-                                    color: 'var(--primary)'
-                                }}
-                            >
-                                <MapPin size={14} /> Mapa
-                            </a>
-                        )}
-                        {match.field?.phone && (
-                            <a
-                                href={`tel:${match.field.phone}`}
-                                className="btn-primary"
-                                style={{
-                                    padding: '0.4rem 1rem',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    textDecoration: 'none',
-                                    background: 'rgba(var(--primary-rgb), 0.1)',
-                                    border: '1px solid var(--primary)',
-                                    color: 'var(--primary)'
-                                }}
-                            >
-                                <Phone size={14} /> Llamar
-                            </a>
-                        )}
+                        <Shield size={18} />
+                        <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>
                     </div>
                 </div>
             </Card>

@@ -285,10 +285,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <MatchHeader
                     match={match}
-                    isRefreshing={isRefreshing}
                     onBack={onBack}
-                    onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
-                    canManage={canManage}
                     enrolledCount={enrolledCount}
                     totalNeeded={totalNeeded}
                     numTeams={numTeams}
@@ -298,8 +295,11 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     onLeave={handleLeave}
                     actionLoading={actionLoading}
                     confirmingLeave={confirmingLeave}
+                    canManage={canManage}
+                    onEdit={() => setEditModal(true)}
                     viewerId={profile?.id}
                     viewerIsSuperAdmin={profile?.is_super_admin}
+                    hasPaid={enrollments?.find(e => e.player_id === profile?.id)?.paid || false}
                 />
 
                 <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />

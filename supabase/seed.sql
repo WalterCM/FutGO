@@ -4,12 +4,12 @@
 -- ====================
 -- 1. CAMPOS (Fields)
 -- ====================
-INSERT INTO public.fields (id, name, players_per_team, price_per_hour, address)
+INSERT INTO public.fields (id, name, players_per_team, price_per_hour, address, google_maps_url, phone)
 VALUES 
-    ('00000000-0000-0000-0000-f00000000001', 'Cancha 5v5 - La Cantera', 5, 100.00, 'Av. Brasil 123'),
-    ('00000000-0000-0000-0000-f00000000002', 'Cancha 6v6 - Pro', 6, 120.00, 'Jirón Tacna 456'),
-    ('00000000-0000-0000-0000-f00000000003', 'Estadio 7v7 - FutGO', 7, 140.00, 'Av. Arequipa 789')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+    ('00000000-0000-0000-0000-f00000000001', 'Cancha 5v5 - La Cantera', 5, 100.00, 'Av. Brasil 123', 'https://maps.google.com?q=La+Cantera', '999111222'),
+    ('00000000-0000-0000-0000-f00000000002', 'Cancha 6v6 - Pro', 6, 120.00, 'Jirón Tacna 456', 'https://maps.google.com?q=Pro+Field', '999333444'),
+    ('00000000-0000-0000-0000-f00000000003', 'Estadio 7v7 - FutGO', 7, 140.00, 'Av. Arequipa 789', 'https://maps.google.com?q=Estadio+FutGO', '999555666')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, google_maps_url = EXCLUDED.google_maps_url, phone = EXCLUDED.phone;
 
 -- ====================
 -- 2. AUTH & PROFILES
