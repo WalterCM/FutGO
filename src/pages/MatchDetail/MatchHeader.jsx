@@ -26,6 +26,8 @@ const MatchHeader = ({
 
     if (!match) return null
 
+    const showPaymentInfo = match.creator?.phone && !hasPaid
+
     const handleCopyPhone = () => {
         if (!match.creator?.phone) return
         navigator.clipboard.writeText(match.creator.phone)
@@ -161,7 +163,7 @@ const MatchHeader = ({
                     )}
                 </div>
 
-                {match.creator?.phone && !hasPaid && (
+                {showPaymentInfo && (
                     <div className="payment-info-box">
                         <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             <Shield size={12} /> Información de Pago (Yape/Plin)
@@ -189,19 +191,21 @@ const MatchHeader = ({
                     </div>
                 )}
 
-                <div className="match-header-footer" style={{ borderTop: match.creator?.phone && !hasPaid ? 'none' : '1px solid var(--border)', marginTop: match.creator?.phone && !hasPaid ? '0.5rem' : '1.5rem' }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        color: 'var(--primary)',
-                        fontWeight: '500',
-                        fontSize: '0.9rem'
-                    }}>
-                        <Shield size={18} />
-                        <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>
+                {!showPaymentInfo && (
+                    <div className="match-header-footer" style={{ borderTop: '1px solid var(--border)', marginTop: '1.5rem' }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            color: 'var(--primary)',
+                            fontWeight: '500',
+                            fontSize: '0.9rem'
+                        }}>
+                            <Shield size={18} />
+                            <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>
+                        </div>
                     </div>
-                </div>
+                )}
             </Card>
         </>
     )
