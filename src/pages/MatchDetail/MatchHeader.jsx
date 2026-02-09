@@ -142,27 +142,29 @@ const MatchHeader = ({
 
                 {match.creator?.phone && (
                     <div className="payment-info-box">
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <Shield size={14} color="var(--primary)" /> INFORMACIÓN DE PAGO (Yape/Plin)
+                        <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            <Shield size={12} /> Información de Pago (Yape/Plin)
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                             <div>
-                                <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>{match.creator.phone}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>A nombre de: {match.creator.full_name}</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'white', letterSpacing: '0.5px' }}>{match.creator.phone}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>A nombre de: <span style={{ color: 'var(--text-main)' }}>{match.creator.full_name}</span></div>
                             </div>
                             <Button
                                 size="sm"
                                 variant={copied ? 'success' : 'outline'}
                                 onClick={handleCopyPhone}
                                 icon={copied ? CheckCircle2 : Copy}
-                                style={{ padding: '0.4rem 0.8rem', minWidth: '90px' }}
+                                style={{ padding: '0.5rem 1rem', minWidth: '100px', borderRadius: '10px' }}
                             >
                                 {copied ? 'Copiado' : 'Copiar'}
                             </Button>
                         </div>
-                        <p style={{ marginTop: '0.8rem', fontSize: '0.7rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-                            💡 Paga y envía el comprobante al admin para asegurar tu cupo de titular.
-                        </p>
+                        <div style={{ marginTop: '1rem', padding: '0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'flex', gap: '0.4rem', alignItems: 'flex-start', margin: 0, lineHeight: '1.4' }}>
+                                <span>💡</span> <span>Paga y envía el comprobante al organizador para asegurar tu lugar en la lista de titulares.</span>
+                            </p>
+                        </div>
                     </div>
                 )}
 

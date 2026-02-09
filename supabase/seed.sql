@@ -19,9 +19,9 @@ VALUES
   ('00000000-0000-0000-0000-100000000001', 'walter@futgo.com', extensions.crypt('tester123', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Walter Admin"}', 'authenticated', 'authenticated')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin)
-VALUES ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true)
-ON CONFLICT (id) DO UPDATE SET is_super_admin = true;
+INSERT INTO public.profiles (id, full_name, elo_rating, is_admin, is_super_admin, phone)
+VALUES ('00000000-0000-0000-0000-100000000001', 'Walter Admin', 1500, true, true, '987654321')
+ON CONFLICT (id) DO UPDATE SET is_super_admin = true, phone = '987654321';
 
 -- Pool of 100 Players to avoid offset issues
 DO $$

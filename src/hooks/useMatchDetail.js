@@ -30,7 +30,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             // Fetch match
             const { data: matchData, error: matchError } = await supabase
                 .from('matches')
-                .select('*, field:fields(*), creator:profiles(full_name)')
+                .select('*, field:fields(*), creator:profiles(full_name, phone)')
                 .eq('id', matchId)
                 .single()
 
