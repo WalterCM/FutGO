@@ -241,9 +241,6 @@ export default function Fields({ profile }) {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Users size={16} /> Fútbol {field.players_per_team} ({field.players_per_team * 2} jugadores)
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <DollarSign size={16} /> S/ {field.price_per_hour} por hora
-                                </div>
                                 {field.address && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <MapPin size={16} />
