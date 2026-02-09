@@ -17,7 +17,7 @@ import { getRating, getDisplayName } from './lib/utils'
 
 
 function MainContent() {
-  const { user, profile, signOut, refreshProfile } = useAuth()
+  const { user, profile, loading, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -37,7 +37,8 @@ function MainContent() {
     setIsMenuOpen(false)
   }, [location])
 
-  if (user && !profile) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando datos...</div>
+  if (loading) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando...</div>
+
   if (!user) return <Auth />
   if (!profile?.profile_complete) return <ProfileSetup onComplete={refreshProfile} />
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckCircle as CheckCircle2, Share2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckCircle as CheckCircle2, Share2, Users } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { getDisplayName } from '../../lib/utils'
@@ -45,9 +45,10 @@ const MatchHeader = ({
         message += `⏰ ${timeStr} hrs\n\n`
 
         if (enrollments && enrollments.length > 0) {
-            message += `*Jugadores (${enrollments.length}/${totalNeeded}):*\n`
-            enrollments.forEach((enrol, index) => {
-                const name = getDisplayName(enrol.profiles, viewerId, match.creator_id, viewerIsSuperAdmin)
+            const activeEnrollments = enrollments.filter(e => !e.is_excluded)
+            message += `*Jugadores (${activeEnrollments.length}/${totalNeeded}):*\n`
+            activeEnrollments.forEach((enrol, index) => {
+                const name = getDisplayName(enrol.player || enrol.profiles, viewerId, match.creator_id, viewerIsSuperAdmin)
                 message += `${index + 1}. ${name}${enrol.paid ? ' ✅' : ''}\n`
             })
         } else {
@@ -80,89 +81,70 @@ const MatchHeader = ({
             </button>
 
             <Card style={{ marginBottom: '2rem' }} hover={false}>
-                <div className="match-header-top">
-                    <div className="match-header-title-container" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <h2 className="match-title" style={{ margin: 0 }}>{match.field?.name}</h2>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <button
-                                onClick={handleShare}
-                                style={{
-                                    background: 'rgba(var(--primary-rgb), 0.1)',
-                                    border: '1px solid var(--primary)',
-                                    color: 'var(--primary)',
-                                    cursor: 'pointer',
-                                    padding: '0.4rem',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                title="Compartir en WhatsApp"
-                            >
-                                <Share2 size={18} />
-                            </button>
-
-                            {canManage && !match.is_locked && (
+                <div className="match-header-content">
+                    <div className="match-header-main">
+                        <div className="match-title-row">
+                            <h2 className="match-title">{match.field?.name}</h2>
+                            <div className="match-header-actions">
                                 <button
-                                    onClick={onEdit}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: 'var(--primary)',
-                                        cursor: 'pointer',
-                                        opacity: 0.7,
-                                        padding: '0.3rem 0',
-                                        flexShrink: 0
-                                    }}
-                                    title="Editar detalles"
+                                    onClick={handleShare}
+                                    className="icon-action-btn"
+                                    title="Compartir en WhatsApp"
                                 >
-                                    <Pencil size={20} />
+                                    <Share2 size={18} />
                                 </button>
-                            )}
+
+                                {canManage && !match.is_locked && (
+                                    <button
+                                        onClick={onEdit}
+                                        className="icon-action-btn subtle"
+                                        title="Editar detalles"
+                                    >
+                                        <Pencil size={20} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="match-stats-row">
+                            <div className="stat-pill">
+                                <Users size={14} />
+                                <span>Fútbol {playersPerTeam} • {numTeams} Equipos</span>
+                            </div>
+                            <div className="stat-pill primary">
+                                <span>
+                                    {enrolledCount > totalNeeded
+                                        ? `${totalNeeded}/${totalNeeded} (+${enrolledCount - totalNeeded})`
+                                        : `${enrolledCount}/${totalNeeded}`
+                                    } Reservados
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="match-status-badge">
-                        <div className="player-count-box">
-                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
-                                {enrolledCount > totalNeeded
-                                    ? `${totalNeeded} / ${totalNeeded} (+${enrolledCount - totalNeeded})`
-                                    : `${enrolledCount} / ${totalNeeded}`
-                                }
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>Jugadores</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--primary)', opacity: 0.8, marginTop: '0.4rem', fontWeight: 'bold' }}>
-                                Fútbol {playersPerTeam} • {numTeams} Equipos
-                            </div>
-                        </div>
-
-                        <div className="action-btn-container">
-                            {isEnrolled ? (
-                                <Button
-                                    onClick={onLeave}
-                                    variant={(confirmingLeave || actionLoading === 'leave') ? 'danger' : 'outline-danger'}
-                                    size="sm"
-                                    style={{ width: '100%', transition: 'none' }}
-                                    loading={actionLoading === 'leave'}
-                                    disabled={match.is_locked}
-                                >
-                                    {(confirmingLeave || actionLoading === 'leave') ? '¿Seguro?' : 'Salir'}
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={onJoin}
-                                    size="sm"
-                                    style={{ width: '100%' }}
-                                    loading={actionLoading === 'join'}
-                                    disabled={match.is_locked || enrolledCount >= totalNeeded + playersPerTeam}
-                                >
-                                    {enrolledCount >= totalNeeded + playersPerTeam ? 'Lleno' :
-                                        enrolledCount >= totalNeeded ? 'Unirme a Espera' : 'Unirme'}
-                                </Button>
-                            )}
-                        </div>
+                    <div className="match-header-side">
+                        {isEnrolled ? (
+                            <Button
+                                onClick={onLeave}
+                                variant={(confirmingLeave || actionLoading === 'leave') ? 'danger' : 'outline-danger'}
+                                style={{ minWidth: '140px', transition: 'none' }}
+                                loading={actionLoading === 'leave'}
+                                disabled={match.is_locked}
+                            >
+                                {(confirmingLeave && actionLoading !== 'leave') ? '¿Confirmar Salir?' :
+                                    actionLoading === 'leave' ? 'Saliendo...' : 'Salir del Partido'}
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={onJoin}
+                                style={{ minWidth: '140px' }}
+                                loading={actionLoading === 'join'}
+                                disabled={match.is_locked || enrolledCount >= totalNeeded + playersPerTeam}
+                            >
+                                {enrolledCount >= totalNeeded + playersPerTeam ? 'Lleno' :
+                                    enrolledCount >= totalNeeded ? 'Unirme a Espera' : 'Unirme al Partido'}
+                            </Button>
+                        )}
                     </div>
                 </div>
 

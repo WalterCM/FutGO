@@ -5,7 +5,12 @@ import { AlertModal } from '../components/ConfirmModal'
 
 export default function ProfileSetup({ onComplete }) {
     const { user, profile } = useAuth()
-    const [fullName, setFullName] = useState(profile?.full_name || '')
+    const [fullName, setFullName] = useState(
+        profile?.full_name ||
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        ''
+    )
     const [nickname, setNickname] = useState('')
     const [phone, setPhone] = useState('')
     const [loading, setLoading] = useState(false)
@@ -23,13 +28,13 @@ export default function ProfileSetup({ onComplete }) {
 
         const { error } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+                id: user.id, // Ensure ID is included for upsert
                 full_name: fullName.trim(),
                 nickname: nickname.trim() || null,
                 phone: phone.trim() || null,
                 profile_complete: true
             })
-            .eq('id', user.id)
 
         if (error) {
             setErrorMsg(error.message)

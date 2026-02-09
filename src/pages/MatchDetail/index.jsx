@@ -262,8 +262,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const rawTotal = match.max_players || (playersPerTeam * 2)
     const numTeams = Math.max(2, Math.round(rawTotal / playersPerTeam))
     const totalNeeded = numTeams * playersPerTeam
-    const enrolledCount = enrollments.length
-    const isEnrolled = enrollments.some(e => e.player_id === profile?.id)
+    const enrolledCount = enrollments.filter(e => !e.is_excluded).length
+    const isEnrolled = enrollments.some(e => e.player_id === profile?.id && !e.is_excluded)
     const suggestedQuota = Math.ceil((match.field?.price_per_hour || 120) / (2 * playersPerTeam))
     const canManage = profile?.is_super_admin || match?.creator_id === profile?.id
 
@@ -296,7 +296,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     actionLoading={actionLoading}
                     confirmingLeave={confirmingLeave}
                     canManage={canManage}
-                    onEdit={() => setEditModal(true)}
+                    onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
                     viewerId={profile?.id}
                     viewerIsSuperAdmin={profile?.is_super_admin}
                     hasPaid={enrollments?.find(e => e.player_id === profile?.id)?.paid || false}

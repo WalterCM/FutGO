@@ -188,30 +188,7 @@ const AdminTab = ({
                 variant="danger"
             />
 
-            {/* ===== MATCH INFO CARD ===== */}
-            <Card style={{
-                marginBottom: '2rem',
-                padding: '1.2rem',
-                border: '1px solid var(--border)',
-                background: 'rgba(255, 255, 255, 0.02)'
-            }} hover={false}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Jugadores Titulares</div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {paidEnrollments.slice(0, totalNeeded).length} / {totalNeeded}
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Reservas Pagados</div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                            {Math.max(0, paidEnrollments.length - totalNeeded)}
-                        </div>
-                    </div>
-                </div>
-            </Card>
-
-            {/* ===== ATTENDANCE & PAYMENTS LIST ===== */}
+            {/* Attendance & Payments list header */}
             <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <CheckCircle size={20} /> Asistencia y Pagos
             </h3>

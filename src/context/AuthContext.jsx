@@ -41,16 +41,24 @@ export const AuthProvider = ({ children }) => {
         let isMounted = true
 
         const initializeAuth = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession()
+            // Use getUser instead of getSession to force a server-side check.
+            // This prevents stale localStorage sessions from surviving DB resets.
+            const { data: { user: currentUser }, error } = await supabase.auth.getUser()
 
             if (error) {
-                console.error('Session initialization error:', error.message)
-                await supabase.auth.signOut()
-                if (isMounted) setLoading(false)
+                // If the user doesn't exist on the server, getSession might still 
+                // return something, but getUser will fail.
+                console.log('Session validation failed or no session found:', error.message)
+                if (error.status === 401 || error.message.includes('not found')) {
+                    await supabase.auth.signOut()
+                }
+                if (isMounted) {
+                    setUser(null)
+                    setLoading(false)
+                }
                 return
             }
 
-            const currentUser = session?.user ?? null
             if (isMounted) setUser(currentUser)
 
             if (currentUser) {
