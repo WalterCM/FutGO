@@ -50,7 +50,7 @@ const FixtureTimeline = ({
     }
 
     // Check if there's a liguilla phase (for standings-based elimination)
-    const hasPreviousLiguilla = phases.some(p => p.type === 'liguilla')
+    const hasPreviousLiguilla = phases.some(p => p.type === 'liguilla' || p.type === 'liguilla_double')
 
     // Get global standings (all liguilla phases) for PhaseConfigModal
     const globalStandings = getStandings ? getStandings() : []
@@ -63,7 +63,7 @@ const FixtureTimeline = ({
     }
 
     const getPhaseIcon = (type) => {
-        if (type === 'liguilla') return '🏆'
+        if (type === 'liguilla' || type === 'liguilla_double') return '🏆'
         if (type?.startsWith('tournament')) return '⚔️'
         if (type === 'winner_stays') return '🔥'
         return '⚽'
@@ -155,7 +155,7 @@ const FixtureTimeline = ({
                         {phases.map((phase) => {
                             const phaseFixtures = getPhaseFixtures(phase.id)
                             const isGenerated = phaseFixtures.length > 0
-                            const isLiguilla = phase.type === 'liguilla'
+                            const isLiguilla = phase.type === 'liguilla' || phase.type === 'liguilla_double'
                             // Get standings for THIS specific phase
                             const standings = isLiguilla && getStandings ? getStandings(phase.id) : []
                             const showStandingsButton = isLiguilla && standings.length > 0

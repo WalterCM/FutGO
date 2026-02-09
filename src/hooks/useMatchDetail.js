@@ -604,7 +604,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             // For tournament_standings, find the last liguilla phase to use as source
             let sourcePhaseId = null
             if (type === 'tournament_standings') {
-                const liguillaPhases = currentPhases.filter(p => p.type === 'liguilla')
+                const liguillaPhases = currentPhases.filter(p => p.type === 'liguilla' || p.type === 'liguilla_double')
                 if (liguillaPhases.length > 0) {
                     sourcePhaseId = liguillaPhases[liguillaPhases.length - 1].id
                 }
@@ -613,7 +613,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const newPhase = {
                 id: Math.random().toString(36).substr(2, 9),
                 type,
-                name: name || (type === 'liguilla' ? 'Liguilla' : type === 'tournament' ? 'Fase de Grupos' : type === 'winner_stays' ? 'Ganador Queda' : 'Fase Libre'),
+                name: name || (type === 'liguilla' ? 'Liguilla' : type === 'liguilla_double' ? 'Liguilla Doble' : type === 'tournament' ? 'Fase de Grupos' : type === 'winner_stays' ? 'Ganador Queda' : 'Fase Libre'),
                 status: 'pending',
                 created_at: new Date().toISOString(),
                 ...(sourcePhaseId && { sourcePhaseId }) // Reference to which liguilla's standings to use
@@ -919,7 +919,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         })
 
         // Fallback for legacy phases without sourcePhaseId - check if ANY liguilla is complete
-        const liguillaPhases = match.phases.filter(p => p.type === 'liguilla')
+        const liguillaPhases = match.phases.filter(p => p.type === 'liguilla' || p.type === 'liguilla_double')
         let legacyPositionMap = {}
         if (liguillaPhases.length > 0) {
             const liguillaFixtures = match.fixtures.filter(f =>
