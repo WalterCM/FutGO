@@ -43,7 +43,7 @@ export default function Stats({ viewerId, viewerIsSuperAdmin }) {
                 <h2 style={{ color: 'var(--primary)', fontSize: '2.5rem', marginBottom: '0.5rem' }}>
                     Líderes de la Cancha
                 </h2>
-                <p style={{ color: 'var(--text-dim)' }}>Los más cracks de la comunidad FutGO</p>
+                <p style={{ color: 'var(--text-dim)' }}>Los mejores jugadores de la comunidad FutGO</p>
             </div>
 
             {loading ? (

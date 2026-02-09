@@ -27,7 +27,7 @@ describe('Users', () => {
 
     test('renders user list for super admins', async () => {
         const users = [
-            createMockProfile({ full_name: 'Walter Crack', is_super_admin: true }),
+            createMockProfile({ full_name: 'Walter Jugador', is_super_admin: true }),
             createMockProfile({ full_name: 'Pedro Goleador', is_admin: true }),
             createMockProfile({ full_name: 'Luis Defensa' })
         ]
@@ -40,7 +40,7 @@ describe('Users', () => {
         render(<Users profile={createMockProfile({ is_super_admin: true })} />)
 
         await waitFor(() => {
-            expect(screen.getByText('Walter Crack')).toBeDefined()
+            expect(screen.getByText('Walter Jugador')).toBeDefined()
             expect(screen.getByText('Pedro Goleador')).toBeDefined()
             expect(screen.getByText('Luis Defensa')).toBeDefined()
         })
@@ -95,7 +95,7 @@ describe('Users', () => {
         expect(screen.queryByText('Martin Palermo')).toBeNull()
     })
 
-    test('shows "No se encontraron cracks" when search has no results', async () => {
+    test('shows "No se encontraron jugadores" when search has no results', async () => {
         const users = [createMockProfile({ full_name: 'Carlos' })]
 
         supabase.from().select().order.mockResolvedValue({
@@ -112,6 +112,6 @@ describe('Users', () => {
         const searchInput = screen.getByPlaceholderText(/Buscar por nombre/i)
         await userEvent.type(searchInput, 'ZZZZZ')
 
-        expect(screen.getByText(/No se encontraron cracks/i)).toBeDefined()
+        expect(screen.getByText(/No se encontraron jugadores/i)).toBeDefined()
     })
 })

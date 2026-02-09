@@ -77,7 +77,7 @@ export default function Users({ profile }) {
         <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ color: 'var(--primary)', fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <UsersIcon size={32} /> Gestión de Cracks
+                    <UsersIcon size={32} /> Gestión de Jugadores
                 </h2>
 
                 <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
@@ -108,7 +108,7 @@ export default function Users({ profile }) {
                     />
                     {filteredUsers.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
-                            No se encontraron cracks con ese nombre.
+                            No se encontraron jugadores con ese nombre.
                         </div>
                     )}
                 </>

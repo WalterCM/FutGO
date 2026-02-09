@@ -22,7 +22,7 @@ export default function UserModals({
             >
                 <div style={{ textAlign: 'center', padding: '1rem' }}>
                     <Pencil size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-                    <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>Estás editando el nombre de cancha para este crack.</p>
+                    <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem' }}>Estás editando el nombre de cancha para este jugador.</p>
 
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'left' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', display: 'block', marginBottom: '0.5rem' }}>Nombre o Apodo:</label>
@@ -80,7 +80,7 @@ export default function UserModals({
                     {roleConfirm.roleField === 'is_super_admin' && roleConfirm.newValue && (
                         <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', display: 'block', marginBottom: '0.5rem' }}>
-                                Escribe el nombre completo del crack para confirmar:
+                                Escribe el nombre completo del jugador para confirmar:
                             </label>
                             <input
                                 type="text"

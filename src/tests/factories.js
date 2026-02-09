@@ -9,7 +9,7 @@ export function createMockProfile(overrides = {}) {
     const id = `profile-${idCounter++}`
     return {
         id,
-        full_name: 'Juan Crack',
+        full_name: 'Juan Jugador',
         elo_rating: 1200,
         balance: 50,
         is_admin: false,
