@@ -56,6 +56,7 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 import { getDisplayName } from '../../lib/utils'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 const AdminTab = ({
     enrollments,
@@ -76,6 +77,8 @@ const AdminTab = ({
     viewerId,
     viewerIsSuperAdmin
 }) => {
+    const isMobile = useMediaQuery('(max-width: 600px)')
+
     // Modal state for removal confirmation
     const [removeConfirm, setRemoveConfirm] = useState({ show: false, enrol: null })
     // Modal state for unpaid confirmation (removing payment)
@@ -213,8 +216,8 @@ const AdminTab = ({
                 <CheckCircle size={20} /> Asistencia y Pagos
             </h3>
 
-            <Card style={{ marginBottom: '3rem', padding: '1rem' }} hover={false}>
-                <div style={{ display: 'grid', gap: '0.8rem' }}>
+            <Card style={{ marginBottom: '3rem', padding: isMobile ? '0.5rem' : '1rem' }} hover={false}>
+                <div style={{ display: 'grid', gap: isMobile ? '0.4rem' : '0.8rem' }}>
                     {sortedEnrollments.map((enrol, index) => {
                         // Find its position in the overall sorted list
                         const overallIndex = index + 1
@@ -251,7 +254,6 @@ const AdminTab = ({
                             tagLabel = 'INTERESADO'
                             tagColor = 'var(--text-dim)'
                             tagBg = 'rgba(255, 255, 255, 0.02)'
-                            tagBorder = 'var(--border)'
                             tagBorder = 'rgba(255, 255, 255, 0.1)'
                         }
 
@@ -266,41 +268,42 @@ const AdminTab = ({
                                 opacity: enrol.is_excluded ? 0.5 : 1
                             }}>
                                 <div className="admin-player-info">
-                                    <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{enrol.is_excluded ? '-' : overallIndex}.</span>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{
+                                    <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>{enrol.is_excluded ? '-' : overallIndex}.</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                                        <div style={{
                                             fontWeight: '600',
+                                            fontSize: isMobile ? '0.85rem' : '1rem',
                                             color: enrol.is_excluded ? 'var(--text-dim)' : isNoShow ? 'var(--danger)' : enrol.is_present ? 'var(--primary)' : 'white',
-                                            textDecoration: enrol.is_excluded || isNoShow ? 'line-through' : 'none'
+                                            textDecoration: enrol.is_excluded || isNoShow ? 'line-through' : 'none',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
                                         }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span>{getDisplayName(enrol.player, viewerId, match?.creator_id, viewerIsSuperAdmin)}</span>
-                                                {(viewerIsSuperAdmin || viewerId === match?.creator_id) && enrol.player?.nickname && (
-                                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>
-                                                        ({enrol.player.full_name})
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </span>
-                                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                                            {getDisplayName(enrol.player, viewerId, match?.creator_id, viewerIsSuperAdmin)}
+                                            {(viewerIsSuperAdmin || viewerId === match?.creator_id) && enrol.player?.nickname && (
+                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontWeight: 'normal', marginLeft: '0.3rem' }}>
+                                                    ({enrol.player.full_name})
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.1rem', flexWrap: 'wrap' }}>
                                             {tagLabel && (
                                                 <div style={{
-                                                    fontSize: '0.6rem',
-                                                    padding: '0.1rem 0.3rem',
+                                                    fontSize: '0.55rem',
+                                                    padding: '0.05rem 0.2rem',
                                                     borderRadius: '3px',
                                                     background: tagBg,
                                                     color: tagColor,
-                                                    border: `1px solid ${tagBorder}`,
+                                                    border: `1px solid ${tagColor || tagBorder}`,
                                                     fontWeight: 'bold'
                                                 }}>
                                                     {tagLabel}
                                                 </div>
                                             )}
-                                            {/* NO-SHOW indicator */}
                                             {isNoShow && (
                                                 <div style={{
-                                                    fontSize: '0.6rem',
-                                                    padding: '0.1rem 0.3rem',
+                                                    fontSize: '0.55rem',
+                                                    padding: '0.05rem 0.2rem',
                                                     borderRadius: '3px',
                                                     background: 'rgba(239, 68, 68, 0.15)',
                                                     color: 'var(--danger)',
@@ -310,8 +313,8 @@ const AdminTab = ({
                                                     NO LLEGÓ
                                                 </div>
                                             )}
-                                            {enrol.paid && !enrol.is_excluded && (
-                                                <div style={{ fontSize: '0.6rem', color: 'var(--primary)', opacity: 0.8 }}>
+                                            {enrol.paid && !enrol.is_excluded && !isMobile && (
+                                                <div style={{ fontSize: '0.55rem', color: 'var(--primary)', opacity: 0.8 }}>
                                                     Pagó: {new Date(enrol.paid_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             )}
@@ -328,20 +331,20 @@ const AdminTab = ({
                                                 disabled={match.is_locked || !canManage}
                                                 icon={CreditCard}
                                                 style={{ transition: 'none' }}
+                                                title={enrol.paid ? 'Pagado' : 'Cobrar'}
                                             >
-                                                {enrol.paid ? 'Pagado' : 'Cobrar'}
+                                                {!isMobile && (enrol.paid ? 'Pagado' : 'Cobrar')}
                                             </Button>
-                                            {/* Presence toggle - requires payment first (no on-site payments) */}
                                             <Button
                                                 size="sm"
                                                 variant={enrol.is_present ? 'primary' : 'outline'}
                                                 onClick={() => handlePresenceClick(enrol)}
                                                 disabled={match.is_locked || !canManage || (!enrol.paid && !enrol.is_present)}
                                                 icon={Users}
+                                                title={enrol.is_present ? 'Presente' : 'Ausente'}
                                             >
-                                                {enrol.is_present ? 'Presente' : 'Ausente'}
+                                                {!isMobile && (enrol.is_present ? 'Presente' : 'Ausente')}
                                             </Button>
-                                            {/* Remove button - ONLY for unpaid players who haven't been excluded */}
                                             {canRemove && onRemovePlayer && (
                                                 <Button
                                                     size="sm"
@@ -354,31 +357,31 @@ const AdminTab = ({
                                             )}
                                         </>
                                     ) : canManage && enrol.is_excluded && !match.is_locked ? (
-                                        // Restore button for excluded players (can undo exclusion)
                                         <Button
                                             size="sm"
                                             variant="outline"
                                             onClick={() => onRestorePlayer && onRestorePlayer(enrol)}
                                             disabled={!canManage}
                                             icon={UserPlus}
+                                            title="Restaurar"
                                         >
-                                            Restaurar
+                                            {!isMobile && 'Restaurar'}
                                         </Button>
                                     ) : (
                                         enrol.is_present && !enrol.is_excluded && (
                                             <div style={{
-                                                fontSize: '0.7rem',
+                                                fontSize: '0.65rem',
                                                 color: 'var(--primary)',
-                                                padding: '0.2rem 0.6rem',
-                                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                                padding: '0.15rem 0.5rem',
+                                                background: 'rgba(0, 255, 136, 0.1)',
                                                 borderRadius: '30px',
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '0.3rem',
-                                                border: '1px solid rgba(var(--primary-rgb), 0.2)'
+                                                border: '1px solid rgba(0, 255, 136, 0.2)'
                                             }}>
-                                                <Users size={12} /> PRESENTE
+                                                <Users size={12} /> {isMobile ? '' : 'PRESENTE'}
                                             </div>
                                         )
                                     )}
@@ -391,24 +394,22 @@ const AdminTab = ({
 
             {/* ===== TEAM MANAGEMENT BUTTONS ===== */}
             {canManage && !match.is_locked && (
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                    {/* Expand up to 6 teams max */}
+                <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
                     {numTeams < 6 && (
                         <Button
                             variant="outline"
                             onClick={onExpand}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, minWidth: isMobile ? '100%' : 'auto' }}
                             loading={actionLoading === 'capacity'}
                         >
                             Habilitar {getOrdinal(numTeams + 1)} Equipo
                         </Button>
                     )}
-                    {/* Shrink down to minimum 2 teams */}
                     {numTeams > 2 && (
                         <Button
                             variant="outline-danger"
                             onClick={onShrink}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, minWidth: isMobile ? 'calc(50% - 0.25rem)' : 'auto' }}
                             loading={actionLoading === 'capacity'}
                         >
                             Quitar Equipo
@@ -417,7 +418,7 @@ const AdminTab = ({
                     <Button
                         variant="outline-danger"
                         onClick={onCancel}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, minWidth: isMobile ? (numTeams > 2 ? 'calc(50% - 0.25rem)' : '100%') : 'auto' }}
                         loading={actionLoading === 'canceling'}
                     >
                         Cancelar Partido
