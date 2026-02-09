@@ -351,3 +351,66 @@ body,
     justify-content: center;
   }
 }
+
+/* Fixture & History Row Responsive */
+.fixture-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.fixture-label-badge {
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  white-space: nowrap;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.fixture-actions {
+  min-width: 85px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .fixture-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.8rem !important;
+    padding: 1rem 0.8rem;
+  }
+
+  .fixture-label-badge {
+    align-self: center;
+    font-size: 0.55rem;
+  }
+
+  .fixture-content {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    width: 100%;
+    justify-content: space-between !important;
+  }
+
+  .fixture-actions {
+    margin-top: 0.5rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: center;
+    min-width: 0 !important;
+  }
+}

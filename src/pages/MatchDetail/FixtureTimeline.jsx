@@ -289,27 +289,21 @@ const FixtureTimeline = ({
                                                     onDragStart={(e) => handleDragStart(e, globalIdx)}
                                                     onDragOver={(e) => e.preventDefault()}
                                                     onDrop={(e) => handleDrop(e, globalIdx)}
+                                                    className="fixture-card"
                                                     style={{
-                                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem',
-                                                        borderRadius: '12px', background: 'rgba(255,255,255,0.03)',
-                                                        border: '1px solid var(--border)',
                                                         opacity: fixture.status === 'completed' ? 0.6 : 1,
-                                                        cursor: isReordering ? 'grab' : 'default'
+                                                        cursor: isReordering ? 'grab' : 'default',
+                                                        display: undefined, alignItems: undefined, gap: undefined, padding: undefined, borderRadius: undefined, background: undefined, border: undefined
                                                     }}
                                                 >
                                                     {fixture.label && (
-                                                        <div style={{
-                                                            fontSize: '0.6rem', fontWeight: 'bold', color: '#f59e0b',
-                                                            textTransform: 'uppercase', letterSpacing: '0.5px',
-                                                            padding: '0.2rem 0.5rem', border: '1px solid rgba(245, 158, 11, 0.3)',
-                                                            borderRadius: '6px', whiteSpace: 'nowrap', background: 'rgba(245, 158, 11, 0.05)'
-                                                        }}>
+                                                        <div className="fixture-label-badge" style={{ fontSize: undefined, fontWeight: undefined, color: undefined, textTransform: undefined, letterSpacing: undefined, padding: undefined, border: undefined, borderRadius: undefined, whiteSpace: undefined, background: undefined }}>
                                                             {fixture.label}
                                                         </div>
                                                     )}
                                                     {isReordering && <GripVertical size={16} color="var(--text-dim)" />}
 
-                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
+                                                    <div className="fixture-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
                                                         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
                                                             {fixture.team1Id ? (
                                                                 <TeamBadge id={fixture.team1Id} teamConfigs={teamConfigs} />
@@ -343,13 +337,13 @@ const FixtureTimeline = ({
                                                         </div>
                                                     </div>
 
-                                                    <div style={{ minWidth: '80px', textAlign: 'right' }}>
+                                                    <div className="fixture-actions">
                                                         {fixture.status === 'pending' && canManage && !isReordering && fixture.team1Id && fixture.team2Id && (
                                                             <Button size="sm" onClick={() => onStartMatch(fixture.team1Id, fixture.team2Id, fixture.id)}>
                                                                 Jugar
                                                             </Button>
                                                         )}
-                                                        {fixture.status === 'completed' && <CheckCircle2 size={18} color="#10b981" style={{ marginLeft: 'auto' }} />}
+                                                        {fixture.status === 'completed' && <CheckCircle2 size={18} color="#10b981" />}
                                                     </div>
                                                 </div>
                                             )
