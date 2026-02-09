@@ -42,6 +42,8 @@ const PhaseConfigModal = ({ show, onClose, onAdd, standingsCount = 0, numTeams =
         setSelectedType(type)
         if (type.id === 'tournament') {
             setStep('elimination_config')
+        } else if (type.id === 'liguilla') {
+            setStep('liguilla_config')
         } else {
             onAdd(type.id, type.name)
             resetAndClose()
@@ -60,7 +62,11 @@ const PhaseConfigModal = ({ show, onClose, onAdd, standingsCount = 0, numTeams =
         <Modal
             show={show}
             onClose={resetAndClose}
-            title={step === 'type' ? 'Añadir Nueva Fase' : 'Configurar Eliminación'}
+            title={
+                step === 'type' ? 'Añadir Nueva Fase' :
+                    step === 'liguilla_config' ? 'Configurar Liguilla' :
+                        'Configurar Eliminación'
+            }
         >
             <div style={{ padding: '1rem' }}>
                 {step === 'type' ? (
@@ -89,6 +95,50 @@ const PhaseConfigModal = ({ show, onClose, onAdd, standingsCount = 0, numTeams =
                                 </div>
                             </button>
                         ))}
+                    </div>
+                ) : step === 'liguilla_config' ? (
+                    <div style={{ display: 'grid', gap: '1.5rem' }}>
+                        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', margin: 0 }}>
+                            ¿Quieres jugar a una sola vuelta o ida y vuelta?
+                        </p>
+
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                            <Button
+                                variant="primary"
+                                fullWidth
+                                size="lg"
+                                style={{ height: 'auto', padding: '1.2rem', justifyContent: 'flex-start', gap: '1rem' }}
+                                onClick={() => {
+                                    onAdd('liguilla', 'Liguilla (Simple)')
+                                    resetAndClose()
+                                }}
+                            >
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontWeight: 'bold' }}>Simple (Solo Ida)</div>
+                                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Cada equipo juega contra todos una vez.</div>
+                                </div>
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                fullWidth
+                                size="lg"
+                                style={{ height: 'auto', padding: '1.2rem', justifyContent: 'flex-start', gap: '1rem' }}
+                                onClick={() => {
+                                    onAdd('liguilla_double', 'Liguilla (Ida y Vuelta)')
+                                    resetAndClose()
+                                }}
+                            >
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontWeight: 'bold' }}>Doble (Ida y Vuelta)</div>
+                                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Dos rondas completas con localía invertida.</div>
+                                </div>
+                            </Button>
+                        </div>
+
+                        <Button variant="ghost" fullWidth onClick={() => setStep('type')}>
+                            ← Volver
+                        </Button>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gap: '1.5rem' }}>

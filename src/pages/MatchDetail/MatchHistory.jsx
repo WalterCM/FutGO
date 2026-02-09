@@ -7,6 +7,7 @@ export default function MatchHistory({
     showHistory,
     setShowHistory,
     games,
+    fixtures = [],
     teamConfigs,
     canManage,
     onDeleteGame
@@ -37,37 +38,52 @@ export default function MatchHistory({
 
             {showHistory && (
                 <div style={{ display: 'grid', gap: '0.8rem' }}>
-                    {games.map((game) => (
-                        <Card key={game.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }} hover={false}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                    <TeamBadge id={game.team1_id} teamConfigs={teamConfigs} />
+                    {games.map((game) => {
+                        const fixture = fixtures.find(f => f.id === game.fixture_id)
+                        return (
+                            <Card key={game.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }} hover={false}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {fixture?.label && (
+                                        <div style={{
+                                            fontSize: '0.55rem', fontWeight: 'bold', color: '#f59e0b',
+                                            textTransform: 'uppercase', padding: '0.2rem 0.4rem',
+                                            border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '4px',
+                                            background: 'rgba(245, 158, 11, 0.05)', whiteSpace: 'nowrap'
+                                        }}>
+                                            {fixture.label}
+                                        </div>
+                                    )}
+                                    <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                            <TeamBadge id={game.team1_id} teamConfigs={teamConfigs} />
+                                        </div>
+                                        <div style={{
+                                            margin: '0 1rem', fontSize: '1.1rem', fontWeight: '800',
+                                            background: 'rgba(255,255,255,0.1)', color: 'white',
+                                            padding: '0.2rem 1rem', borderRadius: '12px', minWidth: '70px',
+                                            textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                        }}>
+                                            {game.score1} - {game.score2}
+                                        </div>
+                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <TeamBadge id={game.team2_id} teamConfigs={teamConfigs} />
+                                        </div>
+                                    </div>
+                                    {canManage && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteGame(game.id, game.fixture_id)
+                                            }}
+                                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', marginLeft: '0.5rem', color: 'var(--error)', opacity: 0.4 }}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
-                                <div style={{
-                                    margin: '0 1rem', fontSize: '1.1rem', fontWeight: '800',
-                                    background: 'rgba(255,255,255,0.1)', color: 'white',
-                                    padding: '0.2rem 1rem', borderRadius: '12px', minWidth: '70px',
-                                    textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-                                }}>
-                                    {game.score1} - {game.score2}
-                                </div>
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <TeamBadge id={game.team2_id} teamConfigs={teamConfigs} />
-                                </div>
-                                {canManage && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDeleteGame(game.id, game.fixture_id)
-                                        }}
-                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', marginLeft: '0.5rem', color: 'var(--error)', opacity: 0.4 }}
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                )}
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
         </div>

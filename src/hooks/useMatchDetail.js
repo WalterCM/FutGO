@@ -363,20 +363,77 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         const numTeams = Math.max(2, Math.round(maxPlayers / playersPerTeam))
 
         const newFixtures = []
-        if (type === 'liguilla') {
-            for (let i = 1; i <= numTeams; i++) {
-                for (let j = i + 1; j <= numTeams; j++) {
-                    newFixtures.push({
-                        id: Math.random().toString(36).substr(2, 9),
-                        team1Id: i,
-                        team2Id: j,
-                        status: 'pending',
-                        label: phase.name || 'Liguilla',
-                        phaseId: phase.id
-                    })
+        if (type === 'liguilla' || type === 'liguilla_double') {
+            const isDouble = type === 'liguilla_double'
+            const teams = Array.from({ length: numTeams }, (_, i) => i + 1)
+            const isOdd = numTeams % 2 !== 0
+            if (isOdd) teams.push(null) // Bye team
+
+            const n = teams.length
+            const totalRounds = n - 1
+            const matchesPerRound = n / 2
+
+            // 1. Generate Rounds first using Circle Method
+            const rounds = []
+            const currentTeams = [...teams]
+            const homeCounts = {}
+            teams.forEach(t => { if (t !== null) homeCounts[t] = 0 })
+
+            for (let r = 0; r < totalRounds; r++) {
+                const roundMatches = []
+                for (let i = 0; i < matchesPerRound; i++) {
+                    const t1 = currentTeams[i]
+                    const t2 = currentTeams[n - 1 - i]
+                    if (t1 !== null && t2 !== null) {
+                        let home, away
+                        if (homeCounts[t1] < homeCounts[t2]) { home = t1; away = t2 }
+                        else if (homeCounts[t2] < homeCounts[t1]) { home = t2; away = t1 }
+                        else {
+                            if ((i + r) % 2 === 0) { home = t1; away = t2 }
+                            else { home = t2; away = t1 }
+                        }
+                        roundMatches.push({ t1: home, t2: away })
+                        homeCounts[home]++
+                    }
                 }
+                rounds.push(roundMatches)
+                currentTeams.splice(1, 0, currentTeams.pop())
             }
-            newFixtures.sort(() => Math.random() - 0.5)
+
+            // 2. Process Legs (Ida then Vuelta)
+            let matchCount = 1
+            let lastGameTeams = new Set()
+
+            const addMatches = (roundsList, isVuelta = false) => {
+                roundsList.forEach((round) => {
+                    let matches = round.map(m => isVuelta ? { t1: m.t2, t2: m.t1 } : m)
+
+                    // Optimization for n >= 5: Swap matches within round to avoid back-to-back with prev round
+                    if (numTeams >= 5 && lastGameTeams.size > 0 && matches.length > 1) {
+                        if (lastGameTeams.has(matches[0].t1) || lastGameTeams.has(matches[0].t2)) {
+                            const safeIdx = matches.findIndex(m => !lastGameTeams.has(m.t1) && !lastGameTeams.has(m.t2))
+                            if (safeIdx > 0) {
+                                [matches[0], matches[safeIdx]] = [matches[safeIdx], matches[0]]
+                            }
+                        }
+                    }
+
+                    matches.forEach(m => {
+                        newFixtures.push({
+                            id: Math.random().toString(36).substr(2, 9),
+                            team1Id: m.t1,
+                            team2Id: m.t2,
+                            status: 'pending',
+                            label: `Juego ${matchCount++}`,
+                            phaseId: phase.id
+                        })
+                        lastGameTeams = new Set([m.t1, m.t2])
+                    })
+                })
+            }
+
+            addMatches(rounds, false) // Ida
+            if (isDouble) addMatches(rounds, true) // Vuelta
         } else if (type === 'tournament') {
             // Basic Elimination Bracket (1 vs 4, 2 vs 3, etc.)
             // If it's the first phase, we use team numbers. If not, we might use placeholders.
@@ -432,6 +489,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             }
 
             // Create matches from shuffled pairs
+            let matchIdx = 1
             for (let i = 0; i < teamIds.length; i += 2) {
                 if (teamIds[i + 1]) {
                     newFixtures.push({
@@ -439,10 +497,34 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                         team1Id: teamIds[i],
                         team2Id: teamIds[i + 1],
                         status: 'pending',
-                        label: numTeams <= 4 ? 'Semifinal' : `Ronda 1`,
+                        label: numTeams <= 4 ? `Semifinal ${matchIdx++}` : `Ronda 1`,
                         phaseId: phase.id
                     })
                 }
+            }
+
+            // If we have 4 teams, also add the Third Place and Final placeholders
+            if (numTeams === 4) {
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Tercer Puesto',
+                    placeholder1: 'Perdedor SF1',
+                    placeholder2: 'Perdedor SF2',
+                    phaseId: phase.id
+                })
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Gran Final',
+                    placeholder1: 'Ganador SF1',
+                    placeholder2: 'Ganador SF2',
+                    phaseId: phase.id
+                })
             }
         } else if (type === 'tournament_standings') {
             // Generate placeholders based on standings positions
@@ -468,6 +550,17 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     label: 'Semifinal 2',
                     placeholder1: '2º de Liguilla',
                     placeholder2: '3º de Liguilla',
+                    phaseId: phase.id
+                })
+                // Third Place placeholder
+                newFixtures.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    team1Id: null,
+                    team2Id: null,
+                    status: 'pending',
+                    label: 'Tercer Puesto',
+                    placeholder1: 'Perdedor SF1',
+                    placeholder2: 'Perdedor SF2',
                     phaseId: phase.id
                 })
                 // Final placeholder
@@ -659,7 +752,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         } else {
             // Legacy: get all liguilla phases
             targetPhaseIds = (match.phases || [])
-                .filter(p => p.type === 'liguilla')
+                .filter(p => p.type === 'liguilla' || p.type === 'liguilla_double')
                 .map(p => p.id)
         }
 
@@ -845,14 +938,17 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             }
         }
 
-        // Build a map of fixture IDs to their winners (from completed fixtures)
+        // Build a map of fixture IDs to their winners and losers (from completed fixtures)
         const fixtureWinners = {}
+        const fixtureLosers = {}
         match.fixtures.forEach(f => {
             if (f.status === 'completed' && f.score1 !== undefined && f.score2 !== undefined) {
                 if (f.score1 > f.score2) {
                     fixtureWinners[f.id] = f.team1Id
+                    fixtureLosers[f.id] = f.team2Id
                 } else if (f.score2 > f.score1) {
                     fixtureWinners[f.id] = f.team2Id
+                    fixtureLosers[f.id] = f.team1Id
                 }
             }
         })
@@ -906,16 +1002,38 @@ export const useMatchDetail = (matchId, profile, onBack) => {
 
             // Resolve semifinal winner placeholders for finals
             if (f.placeholder1 === 'Ganador SF1' && !f.team1Id) {
-                const sf1 = match.fixtures.find(x => x.label === 'Semifinal 1' && x.phaseId === f.phaseId)
+                // Find first semifinal by label 'Semifinal 1' or just 'Semifinal'
+                const sf1 = match.fixtures.find(x => (x.label === 'Semifinal 1' || x.label === 'Semifinal') && x.phaseId === f.phaseId)
                 if (sf1 && fixtureWinners[sf1.id]) {
                     updated.team1Id = fixtureWinners[sf1.id]
                     hasChanges = true
                 }
             }
             if (f.placeholder2 === 'Ganador SF2' && !f.team2Id) {
-                const sf2 = match.fixtures.find(x => x.label === 'Semifinal 2' && x.phaseId === f.phaseId)
+                const sfs = match.fixtures.filter(x => (x.label === 'Semifinal 2' || x.label === 'Semifinal') && x.phaseId === f.phaseId)
+                // If we're looking for SF2 and they are both labeled 'Semifinal', take the second one
+                const sf2 = sfs.length > 1 && sfs[0].label === 'Semifinal' ? sfs[1] : sfs.find(x => x.label === 'Semifinal 2')
+
                 if (sf2 && fixtureWinners[sf2.id]) {
                     updated.team2Id = fixtureWinners[sf2.id]
+                    hasChanges = true
+                }
+            }
+
+            // Resolve semifinal loser placeholders for third place
+            if (f.placeholder1 === 'Perdedor SF1' && !f.team1Id) {
+                const sf1 = match.fixtures.find(x => (x.label === 'Semifinal 1' || x.label === 'Semifinal') && x.phaseId === f.phaseId)
+                if (sf1 && fixtureLosers[sf1.id]) {
+                    updated.team1Id = fixtureLosers[sf1.id]
+                    hasChanges = true
+                }
+            }
+            if (f.placeholder2 === 'Perdedor SF2' && !f.team2Id) {
+                const sfs = match.fixtures.filter(x => (x.label === 'Semifinal 2' || x.label === 'Semifinal') && x.phaseId === f.phaseId)
+                const sf2 = sfs.length > 1 && sfs[0].label === 'Semifinal' ? sfs[1] : sfs.find(x => x.label === 'Semifinal 2')
+
+                if (sf2 && fixtureLosers[sf2.id]) {
+                    updated.team2Id = fixtureLosers[sf2.id]
                     hasChanges = true
                 }
             }

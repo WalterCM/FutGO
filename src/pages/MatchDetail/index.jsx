@@ -439,6 +439,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                             showHistory={showHistory}
                             setShowHistory={setShowHistory}
                             games={games}
+                            fixtures={match?.fixtures}
                             teamConfigs={teamConfigs}
                             canManage={canManage}
                             onDeleteGame={handleDeleteGameRequest}

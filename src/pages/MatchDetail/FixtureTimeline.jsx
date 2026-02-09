@@ -297,6 +297,16 @@ const FixtureTimeline = ({
                                                         cursor: isReordering ? 'grab' : 'default'
                                                     }}
                                                 >
+                                                    {fixture.label && (
+                                                        <div style={{
+                                                            fontSize: '0.6rem', fontWeight: 'bold', color: '#f59e0b',
+                                                            textTransform: 'uppercase', letterSpacing: '0.5px',
+                                                            padding: '0.2rem 0.5rem', border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                            borderRadius: '6px', whiteSpace: 'nowrap', background: 'rgba(245, 158, 11, 0.05)'
+                                                        }}>
+                                                            {fixture.label}
+                                                        </div>
+                                                    )}
                                                     {isReordering && <GripVertical size={16} color="var(--text-dim)" />}
 
                                                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
