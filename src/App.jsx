@@ -1,3 +1,21 @@
+/**
+ * App - Main Application Hub & Dashboard
+ * 
+ * BUSINESS LOGIC DOCUMENTATION:
+ * 
+ * 1. DASHBOARD STATISTICS (ESTADÍSTICAS EN VIVO)
+ *    - Data is fetched on-the-fly when the profile is loaded
+ *    - PRÓXIMO PARTIDO: Fetches the closest upcoming match that isn't canceled
+ *    - PARTIDOS JUGADOS: Counts `enrollments` where `is_present = true` and `is_excluded = false`
+ *    - GOLES ANOTADOS: Iterates through all `completed` games where the user played. 
+ *      Counts instances within the `goals` JSONB array where `player_id` matches the user.
+ * 
+ * 2. APP INITIALIZATION & PROFILE SETUP
+ *    - On mount, the app checks for a valid session via `AuthContext`
+ *    - If a session exists but no profile is found, the user is redirected to `/setup`
+ *    - Navigational links (Asistencias, Equipos, Fixture) are only active when a match is selected
+ */
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'

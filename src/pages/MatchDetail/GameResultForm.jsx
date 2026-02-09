@@ -1,3 +1,25 @@
+/**
+ * GameResultForm - Match Data Recording & Validation
+ * 
+ * BUSINESS LOGIC DOCUMENTATION:
+ * 
+ * 1. GOAL RECORDING (GOLES)
+ *    - Goals are stored as a JSONB array in the `games` table
+ *    - Each goal object: { player_id, team_id (the team that GAINED the goal), is_own_goal }
+ *    - Recording order: The screen first asks WHICH team scored, then WHO scored
+ * 
+ * 2. OWN GOAL DETECTION (AUTOGOL)
+ *    - A goal is flagged as `is_own_goal: true` if the scoring player's current assignment 
+ *      is DIFFERENT from the team receiving the point
+ *    - Own goals contribute to the opponent's score but are attributed to the player
+ * 
+ * 3. CUSTOM LINEUPS (ALINEACIÓN CUSTOM)
+ *    - If a game has `team1_players` or `team2_players` arrays (Manual Lineup), 
+ *      these override the default match-level `team_assignment`
+ *    - This is crucial for "refuerzos" (borrowed players) or mid-match changes
+ *    - If No Custom Lineup: Use `enrollments.filter(team_assignment === X)`
+ */
+
 import React, { useState } from 'react'
 import { Trophy, Plus, X, Trash2, User, Users, RotateCcw } from 'lucide-react'
 import Button from '../../components/ui/Button'

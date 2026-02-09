@@ -1,3 +1,33 @@
+/**
+ * FixtureTimeline - Tournament Architecture & Match Sequencing
+ * 
+ * BUSINESS LOGIC DOCUMENTATION:
+ * 
+ * 1. TOURNAMENT PHASES (FASE)
+ *    - A match can have multiple sequential or parallel phases
+ *    - LIGUILLA / LIGUILLA_DOUBLE: Round-robin format (everyone plays everyone)
+ *    - WINNER_STAYS (PELOTA MUERTA): Winner keeps playing, loser rotates
+ *    - TOURNAMENT_ELIMINATION: Knockout rounds (Quarterfinals, Semis, Final)
+ * 
+ * 2. STANDINGS (TABLA DE POSICIONES)
+ *    - Standings are calculated per-phase (local) or across all liguillas (global)
+ *    - Criteria: Points (3 W, 1 D, 0 L) > Goal Difference > Goals For
+ *    - Standings allow automatic "seeding" for subsequent elimination phases
+ * 
+ * 3. PLACEHOLDERS (CRUCES)
+ *    - Encounter teams can be FIXED (e.g., Team 1 vs Team 2) or PLACEHOLDERS
+ *    - Placeholders use syntax: "Xº de Fase Y" (e.g., "1º de Liguilla")
+ *    - Resolution: Logic fetches the standings of the target phase and injects the Team ID
+ *    - This allows building the "bracket" before the previous phase ends
+ * 
+ * 4. FIXTURE ORDERING (CRONOGRAMA)
+ *    - Fixtures are sorted manually by drag-and-drop or automatically by generator
+ *    - Reordering ensures proper rest periods for teams (swapping rounds)
+ * 
+ * 5. LEGACY DATA
+ *    - Older matches might have fixtures without phaseId; these are shown in a fallback "Legacy" card
+ */
+
 import React, { useState } from 'react'
 import { GripVertical, CheckCircle2, Settings2, PlusCircle, Plus, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
 import ManualFixtureModal from './ManualFixtureModal'

@@ -1,4 +1,22 @@
 /**
+ * utils - Global Utility Functions & Calculation Formulas
+ * 
+ * BUSINESS LOGIC DOCUMENTATION:
+ * 
+ * 1. FIFA-STYLE RATING (RATING VIRTUAL)
+ *    - Formula: Normalizes raw ELO [1000-2000+] into a 40-99 scale.
+ *    - Base Floor: 60 (Represents a standard amateur/gold player).
+ *    - Excellence Ceiling: Math.max(Max Community ELO, 2000).
+ *    - Scaling: Each win (+20 ELO) typically adds ~1 point to the rating, ensuring gradual progression.
+ * 
+ * 2. PRIVACY-AWARE DISPLAY NAMES
+ *    - Goal: Show nicknames to everyone, but real names ONLY to admins/organizers.
+ *    - Logic: if (isSuperAdmin || isCreator) -> canSeeRealName is true.
+ *    - If allowed, the UI typically shows "Nickname (Real Name)".
+ *    - Regular users only see "Nickname" or a fallback.
+ */
+
+/**
  * Computes a FIFA-style Rating (0-99) relative to the community's top player.
  * @param {number} elo - The player's current ELO.
  * @param {number} maxElo - The current maximum ELO in the community.

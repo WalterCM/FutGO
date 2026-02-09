@@ -1,3 +1,25 @@
+/**
+ * AuthContext - Authentication & Session Management
+ * 
+ * BUSINESS LOGIC DOCUMENTATION:
+ * 
+ * 1. SESSION VALIDATION (BULLETPROOFING)
+ *    - Uses `supabase.auth.getUser()` instead of `supabase.auth.getSession()` on init
+ *    - `getSession()` reads from `localStorage` (unsafe if DB was reset)
+ *    - `getUser()` forces a server-side fetch to verify the JWT is still valid in the current DB
+ *    - If `getUser()` fails, the app clears local state and forces a fresh login
+ * 
+ * 2. AUTH USER vs PROFILE
+ *    - `user`: The Supabase Auth record (email, metadata, UUID)
+ *    - `profile`: The public data in our `profiles` table (nickname, rating, phone)
+ *    - A user can exist in Auth but not in `profiles` (Onboarding state)
+ *    - `AuthContext` provides both; if `profile` is null, the app redirects to `/setup`
+ * 
+ * 3. LOGOUT & DB RESET HANDLING
+ *    - When the organization resets the database (`supabase db reset`), old JWTs are invalid
+ *    - The logic automatically triggers `signOut()` if a valid user has no corresponding profile
+ */
+
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
