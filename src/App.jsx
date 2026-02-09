@@ -7,6 +7,7 @@ import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
 import Matches from './pages/Matches/index'
+import ProfileModal from './components/ProfileModal'
 import MatchDetail from './pages/MatchDetail/index'
 import Users from './pages/Users/index'
 import Stats from './pages/Stats'
@@ -20,6 +21,7 @@ function MainContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [profileModal, setProfileModal] = useState(false)
 
   const handleMatchClick = useCallback((m) => {
     navigate(`/partido/${m.id}`, { state: { match: m } })
@@ -128,7 +130,7 @@ function MainContent() {
           <button className="nav-mobile-toggle" onClick={() => setIsMenuOpen(true)}>
             <Menu size={24} />
           </button>
-          <Link to="/" className="logo" style={{ textDecoration: 'none' }}>FutGO</Link>
+          <Link to="/" className="logo" style={{ textDecoration: 'none' }}>⚽ FutGO</Link>
         </div>
 
         <nav className="nav-desktop">
@@ -136,7 +138,11 @@ function MainContent() {
         </nav>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div className="user-info-desktop" style={{ textAlign: 'right', marginRight: '1rem' }}>
+          <div
+            className="user-info-desktop"
+            style={{ textAlign: 'right', marginRight: '1rem', cursor: 'pointer' }}
+            onClick={() => setProfileModal(true)}
+          >
             <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{getDisplayName(profile, profile?.id, null, profile?.is_super_admin)}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{user?.email} {profile?.is_super_admin ? '(Owner)' : (profile?.is_admin && '(Admin)')}</div>
           </div>
@@ -146,13 +152,20 @@ function MainContent() {
         </div>
       </header>
 
+      <ProfileModal
+        show={profileModal}
+        onClose={() => setProfileModal(false)}
+        profile={profile}
+        onUpdate={refreshProfile}
+      />
+
       {/* Mobile Menu Drawer */}
       {isMenuOpen && (
         <>
           <div className="mobile-menu-overlay" onClick={() => setIsMenuOpen(false)} />
           <div className="mobile-menu-drawer animate-slide-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <span className="logo">FutGO</span>
+              <span className="logo">⚽ FutGO</span>
               <button onClick={() => setIsMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
                 <X size={24} />
               </button>

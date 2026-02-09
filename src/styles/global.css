@@ -355,6 +355,43 @@ body,
   }
 }
 
+@media (max-width: 600px) {
+  .match-detail-page {
+    padding: 0 !important;
+  }
+
+  .match-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .match-status-badge {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Make header edge-to-edge on mobile */
+  .match-detail-page>div>.premium-card:first-child {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 1rem !important;
+  }
+
+  .tabs-nav {
+    padding: 0 1rem;
+  }
+}
+
+.payment-info-box {
+  background: rgba(0, 255, 136, 0.03);
+  border: 1px dashed rgba(0, 255, 136, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
 /* Fixture & History Row Responsive */
 .fixture-card {
   display: flex;
@@ -415,5 +452,60 @@ body,
     display: flex;
     justify-content: center;
     min-width: 0 !important;
+  }
+}
+
+/* Modal System */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Animations */
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckCircle as CheckCircle2 } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { getDisplayName } from '../../lib/utils'
@@ -21,7 +21,16 @@ const MatchHeader = ({
     viewerId,
     viewerIsSuperAdmin
 }) => {
+    const [copied, setCopied] = React.useState(false)
+
     if (!match) return null
+
+    const handleCopyPhone = () => {
+        if (!match.creator?.phone) return
+        navigator.clipboard.writeText(match.creator.phone)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
 
     return (
         <>
@@ -131,6 +140,32 @@ const MatchHeader = ({
                     )}
                 </div>
 
+                {match.creator?.phone && (
+                    <div className="payment-info-box">
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Shield size={14} color="var(--primary)" /> INFORMACIÓN DE PAGO (Yape/Plin)
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>{match.creator.phone}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>A nombre de: {match.creator.full_name}</div>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant={copied ? 'success' : 'outline'}
+                                onClick={handleCopyPhone}
+                                icon={copied ? CheckCircle2 : Copy}
+                                style={{ padding: '0.4rem 0.8rem', minWidth: '90px' }}
+                            >
+                                {copied ? 'Copiado' : 'Copiar'}
+                            </Button>
+                        </div>
+                        <p style={{ marginTop: '0.8rem', fontSize: '0.7rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                            💡 Paga y envía el comprobante al admin para asegurar tu cupo de titular.
+                        </p>
+                    </div>
+                )}
+
                 <div className="match-header-footer">
                     <div style={{
                         display: 'flex',
@@ -140,7 +175,7 @@ const MatchHeader = ({
                         fontWeight: '500',
                         fontSize: '0.9rem'
                     }}>
-                        {match.creator?.full_name && (
+                        {match.creator?.full_name && !match.creator?.phone && (
                             <>
                                 <Shield size={18} />
                                 <span>Administrado por {getDisplayName(match.creator, viewerId, match.creator_id, viewerIsSuperAdmin)}</span>

@@ -282,26 +282,25 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
 
     return (
         <div className="match-detail-page" style={{ padding: '1rem', paddingBottom: '5rem', minHeight: '100vh', background: 'var(--bg-dark)' }}>
-            <MatchHeader
-                match={match}
-                isRefreshing={isRefreshing}
-                onBack={onBack}
-                onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
-                canManage={canManage}
-                enrolledCount={enrolledCount}
-                totalNeeded={totalNeeded}
-                numTeams={numTeams}
-                playersPerTeam={playersPerTeam}
-                isEnrolled={isEnrolled}
-                onJoin={handleJoin}
-                onLeave={handleLeave}
-                actionLoading={actionLoading}
-                confirmingLeave={confirmingLeave}
-                viewerId={profile?.id}
-                viewerIsSuperAdmin={profile?.is_super_admin}
-            />
-
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                <MatchHeader
+                    match={match}
+                    isRefreshing={isRefreshing}
+                    onBack={onBack}
+                    onEdit={() => setEditModal({ show: true, date: match.date, time: match.time })}
+                    canManage={canManage}
+                    enrolledCount={enrolledCount}
+                    totalNeeded={totalNeeded}
+                    numTeams={numTeams}
+                    playersPerTeam={playersPerTeam}
+                    isEnrolled={isEnrolled}
+                    onJoin={handleJoin}
+                    onLeave={handleLeave}
+                    actionLoading={actionLoading}
+                    confirmingLeave={confirmingLeave}
+                    viewerId={profile?.id}
+                    viewerIsSuperAdmin={profile?.is_super_admin}
+                />
 
                 <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
