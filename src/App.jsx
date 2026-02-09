@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { Wallet, Star, LayoutDashboard, Calendar, MapPin, Users as UsersIcon, LogOut, Menu, X } from 'lucide-react'
+import { Wallet, Star, LayoutDashboard, Calendar, MapPin, Users as UsersIcon, LogOut, Menu, X, Activity } from 'lucide-react'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import Fields from './pages/Fields'
@@ -209,55 +209,133 @@ function MainContent() {
   )
 }
 
-function Dashboard({ profile, onMatchClick }) { // Receive profile as prop
+function Dashboard({ profile, onMatchClick }) {
   const navigate = useNavigate()
-  const [maxElo, setMaxElo] = useState(2000)
+  const [stats, setStats] = useState({
+    nextMatch: null,
+    gamesPlayed: 0,
+    goals: 0,
+    loading: true
+  })
 
   useEffect(() => {
-    async function fetchMaxElo() {
-      const { data } = await supabase
-        .from('profiles')
-        .select('elo_rating')
-        .order('elo_rating', { ascending: false })
-        .limit(1)
-        .single()
+    async function fetchDashboardData() {
+      try {
+        // 1. Fetch Next Match (Closest upcoming)
+        const { data: nextMatch } = await supabase
+          .from('matches')
+          .select('*, field:fields(*)')
+          .gte('date', new Date().toISOString().split('T')[0])
+          .eq('is_canceled', false)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true })
+          .limit(1)
+          .maybeSingle()
 
-      if (data?.elo_rating) setMaxElo(data.elo_rating)
+        // 2. Fetch Games Played (Enrolled + Present)
+        const { count: gamesPlayed } = await supabase
+          .from('enrollments')
+          .select('*', { count: 'exact', head: true })
+          .eq('player_id', profile.id)
+          .eq('is_present', true)
+
+        // 3. Fetch Goals (from completed games where user played)
+        const { data: games } = await supabase
+          .from('games')
+          .select('goals')
+          .or(`team1_players.cs.{${profile.id}},team2_players.cs.{${profile.id}}`)
+          .eq('is_completed', true)
+
+        let totalGoals = 0
+        if (games) {
+          games.forEach(g => {
+            if (g.goals && Array.isArray(g.goals)) {
+              g.goals.forEach(goal => {
+                if (goal.player_id === profile.id) {
+                  totalGoals++
+                }
+              })
+            }
+          })
+        }
+
+        setStats({
+          nextMatch,
+          gamesPlayed: gamesPlayed || 0,
+          goals: totalGoals,
+          loading: false
+        })
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error)
+        setStats(prev => ({ ...prev, loading: false }))
+      }
     }
-    fetchMaxElo()
-  }, [])
 
-  const rating = getRating(profile?.elo_rating, maxElo)
+    if (profile?.id) fetchDashboardData()
+  }, [profile?.id])
+
+  if (stats.loading) return <div className="flex-center" style={{ minHeight: '300px', color: 'var(--text-dim)' }}>Cargando pichangas...</div>
+
+  const { nextMatch } = stats
 
   return (
     <div className="grid-dashboard">
       <section className="premium-card">
-        <h3>Próximo Partido</h3>
-        <p style={{ color: 'var(--text-dim)', marginBottom: '1rem' }}>Sábado, 20:00 • El Monumental</p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>12 reservado</span>
-          <button className="btn-primary" style={{ padding: '0.5rem 1rem' }} onClick={() => onMatchClick({ id: 'latest' })}>Ir al Partido</button>
-        </div>
-      </section>
-
-      {/* Wallet disabled for decentralized model */}
-      {/* 
-      <section className="premium-card">
-        <h3>Mi Billetera FutGO</h3>
-        <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0', color: 'var(--primary)' }}>S/ {profile?.balance || 0}</div>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Saldo disponible para tus pichangas.</p>
-      </section>
-      */}
-
-      <section className="premium-card" style={{ cursor: 'pointer' }} onClick={() => navigate('/lideres')}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Trophy size={20} /> Mi Nivel
+          <Calendar size={20} /> Próximo Partido
         </h3>
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '0.2rem' }}>Rating FutGO</div>
-        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: 'var(--primary)' }}>
-          {rating}
+        {nextMatch ? (
+          <>
+            <div style={{ margin: '1rem 0' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                {nextMatch.field?.name || 'Cancha por confirmar'}
+              </div>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                {new Date(nextMatch.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })} • {nextMatch.time.substring(0, 5)} hrs
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                className="btn-primary"
+                style={{ padding: '0.6rem 1.2rem', borderRadius: '10px' }}
+                onClick={() => onMatchClick(nextMatch)}
+              >
+                Ver Detalles
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>No hay partidos programados pronto.</p>
+            <button
+              className="btn-primary"
+              style={{ padding: '0.6rem 1.2rem', marginTop: '1rem', borderRadius: '10px' }}
+              onClick={() => navigate('/partidos')}
+            >
+              Explorar Partidos
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="premium-card">
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Activity size={20} /> Partidos Jugados
+        </h3>
+        <div style={{ fontSize: '3rem', fontWeight: '900', margin: '0.5rem 0', color: 'var(--primary)', lineHeight: 1 }}>
+          {stats.gamesPlayed}
         </div>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Toca para ver los Líderes</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Presencias confirmadas en cancha.</p>
+      </section>
+
+      <section className="premium-card">
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Star size={20} style={{ fill: 'var(--primary)', color: 'var(--primary)' }} /> Goles Anotados
+        </h3>
+        <div style={{ fontSize: '3rem', fontWeight: '900', margin: '0.5rem 0', color: 'var(--primary)', lineHeight: 1 }}>
+          {stats.goals}
+        </div>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Total de goles en partidos oficiales.</p>
       </section>
     </div>
   )
