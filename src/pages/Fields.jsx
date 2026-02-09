@@ -10,6 +10,7 @@ export default function Fields({ profile }) {
     const [editingId, setEditingId] = useState(null)
     const [newField, setNewField] = useState({
         name: '',
+        nickname: '',
         players_per_team: 5,
         price_per_hour: '',
         address: '',
@@ -64,7 +65,7 @@ export default function Fields({ profile }) {
             showMsg('success', editingId ? 'Cancha actualizada' : 'Cancha creada')
             setShowForm(false)
             setEditingId(null)
-            setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
+            setNewField({ name: '', nickname: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
             fetchFields()
         }
         setLoading(false)
@@ -74,6 +75,7 @@ export default function Fields({ profile }) {
         setEditingId(field.id)
         setNewField({
             name: field.name,
+            nickname: field.nickname || '',
             players_per_team: field.players_per_team,
             price_per_hour: field.price_per_hour,
             address: field.address,
@@ -87,7 +89,7 @@ export default function Fields({ profile }) {
     function cancelEdit() {
         setShowForm(false)
         setEditingId(null)
-        setNewField({ name: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
+        setNewField({ name: '', nickname: '', players_per_team: 5, price_per_hour: '', address: '', phone: '', google_maps_url: '' })
     }
 
     function deleteField(id) {
@@ -140,7 +142,7 @@ export default function Fields({ profile }) {
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div style={{ gridColumn: 'span 2' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Nombre de la Cancha</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Nombre de la Cancha (Google Maps)</label>
                                 <input
                                     type="text"
                                     required
@@ -148,6 +150,17 @@ export default function Fields({ profile }) {
                                     style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
                                     value={newField.name}
                                     onChange={e => setNewField({ ...newField, name: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Apodo / Nickname (Ej: Principal, Lolo) - Usado para la URL</label>
+                                <input
+                                    type="text"
+                                    className="premium-input"
+                                    style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
+                                    value={newField.nickname}
+                                    onChange={e => setNewField({ ...newField, nickname: e.target.value })}
+                                    placeholder="Opcional: Si está vacío se usa la primera palabra del nombre"
                                 />
                             </div>
                             <div>
@@ -236,7 +249,10 @@ export default function Fields({ profile }) {
                                     </button>
                                 </div>
                             )}
-                            <h3 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>{field.name}</h3>
+                            <h3 style={{ marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {field.name}
+                                {field.nickname && <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>"{field.nickname}"</span>}
+                            </h3>
                             <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Users size={16} /> Fútbol {field.players_per_team} ({field.players_per_team * 2} jugadores)

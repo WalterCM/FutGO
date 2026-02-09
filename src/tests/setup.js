@@ -1,5 +1,21 @@
-import '@testing-library/jest-dom'
 import { vi, beforeEach } from 'vitest'
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(), // deprecated
+        removeListener: vi.fn(), // deprecated
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+    })),
+});
+
+import '@testing-library/jest-dom'
 
 // Create a Proxy-based mock that always returns itself for any method call
 // This allows infinite chaining like: from().select().order().order().order()
@@ -73,6 +89,7 @@ vi.mock('../lib/supabase', () => ({
     supabase: {
         from: (table) => mockQuery.from(table),
         auth: {
+            getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
             getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
             onAuthStateChange: vi.fn(() => ({
                 data: { subscription: { unsubscribe: vi.fn() } },

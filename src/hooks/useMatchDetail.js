@@ -27,21 +27,32 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         else setIsRefreshing(true)
 
         try {
+            // Check if matchId is a UUID or a Slug
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchId);
+
             // Fetch match
-            const { data: matchData, error: matchError } = await supabase
+            let query = supabase
                 .from('matches')
-                .select('*, field:fields(*), creator:profiles(full_name, phone)')
-                .eq('id', matchId)
-                .single()
+                .select('*, field:fields(*), creator:profiles(full_name, phone)');
+
+            if (isUuid) {
+                query = query.eq('id', matchId);
+            } else {
+                query = query.eq('slug', matchId);
+            }
+
+            const { data: matchData, error: matchError } = await query.single();
 
             if (matchError) throw matchError
             setMatch(matchData)
+
+            const actualId = matchData.id;
 
             // Fetch enrollments
             const { data: enrollData, error: enrollError } = await supabase
                 .from('enrollments')
                 .select('*, player:profiles(*)')
-                .eq('match_id', matchId)
+                .eq('match_id', actualId)
                 .order('created_at', { ascending: true })
 
             if (enrollError) throw enrollError
@@ -51,11 +62,9 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { data: gamesData, error: gamesErr } = await supabase
                 .from('games')
                 .select('*')
-                .eq('match_day_id', matchId)
+                .eq('match_day_id', actualId)
                 .order('created_at', { ascending: false })
 
-            // Note: games relationship might be different in actual schema, 
-            // but MatchDetail uses it. Let's stick to what works.
             setGames(gamesData || [])
 
             // After fetching games, resolve any pending placeholders in elimination fixtures
@@ -83,7 +92,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 supabase
                     .from('enrollments')
                     .insert([{
-                        match_id: matchId,
+                        match_id: match?.id,
                         player_id: profile.id
                     }]),
                 wait(300)
@@ -107,7 +116,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 supabase
                     .from('enrollments')
                     .delete()
-                    .eq('match_id', matchId)
+                    .eq('match_id', match?.id)
                     .eq('player_id', profile.id),
                 wait(300)
             ]).then(([res]) => {
@@ -236,7 +245,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     team2_id: gameData.team2Id,
                     team1_players: team1Players,
                     team2_players: team2Players,
-                    match_day_id: matchId,
+                    match_day_id: match?.id,
                     goals: gameData.goals || [],
                     fixture_id: fixtureId
                 }])
@@ -294,7 +303,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     }
                 }
 
-                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
+                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', match?.id)
             }
 
             showMsg('success', 'Resultado registrado')
@@ -320,7 +329,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 )
                 // If it was Winner Stays, we might want to remove the auto-generated next match too
                 // But for now, let's just reset the current one.
-                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', matchId)
+                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', match?.id)
             }
 
             showMsg('success', 'Partido eliminado')
@@ -343,7 +352,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update(updateData)
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({ ...prev, ...updateData }))
@@ -624,7 +633,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update({ phases: nextPhases })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({ ...prev, phases: nextPhases }))
@@ -645,7 +654,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update({ phases: nextPhases, fixtures: nextFixtures })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({ ...prev, phases: nextPhases, fixtures: nextFixtures }))
@@ -674,7 +683,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     fixtures: [...(match.fixtures || []), ...newFixtures],
                     phases: updatedPhases
                 })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({
@@ -707,7 +716,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update({ fixtures: nextFixtures })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({ ...prev, fixtures: nextFixtures }))
@@ -724,7 +733,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update({ fixtures: newFixtures })
-                .eq('id', matchId)
+                .eq('id', match?.id)
             if (error) throw error
             setMatch(prev => ({ ...prev, fixtures: newFixtures }))
         } catch (error) {
@@ -868,7 +877,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     phases: nextPhases,
                     fixtures: nextFixtures
                 })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             setMatch(prev => ({
@@ -1046,7 +1055,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 const { error } = await supabase
                     .from('matches')
                     .update({ fixtures: updatedFixtures })
-                    .eq('id', matchId)
+                    .eq('id', match?.id)
 
                 if (error) throw error
                 setMatch(prev => ({ ...prev, fixtures: updatedFixtures }))
@@ -1079,7 +1088,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update(updates)
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             showMsg('success', 'Capacidad actualizada')
@@ -1097,7 +1106,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update({ is_canceled: true, is_locked: true })
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             showMsg('success', 'Partido cancelado')
@@ -1114,7 +1123,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             const { error } = await supabase
                 .from('matches')
                 .update(updates)
-                .eq('id', matchId)
+                .eq('id', match?.id)
 
             if (error) throw error
             // Update local state optimistically or via refresh
@@ -1217,7 +1226,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                     supabase
                         .from('matches')
                         .update({ team_configs: currentConfigs })
-                        .eq('id', matchId)
+                        .eq('id', match?.id)
                 )
             }
 
@@ -1276,7 +1285,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             await Promise.all([
                 ...profileUpdates,
                 ...enrollmentUpdates,
-                supabase.from('matches').update({ is_locked: true }).eq('id', matchId),
+                supabase.from('matches').update({ is_locked: true }).eq('id', match?.id),
                 wait(300)
             ])
 
@@ -1313,7 +1322,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             await Promise.all([
                 ...profileReversions,
                 ...enrollmentClears,
-                supabase.from('matches').update({ is_locked: false }).eq('id', matchId),
+                supabase.from('matches').update({ is_locked: false }).eq('id', match?.id),
                 wait(300)
             ])
 

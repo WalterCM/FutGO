@@ -21,7 +21,7 @@ import LineupVerificationModal from './LineupVerificationModal'
 import { KIT_LIBRARY, BENCH_KIT, DEFAULT_KIT } from './constants'
 
 export default function MatchDetail({ profile: authProfile, onBack }) {
-    const { id: matchId } = useParams()
+    const { slugOrId: matchId } = useParams()
     const { profile: contextProfile } = useAuth()
     const profile = authProfile || contextProfile
 

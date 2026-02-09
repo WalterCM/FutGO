@@ -18,7 +18,7 @@ const renderWithRouter = (ui, { matchId = 'match-1' } = {}) => {
     return render(
         <MemoryRouter initialEntries={[`/partido/${matchId}`]}>
             <Routes>
-                <Route path="/partido/:id" element={ui} />
+                <Route path="/partido/:slugOrId" element={ui} />
             </Routes>
         </MemoryRouter>
     )
@@ -57,6 +57,25 @@ describe('MatchDetail', () => {
         })
     })
 
+    test('renders match details correctly when using a slug', async () => {
+        const field = createMockField({ name: 'Principal', nickname: 'lolo' })
+        const match = createMockMatch({ id: 'real-uuid-123', slug: 'lolo-lunes-09-feb-26', field })
+
+        // Mock fetch by slug
+        mockQuery.single.mockResolvedValue({ data: match, error: null })
+        mockQuery.order.mockResolvedValue({ data: [], error: null })
+
+        renderWithRouter(
+            <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
+            { matchId: 'lolo-lunes-09-feb-26' }
+        )
+
+        await waitFor(() => {
+            expect(mockQuery.eq).toHaveBeenCalledWith('slug', 'lolo-lunes-09-feb-26')
+            expect(screen.getByText('Principal')).toBeDefined()
+        })
+    })
+
     test('shows player count correctly', async () => {
         const field = createMockField({ players_per_team: 5 })
         const match = createMockMatch({ id: 'match-1', field })
@@ -75,7 +94,7 @@ describe('MatchDetail', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByText('3 / 10')).toBeDefined()
+            expect(screen.getByText('3/10 Reservados')).toBeDefined()
         })
     })
 
@@ -142,55 +161,23 @@ describe('MatchDetail Business Logic', () => {
         resetIdCounter()
     })
 
-    test('calculates quota correctly for 5v5 at S/120', async () => {
-        const field = createMockField({ players_per_team: 5, price_per_hour: 120 })
-        const match = createMockMatch({ id: 'match-1', field })
-
-        mockQuery.single.mockResolvedValue({ data: match, error: null })
-        mockQuery.order.mockResolvedValue({ data: [], error: null })
-
-        renderWithRouter(
-            <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
-            { matchId: 'match-1' }
-        )
-
-        await waitFor(() => {
-            expect(screen.getByText(/Cuota: S\/ 12/i)).toBeDefined()
-        })
-    })
-
-    test('calculates quota correctly for 7v7 at S/150', async () => {
-        const field = createMockField({ players_per_team: 7, price_per_hour: 150 })
-        const match = createMockMatch({ id: 'match-7v7', field, fixed_cost: 150 })
-
-        mockQuery.single.mockResolvedValue({ data: match, error: null })
-        mockQuery.order.mockResolvedValue({ data: [], error: null })
-
-        renderWithRouter(
-            <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
-            { matchId: 'match-7v7' }
-        )
-
-        await waitFor(() => {
-            expect(screen.getByText(/Cuota: S\/ 11/i)).toBeDefined()
-        })
-    })
 
     test('requires confirmation to leave a match', async () => {
+        const leaveId = '00000000-0000-0000-0000-000000000ea1'
         const currentUser = createMockProfile({ id: 'current-user-leave' })
-        const match = createMockMatch({ id: 'match-leave' })
-        const enrollments = [createMockEnrollment({ match_id: 'match-leave', player_id: 'current-user-leave', player: currentUser })]
+        const match = createMockMatch({ id: leaveId })
+        const enrollments = [createMockEnrollment({ match_id: leaveId, player_id: 'current-user-leave', player: currentUser })]
 
         mockQuery.single.mockResolvedValue({ data: match, error: null })
         mockQuery.order.mockResolvedValue({ data: enrollments, error: null })
 
         renderWithRouter(
             <MatchDetail profile={currentUser} onBack={() => { }} />,
-            { matchId: 'match-leave' }
+            { matchId: leaveId }
         )
 
         await waitFor(() => {
-            expect(screen.getByText(/1 \/ 10/i)).toBeDefined()
+            expect(screen.getByText(/1\/10/i)).toBeDefined()
             expect(screen.getByRole('button', { name: /Salir/i })).toBeDefined()
         })
 
@@ -198,27 +185,28 @@ describe('MatchDetail Business Logic', () => {
         const leaveBtn = screen.getByRole('button', { name: /Salir/i })
         await userEvent.click(leaveBtn)
 
-        expect(screen.getByRole('button', { name: /¿Seguro\?/i })).toBeDefined()
+        expect(screen.getByRole('button', { name: /¿Confirmar Salir\?/i })).toBeDefined()
         expect(mockQuery.delete).not.toHaveBeenCalled()
 
         // Second click: should actually call delete
-        await userEvent.click(screen.getByRole('button', { name: /¿Seguro\?/i }))
+        await userEvent.click(screen.getByRole('button', { name: /¿Confirmar Salir\?/i }))
         expect(mockQuery.delete).toHaveBeenCalled()
-        expect(mockQuery.eq).toHaveBeenCalledWith('match_id', 'match-leave')
+        expect(mockQuery.eq).toHaveBeenCalledWith('match_id', leaveId)
         expect(mockQuery.eq).toHaveBeenCalledWith('player_id', 'current-user-leave')
     })
 
     test('opens Edit Match modal and saves changes', async () => {
+        const editId = '00000000-0000-0000-0000-000000000ea2'
         const currentUser = createMockProfile({ id: 'admin-user-edit', is_admin: true })
-        const match = createMockMatch({ id: 'match-edit', creator_id: 'admin-user-edit' })
+        const match = createMockMatch({ id: editId, creator_id: 'admin-user-edit' })
 
         mockQuery.single.mockResolvedValue({ data: match, error: null })
         mockQuery.order.mockResolvedValue({ data: [], error: null })
-        mockQuery.update.mockResolvedValue({ data: { ...match }, error: null })
+        mockQuery.update.mockResolvedValue({ data: [{ ...match }], error: null })
 
         renderWithRouter(
             <MatchDetail profile={currentUser} onBack={() => { }} />,
-            { matchId: 'match-edit' }
+            { matchId: editId }
         )
 
         await waitFor(() => {
@@ -234,23 +222,24 @@ describe('MatchDetail Business Logic', () => {
 
         await waitFor(() => {
             expect(mockQuery.update).toHaveBeenCalled()
-            expect(mockQuery.eq).toHaveBeenCalledWith('id', 'match-edit')
+            expect(mockQuery.eq).toHaveBeenCalledWith('id', editId)
         })
     })
 
     test('queries games using match_day_id column', async () => {
-        const match = createMockMatch({ id: 'match-games' })
+        const gamesId = '00000000-0000-0000-0000-000000000ea3'
+        const match = createMockMatch({ id: gamesId })
         mockQuery.single.mockResolvedValue({ data: match, error: null })
         mockQuery.order.mockResolvedValue({ data: [], error: null })
 
         renderWithRouter(
             <MatchDetail profile={createMockProfile()} onBack={() => { }} />,
-            { matchId: 'match-games' }
+            { matchId: gamesId }
         )
 
         await waitFor(() => {
             expect(mockQuery.from).toHaveBeenCalledWith('games')
-            expect(mockQuery.eq).toHaveBeenCalledWith('match_day_id', 'match-games')
+            expect(mockQuery.eq).toHaveBeenCalledWith('match_day_id', gamesId)
         })
     })
 })

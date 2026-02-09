@@ -42,7 +42,8 @@ function MainContent() {
   const [profileModal, setProfileModal] = useState(false)
 
   const handleMatchClick = useCallback((m) => {
-    navigate(`/partido/${m.id}`, { state: { match: m } })
+    const slugOrId = m.slug || m.id
+    navigate(`/partido/${slugOrId}`, { state: { match: m } })
     setIsMenuOpen(false)
   }, [navigate])
 
@@ -219,7 +220,7 @@ function MainContent() {
           <Route path="/canchas" element={<Fields profile={profile} />} />
           <Route path="/usuarios" element={<Users profile={profile} />} />
           <Route path="/lideres" element={<Stats viewerId={profile?.id} viewerIsSuperAdmin={profile?.is_super_admin} />} />
-          <Route path="/partido/:id" element={<MatchDetail profile={profile} onBack={handleBack} />} />
+          <Route path="/partido/:slugOrId" element={<MatchDetail profile={profile} onBack={handleBack} />} />
           <Route path="*" element={<div className="flex-center" style={{ minHeight: '60vh' }}><h3>404 - Página no encontrada</h3></div>} />
         </Routes>
       </main>
