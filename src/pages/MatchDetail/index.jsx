@@ -300,6 +300,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                     viewerId={profile?.id}
                     viewerIsSuperAdmin={profile?.is_super_admin}
                     hasPaid={enrollments?.find(e => e.player_id === profile?.id)?.paid || false}
+                    enrollments={enrollments}
                 />
 
                 <TabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />

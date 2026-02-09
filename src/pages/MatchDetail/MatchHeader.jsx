@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckCircle as CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckCircle as CheckCircle2, Share2 } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { getDisplayName } from '../../lib/utils'
@@ -20,7 +20,8 @@ const MatchHeader = ({
     onEdit,
     viewerId,
     viewerIsSuperAdmin,
-    hasPaid
+    hasPaid,
+    enrollments
 }) => {
     const [copied, setCopied] = React.useState(false)
 
@@ -33,6 +34,30 @@ const MatchHeader = ({
         navigator.clipboard.writeText(match.creator.phone)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+    }
+
+    const handleShare = () => {
+        const dateStr = new Date(match.date + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })
+        const timeStr = match.time.substring(0, 5)
+
+        let message = `⚽ *Lista para el partido en ${match.field?.name}*\n`
+        message += `📅 ${dateStr}\n`
+        message += `⏰ ${timeStr} hrs\n\n`
+
+        if (enrollments && enrollments.length > 0) {
+            message += `*Jugadores (${enrollments.length}/${totalNeeded}):*\n`
+            enrollments.forEach((enrol, index) => {
+                const name = getDisplayName(enrol.profiles, viewerId, match.creator_id, viewerIsSuperAdmin)
+                message += `${index + 1}. ${name}${enrol.paid ? ' ✅' : ''}\n`
+            })
+        } else {
+            message += `¡Aún no hay jugadores inscritos!\n`
+        }
+
+        message += `\n📲 Únete aquí: ${window.location.href}`
+
+        const encodedMessage = encodeURIComponent(message)
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
     }
 
     return (
@@ -56,25 +81,47 @@ const MatchHeader = ({
 
             <Card style={{ marginBottom: '2rem' }} hover={false}>
                 <div className="match-header-top">
-                    <div className="match-header-title-container">
-                        <h2 className="match-title">{match.field?.name}</h2>
-                        {canManage && !match.is_locked && (
+                    <div className="match-header-title-container" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <h2 className="match-title" style={{ margin: 0 }}>{match.field?.name}</h2>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <button
-                                onClick={onEdit}
+                                onClick={handleShare}
                                 style={{
-                                    background: 'none',
-                                    border: 'none',
+                                    background: 'rgba(var(--primary-rgb), 0.1)',
+                                    border: '1px solid var(--primary)',
                                     color: 'var(--primary)',
                                     cursor: 'pointer',
-                                    opacity: 0.7,
-                                    padding: '0.3rem 0',
-                                    flexShrink: 0
+                                    padding: '0.4rem',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s ease'
                                 }}
-                                title="Editar detalles"
+                                title="Compartir en WhatsApp"
                             >
-                                <Pencil size={20} />
+                                <Share2 size={18} />
                             </button>
-                        )}
+
+                            {canManage && !match.is_locked && (
+                                <button
+                                    onClick={onEdit}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--primary)',
+                                        cursor: 'pointer',
+                                        opacity: 0.7,
+                                        padding: '0.3rem 0',
+                                        flexShrink: 0
+                                    }}
+                                    title="Editar detalles"
+                                >
+                                    <Pencil size={20} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="match-status-badge">
