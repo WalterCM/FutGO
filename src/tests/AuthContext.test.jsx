@@ -14,9 +14,10 @@ describe('AuthContext', () => {
         const mockUser = { id: 'user-123', email: 'test@test.com' }
         const mockProfile = createMockProfile({ id: 'user-123', full_name: 'Test User' })
 
-        // Mock getSession to return a valid session
-        supabase.auth.getSession.mockResolvedValue({
-            data: { session: { user: mockUser } }
+        // Mock getUser to return a valid user
+        supabase.auth.getUser.mockResolvedValue({
+            data: { user: mockUser },
+            error: null
         })
 
         // Mock profile fetch
@@ -35,8 +36,9 @@ describe('AuthContext', () => {
     })
 
     test('returns null user when no session exists', async () => {
-        supabase.auth.getSession.mockResolvedValue({
-            data: { session: null }
+        supabase.auth.getUser.mockResolvedValue({
+            data: { user: null },
+            error: null
         })
 
         const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>
@@ -49,7 +51,7 @@ describe('AuthContext', () => {
     })
 
     test('provides signInWithGoogle function that calls supabase OAuth', async () => {
-        supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
+        supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null })
         supabase.auth.signInWithOAuth.mockResolvedValue({ data: {}, error: null })
 
         const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>
@@ -73,7 +75,7 @@ describe('AuthContext', () => {
 
 
     test('provides signOut function that calls supabase', async () => {
-        supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
+        supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null })
         supabase.auth.signOut.mockResolvedValue({ error: null })
 
         const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>
@@ -95,8 +97,9 @@ describe('AuthContext', () => {
         const initialProfile = createMockProfile({ id: 'user-123', full_name: 'Initial' })
         const updatedProfile = createMockProfile({ id: 'user-123', full_name: 'Updated' })
 
-        supabase.auth.getSession.mockResolvedValue({
-            data: { session: { user: mockUser } }
+        supabase.auth.getUser.mockResolvedValue({
+            data: { user: mockUser },
+            error: null
         })
 
         supabase.from().select().eq().single

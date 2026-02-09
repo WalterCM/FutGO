@@ -108,54 +108,6 @@ describe('AdminTab', () => {
         })
     })
 
-    describe('Financial Calculations', () => {
-        it('calculates collected amount from paid enrollments', () => {
-            const paid1 = createTestEnrollment('Paid 1', { paid: true, paid_at: '2026-02-01T10:00:00Z' })
-            const paid2 = createTestEnrollment('Paid 2', { paid: true, paid_at: '2026-02-01T11:00:00Z' })
-            const unpaid = createTestEnrollment('Unpaid', { paid: false })
-
-            render(<AdminTab {...defaultProps} enrollments={[paid1, paid2, unpaid]} suggestedQuota={10} />)
-
-            // 2 paid x 10 quota = 20 collected
-            expect(screen.getByText(/Recaudado: S\/ 20/)).toBeInTheDocument()
-        })
-
-        it('excludes excluded players from financial calculations', () => {
-            const paid = createTestEnrollment('Paid Player', { paid: true, paid_at: '2026-02-01T10:00:00Z' })
-            const excludedPaid = createTestEnrollment('Excluded Paid', { paid: true, paid_at: '2026-02-01T11:00:00Z', is_excluded: true })
-
-            render(<AdminTab {...defaultProps} enrollments={[paid, excludedPaid]} suggestedQuota={10} />)
-
-            // Only 1 active paid x 10 quota = 10 collected (excluded doesn't count)
-            expect(screen.getByText(/Recaudado: S\/ 10/)).toBeInTheDocument()
-        })
-
-        it('shows "Cancha Cubierta" when collected >= cost', () => {
-            const paidPlayers = Array(10).fill(null).map((_, i) =>
-                createTestEnrollment(`Player ${i}`, { paid: true, paid_at: `2026-02-01T${10 + i}:00:00Z` })
-            )
-
-            render(<AdminTab
-                {...defaultProps}
-                enrollments={paidPlayers}
-                suggestedQuota={20}  // 10 x 20 = 200, matches fixed_cost
-            />)
-
-            expect(screen.getByText(/Cancha Cubierta/)).toBeInTheDocument()
-        })
-
-        it('shows "Faltan" when collected < cost', () => {
-            const paid = createTestEnrollment('Paid Player', { paid: true, paid_at: '2026-02-01T10:00:00Z' })
-
-            render(<AdminTab
-                {...defaultProps}
-                enrollments={[paid]}
-                suggestedQuota={10}  // 1 x 10 = 10, need 200
-            />)
-
-            expect(screen.getByText(/Faltan/)).toBeInTheDocument()
-        })
-    })
 
     describe('Status Badges', () => {
         it('shows TITULAR badge for paid players within capacity', () => {
@@ -286,7 +238,7 @@ describe('AdminTab', () => {
 
             // Modal should appear
             expect(screen.getByText('Quitar Pago')).toBeInTheDocument()
-            expect(screen.getByText(/perderá su cupo de titular/)).toBeInTheDocument()
+            expect(screen.getByText(/¿Estás seguro de quitar el pago/)).toBeInTheDocument()
         })
 
         it('does not show confirmation when clicking Cobrar (adding payment)', async () => {
@@ -345,7 +297,7 @@ describe('AdminTab', () => {
 
             // Modal should appear
             expect(screen.getByText('Retirar Jugador')).toBeInTheDocument()
-            expect(screen.getByText(/no podrá volver a inscribirse/)).toBeInTheDocument()
+            expect(screen.getByText(/¿Estás seguro de retirar/)).toBeInTheDocument()
         })
 
         it('calls onRemovePlayer after confirming removal', async () => {

@@ -18,7 +18,7 @@ const renderWithRouter = (ui, { matchId = 'match-1' } = {}) => {
     return render(
         <MemoryRouter initialEntries={[`/partido/${matchId}`]}>
             <Routes>
-                <Route path="/partido/:id" element={ui} />
+                <Route path="/partido/:slugOrId" element={ui} />
             </Routes>
         </MemoryRouter>
     )
@@ -107,7 +107,7 @@ describe('MatchPhases Refined Logic', () => {
 
         await userEvent.click(await screen.findByText('Encuentros'))
 
-        screen.debug()
+
         // Use exact button text to avoid matching tab label
         const manualBtn = await screen.findByRole('button', { name: /Encuentro$/i })
         await userEvent.click(manualBtn)
@@ -154,6 +154,7 @@ describe('MatchPhases Refined Logic', () => {
 
         await userEvent.click(await screen.findByText('Encuentros'))
 
+
         // Find the Generar button for the elimination phase
         const genBtns = await screen.findAllByText(/Generar/i)
         await userEvent.click(genBtns[1]) // Second phase
@@ -161,14 +162,14 @@ describe('MatchPhases Refined Logic', () => {
         await waitFor(() => {
             expect(mockQuery.update).toHaveBeenCalled()
             const updateCall = mockQuery.update.mock.calls[0][0]
-            // For 4 teams: SF1 (1v4), SF2 (2v3), Final
-            expect(updateCall.fixtures.length).toBe(3)
+            // For 4 teams: SF1 (1v4), SF2 (2v3), Third Place, Final
+            expect(updateCall.fixtures.length).toBe(4)
             expect(updateCall.fixtures[0].placeholder1).toBe('1º de Liguilla')
             expect(updateCall.fixtures[0].placeholder2).toBe('4º de Liguilla')
             expect(updateCall.fixtures[1].placeholder1).toBe('2º de Liguilla')
             expect(updateCall.fixtures[1].placeholder2).toBe('3º de Liguilla')
-            expect(updateCall.fixtures[2].placeholder1).toBe('Ganador SF1')
-            expect(updateCall.fixtures[2].placeholder2).toBe('Ganador SF2')
+            expect(updateCall.fixtures[2].label).toBe('Tercer Puesto')
+            expect(updateCall.fixtures[3].label).toBe('Gran Final')
         })
     })
 })

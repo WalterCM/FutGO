@@ -265,7 +265,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const enrolledCount = enrollments.filter(e => !e.is_excluded).length
     const isEnrolled = enrollments.some(e => e.player_id === profile?.id && !e.is_excluded)
     const suggestedQuota = Math.ceil((match.field?.price_per_hour || 120) / (2 * playersPerTeam))
-    const canManage = profile?.is_super_admin || match?.creator_id === profile?.id
+    const canManage = profile?.is_super_admin || profile?.is_admin || match?.creator_id === profile?.id
 
     // Ensure robust teamConfigs with defaults
     const teamConfigs = {
