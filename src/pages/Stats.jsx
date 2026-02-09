@@ -57,6 +57,10 @@ export default function Stats({ viewerId, viewerIsSuperAdmin }) {
                         <h3 style={{ marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                             <Medal size={24} style={{ color: 'var(--primary)' }} /> Top 5 Ranking
                         </h3>
+                        <Card style={{ padding: '1.5rem', opacity: 0.6, borderStyle: 'dashed', textAlign: 'center' }} hover={false}>
+                            <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>Próximamente...</div>
+                        </Card>
+                        {/* 
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             {topPlayers.map((player, index) => {
                                 const rank = index + 1
@@ -104,6 +108,7 @@ export default function Stats({ viewerId, viewerIsSuperAdmin }) {
                                 )
                             })}
                         </div>
+                        */}
                     </section>
 
                     {/* Future Stats Placeholders */}
