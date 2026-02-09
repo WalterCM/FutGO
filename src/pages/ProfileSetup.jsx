@@ -92,7 +92,7 @@ export default function ProfileSetup({ onComplete }) {
                             type="text"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
-                            placeholder="Ej: Juancho, El Crack, etc."
+                            placeholder="Ej: Yogui, Bubu, etc."
                             style={{
                                 width: '100%',
                                 padding: '1rem',
