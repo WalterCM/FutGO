@@ -152,17 +152,6 @@ export default function Fields({ profile }) {
                                     onChange={e => setNewField({ ...newField, name: e.target.value })}
                                 />
                             </div>
-                            <div style={{ gridColumn: 'span 2' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Apodo / Nickname (Ej: Principal, Lolo) - Usado para la URL</label>
-                                <input
-                                    type="text"
-                                    className="premium-input"
-                                    style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white' }}
-                                    value={newField.nickname}
-                                    onChange={e => setNewField({ ...newField, nickname: e.target.value })}
-                                    placeholder="Opcional: Si está vacío se usa la primera palabra del nombre"
-                                />
-                            </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>Jugadores por Equipo</label>
                                 <input
@@ -251,7 +240,6 @@ export default function Fields({ profile }) {
                             )}
                             <h3 style={{ marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 {field.name}
-                                {field.nickname && <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>"{field.nickname}"</span>}
                             </h3>
                             <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
