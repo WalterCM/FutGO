@@ -10,7 +10,7 @@ export const userTableSchema = z.object({
   full_name: z.string().min(1).max(50).optional(),
   nickname: z.string().max(20).optional(),
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20)
     .optional(),
   role: z.enum(['admin', 'user']),
@@ -30,7 +30,7 @@ export const userCreateSchema = z.object({
     .regex(/^[a-zA-ZÀ-ž\s]+$/, "El nombre contiene caracteres inválidos"),
   role: z.enum(['admin', 'user']).default('user'),
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20, "El teléfono es demasiado largo")
     .optional()
 });
@@ -49,7 +49,7 @@ export const userUpdateSchema = z.object({
     .optional(),
     
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20, "El teléfono es demasiado largo")
     .optional(),
     

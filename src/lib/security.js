@@ -27,7 +27,7 @@ export const isValidUrl = (url, allowedProtocols = ['http:', 'https:']) => {
 export const isValidPhone = (phone) => {
   if (!phone || typeof phone !== 'string') return false;
   // Only allow digits, spaces, +, -, (, )
-  return /^[+]?[\d\s\-\(\)]+$/.test(phone.trim());
+  return /^[+]?[\d\s\-()]+$/.test(phone.trim());
 };
 
 /**

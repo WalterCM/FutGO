@@ -21,7 +21,7 @@ export const fieldCreateSchema = z.object({
     .trim(),
     
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20, "El teléfono es demasiado largo")
     .optional(),
     

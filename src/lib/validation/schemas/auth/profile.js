@@ -17,7 +17,7 @@ export const profileUpdateSchema = z.object({
     .optional(),
     
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20, "El teléfono es demasiado largo")
     .optional()
 });
@@ -35,7 +35,7 @@ export const profileSetupSchema = z.object({
     .regex(/^[a-zA-Z0-9À-ž\s_-]+$/, "El apodo contiene caracteres inválidos"),
     
   phone: z.string()
-    .regex(/^[+]?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
+    .regex(/^[+]?[0-9\s\-()]+$/, "Formato de teléfono inválido")
     .max(20, "El teléfono es demasiado largo")
     .optional()
 });
