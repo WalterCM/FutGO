@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, MapPin, Users, DollarSign, Trash2, Pencil, X, Phone } from 'lucide-react'
+import { createSafeHref, createSafeTelHref } from '../lib/security'
 
 export default function Fields({ profile }) {
     const [fields, setFields] = useState([])
@@ -265,7 +266,7 @@ export default function Fields({ profile }) {
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     {field.google_maps_url && (
                                         <a
-                                            href={field.google_maps_url}
+                                            href={createSafeHref(field.google_maps_url)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="btn-primary"
@@ -286,7 +287,7 @@ export default function Fields({ profile }) {
                                     )}
                                     {field.phone && (
                                         <a
-                                            href={`tel:${field.phone}`}
+                                            href={createSafeTelHref(field.phone)}
                                             className="btn-primary"
                                             style={{
                                                 padding: '0.4rem 0.8rem',

@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar, Clock, MapPin, Phone, Pencil, Shield, Copy, CheckC
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { getDisplayName } from '../../lib/utils'
+import { createSafeHref, createSafeTelHref } from '../../lib/security'
 
 const MatchHeader = ({
     match,
@@ -166,7 +167,7 @@ const MatchHeader = ({
                             </div>
                             {match.field?.google_maps_url && (
                                 <a
-                                    href={match.field.google_maps_url}
+                                    href={createSafeHref(match.field.google_maps_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="info-action-link"
@@ -183,7 +184,7 @@ const MatchHeader = ({
                                 <span>{match.field.phone}</span>
                             </div>
                             <a
-                                href={`tel:${match.field.phone}`}
+                                href={createSafeTelHref(match.field.phone)}
                                 className="info-action-link"
                             >
                                 <Phone size={14} /> Llamar

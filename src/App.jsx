@@ -31,7 +31,7 @@ import Users from './pages/Users/index'
 import Stats from './pages/Stats'
 import { Trophy } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { getRating, getDisplayName } from './lib/utils'
+import { getDisplayName } from './lib/utils'
 
 
 function MainContent() {
@@ -53,6 +53,7 @@ function MainContent() {
 
   // Close menu when location changes
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMenuOpen(false)
   }, [location])
 
@@ -60,6 +61,7 @@ function MainContent() {
 
   if (!user) return <Auth />
   if (!profile?.profile_complete) return <ProfileSetup onComplete={refreshProfile} />
+  // eslint-disable-next-line react-hooks/static-components
 
   const NavLinks = ({ mobile = false }) => (
     <>

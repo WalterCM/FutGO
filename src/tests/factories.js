@@ -7,9 +7,12 @@ let idCounter = 1
 
 export function createMockProfile(overrides = {}) {
     const id = `profile-${idCounter++}`
+    const fullName = overrides.full_name || 'Juan Jugador'
+    
     return {
         id,
-        full_name: 'Juan Jugador',
+        full_name: fullName,
+        nickname: overrides.nickname || fullName, // Use full_name as nickname to ensure display works
         elo_rating: 1200,
         balance: 50,
         is_admin: false,
@@ -79,9 +82,13 @@ export function createMockMatchWithEnrollments(enrollmentCount, matchOverrides =
 
     const enrollments = []
     for (let i = 0; i < enrollmentCount; i++) {
+        const playerName = `Jugador ${i + 1}`
         enrollments.push(createMockEnrollment({
             match_id: match.id,
-            player: createMockProfile({ full_name: `Jugador ${i + 1}` })
+            player: createMockProfile({ 
+                full_name: playerName,
+                nickname: playerName
+            })
         }))
     }
 

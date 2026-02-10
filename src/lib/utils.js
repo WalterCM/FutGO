@@ -14,6 +14,7 @@
  *    - Logic: if (isSuperAdmin || isCreator) -> canSeeRealName is true.
  *    - If allowed, the UI typically shows "Nickname (Real Name)".
  *    - Regular users only see "Nickname" or a fallback.
+ *    - SECURITY: All display names are sanitized to prevent XSS attacks.
  */
 
 /**
@@ -44,24 +45,52 @@ export function getRating(elo, maxElo = 2000) {
 }
 
 /**
- * Returns the display name for a player with privacy awareness.
+ * Sanitizes text to prevent XSS attacks
+ * @param {string} text - Text to sanitize
+ * @returns {string} - Sanitized text
+ */
+export const sanitizeText = (text) => {
+    if (!text || typeof text !== 'string') return '';
+
+    return text
+        .replace(/[<>"'&]/g, '')  // Remove dangerous characters
+        .replace(/\s+/g, ' ')      // Normalize spaces
+        .trim();
+};
+
+/**
+ * Validates and sanitizes a display name with length limits
+ * @param {string} name - Name to sanitize
+ * @param {number} maxLength - Maximum allowed length
+ * @returns {string} - Sanitized name or fallback
+ */
+export const sanitizeDisplayName = (name, maxLength = 50) => {
+    if (!name || typeof name !== 'string') return null;
+
+    return sanitizeText(name).substring(0, maxLength) || null;
+};
+
+/**
+ * Returns the display name for a player with privacy awareness and security.
  * @param {object} profile - Profile object with full_name and nickname
  * @param {string} viewerId - ID of the logged-in user
  * @param {string} matchCreatorId - ID of the match organizer (if applicable)
  * @param {boolean} viewerIsSuperAdmin - Whether the viewer has god-mode permissions
- * @returns {string} - The display name to show
+ * @returns {string} - The sanitized display name to show
  */
 export function getDisplayName(profile, viewerId, matchCreatorId, viewerIsSuperAdmin) {
     if (!profile) return 'Jugador'
 
     const canSeeRealName = viewerIsSuperAdmin || (matchCreatorId && viewerId === matchCreatorId)
+    const sanitizedNickname = sanitizeDisplayName(profile.nickname)
+    const sanitizedFullName = sanitizeDisplayName(profile.full_name)
 
     // If viewer can see real name, we still prioritize nickname as the "Display" name
     // but the component will handle showing the real name in parenthesis if needed.
     if (canSeeRealName) {
-        return profile.nickname || profile.full_name || 'Jugador'
+        return sanitizedNickname || sanitizedFullName || 'Jugador'
     }
 
-    // For regular users, prioritize nickname. If no nickname, fallback to full name (or could be masked 'Jugador')
-    return profile.nickname || profile.full_name || 'Jugador'
+    // For regular users, prioritize nickname. If no nickname, fallback to full name
+    return sanitizedNickname || sanitizedFullName || 'Jugador'
 }

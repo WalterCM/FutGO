@@ -81,10 +81,10 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const [phaseModal, setPhaseModal] = useState({ show: false })
 
     const syncTab = () => {
-        const hash = window.location.hash.replace('#', '')
-        if (['admin', 'field', 'results'].includes(hash)) {
-            setActiveTab(hash)
-        }
+        const VALID_TABS = ['admin', 'field', 'results']
+        const hash = window.location.hash.replace('#', '').toLowerCase()
+        const safeTab = VALID_TABS.includes(hash) ? hash : 'admin'
+        setActiveTab(safeTab)
     }
 
     useEffect(() => {
@@ -94,8 +94,10 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     }, [])
 
     const handleTabChange = (tab) => {
-        window.location.hash = tab
-        setActiveTab(tab)
+        const VALID_TABS = ['admin', 'field', 'results']
+        const safeTab = VALID_TABS.includes(tab) ? tab : 'admin'
+        window.location.hash = safeTab
+        setActiveTab(safeTab)
     }
 
     const handleJoin = async () => {
