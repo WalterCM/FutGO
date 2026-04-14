@@ -18,7 +18,7 @@ import FixtureTimeline from './FixtureTimeline'
 import MatchModals from './MatchModals'
 import MatchHistory from './MatchHistory'
 import LineupVerificationModal from './LineupVerificationModal'
-import { KIT_LIBRARY, BENCH_KIT, DEFAULT_KIT } from './constants'
+import { KIT_LIBRARY, BENCH_KIT, DEFAULT_KIT, COLOR_KITS } from './constants'
 
 export default function MatchDetail({ profile: authProfile, onBack }) {
     const { slugOrId: matchId } = useParams()
@@ -141,15 +141,15 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     const handleRandomizeKit = async (teamId) => {
         const currentConfigs = { ...(match.team_configs || {}) }
         const takenKits = Object.values(currentConfigs).map(c => c.name)
-        const availableKits = KIT_LIBRARY.filter(k => !takenKits.includes(k.name))
-        const pool = availableKits.length > 0 ? availableKits : KIT_LIBRARY
+        const availableKits = COLOR_KITS.filter(k => !takenKits.includes(k.name))
+        const pool = availableKits.length > 0 ? availableKits : COLOR_KITS
         currentConfigs[teamId] = pool[Math.floor(Math.random() * pool.length)]
         await updateMatch({ team_configs: currentConfigs })
     }
 
     const handleRandomizeKitsAll = async () => {
         const currentConfigs = { ...(match.team_configs || {}) }
-        const kits = [...KIT_LIBRARY].sort(() => Math.random() - 0.5)
+        const kits = [...COLOR_KITS].sort(() => Math.random() - 0.5)
         const playersPerTeam = match.field?.players_per_team || 5
         const rawTotal = match.max_players || (playersPerTeam * 2)
         const numTeams = Math.max(2, Math.round(rawTotal / playersPerTeam))
@@ -388,7 +388,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         }}
                         onKitPicker={(teamId) => setKitPicker({ show: true, teamId })}
                         onRandomizeKit={handleRandomizeKit}
-                        onRandomizeAll={() => randomizeTeams(numTeams, KIT_LIBRARY)}
+                        onRandomizeAll={() => randomizeTeams(numTeams, COLOR_KITS)}
                         onRandomizeKitsAll={handleRandomizeKitsAll}
                         actionLoading={actionLoading}
                         viewerId={profile?.id}
