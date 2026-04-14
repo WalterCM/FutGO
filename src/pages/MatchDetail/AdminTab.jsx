@@ -51,12 +51,14 @@
  */
 
 import React, { useState } from 'react'
-import { CheckCircle, CreditCard, Users, UserMinus, UserPlus } from 'lucide-react'
+import { CheckCircle, CreditCard, Users, UserMinus, UserPlus, User } from 'lucide-react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import ConfirmModal from '../../components/ui/ConfirmModal'
+import Modal from '../../components/ui/Modal'
 import { getDisplayName } from '../../lib/utils'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { supabase } from '../../lib/supabase'
 
 const AdminTab = ({
     enrollments,
@@ -66,8 +68,8 @@ const AdminTab = ({
     canManage,
     onTogglePaid,
     onTogglePresent,
-    onRemovePlayer,  // Handler to exclude a player (logical removal)
-    onRestorePlayer, // Handler to restore an excluded player
+    onRemovePlayer,
+    onRestorePlayer,
     onExpand,
     onShrink,
     onCancel,
@@ -75,7 +77,8 @@ const AdminTab = ({
     numTeams,
     getOrdinal,
     viewerId,
-    viewerIsSuperAdmin
+    viewerIsSuperAdmin,
+    onGuestAdded
 }) => {
     const isMobile = useMediaQuery('(max-width: 600px)')
 
@@ -85,6 +88,120 @@ const AdminTab = ({
     const [unpaidConfirm, setUnpaidConfirm] = useState({ show: false, enrol: null })
     // Modal state for absent confirmation (marking as not present)
     const [absentConfirm, setAbsentConfirm] = useState({ show: false, enrol: null })
+    // Modal state for adding guest player
+    const [guestModal, setGuestModal] = useState({ show: false, loading: false, error: null })
+    // Guest player name input
+    const [guestName, setGuestName] = useState('')
+    // Selected guest from existing list
+    const [selectedGuestId, setSelectedGuestId] = useState(null)
+    // Guest list for selection
+    const [guestList, setGuestList] = useState([])
+    const [loadingGuests, setLoadingGuests] = useState(false)
+
+    // Load existing guests when modal opens
+    const loadGuests = async () => {
+        setLoadingGuests(true)
+        try {
+            // Get player IDs already enrolled in this match
+            const enrolledPlayerIds = enrollments
+                .map(e => e.player_id)
+                .filter(Boolean)
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, full_name, nickname')
+                .order('full_name', { ascending: true })
+                .limit(100)
+            
+            if (!error && data) {
+                // Filter out players already enrolled in this match
+                const filteredData = data.filter(p => !enrolledPlayerIds.includes(p.id))
+                setGuestList(filteredData)
+            }
+        } catch (err) {
+            console.error('Error loading guests:', err)
+        } finally {
+            setLoadingGuests(false)
+        }
+    }
+
+    // Handle adding a guest player to the match
+    const handleAddGuest = async (playerId = null) => {
+        const nameToUse = playerId ? null : guestName.trim()
+        
+        if (!nameToUse && !playerId) {
+            setGuestModal({ show: true, loading: false, error: 'Ingresa un nombre o selecciona un jugador' })
+            return
+        }
+
+        setGuestModal(prev => ({ ...prev, loading: true, error: null }))
+
+        try {
+            let playerIdToUse = playerId
+
+            // If no player selected, check if name already exists
+            if (!playerIdToUse) {
+                // Check if a player with this name already exists (case insensitive)
+                const { data: existingPlayer } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .ilike('full_name', nameToUse)
+                    .maybeSingle()
+
+                if (existingPlayer) {
+                    setGuestModal(prev => ({ ...prev, loading: false, error: 'Ya existe un jugador con ese nombre' }))
+                    return
+                }
+
+                // Create new guest player
+                const { data: newPlayerId, error: createError } = await supabase.rpc('create_guest_player', {
+                    p_name: nameToUse
+                })
+                if (createError) throw createError
+                playerIdToUse = newPlayerId
+            }
+
+            // Check if already enrolled in this match
+            const { data: existingEnrollment } = await supabase
+                .from('enrollments')
+                .select('id')
+                .eq('match_id', match.id)
+                .eq('player_id', playerIdToUse)
+                .maybeSingle()
+
+            if (existingEnrollment) {
+                setGuestModal(prev => ({ ...prev, loading: false, error: 'El jugador ya está en este partido' }))
+                return
+            }
+
+            // Add the guest to the current match
+            const { error: enrollmentError } = await supabase.from('enrollments').insert([{
+                match_id: match.id,
+                player_id: playerIdToUse
+            }])
+
+            if (enrollmentError) throw enrollmentError
+
+            // Call the callback to refresh the list
+            if (onGuestAdded) {
+                await onGuestAdded()
+            }
+
+            // Close modal and reset
+            setGuestModal({ show: false, loading: false, error: null })
+            setGuestName('')
+        } catch (err) {
+            console.error('Error adding guest:', err)
+            setGuestModal(prev => ({ ...prev, loading: false, error: err.message || 'Error al agregar jugador' }))
+        }
+    }
+
+    // Load guests when modal opens
+    React.useEffect(() => {
+        if (guestModal.show) {
+            loadGuests()
+        }
+    }, [guestModal.show])
 
     // Titulares are the first N players who PAID (by paid_at time)
     // Reserves are players who PAID after the quota was filled
@@ -102,7 +219,6 @@ const AdminTab = ({
 
     const sortedEnrollments = [...paidEnrollments, ...unpaidEnrollments, ...excludedEnrollments]
 
-    // Handle removal with confirmation
     const handleRemoveClick = (enrol) => {
         setRemoveConfirm({ show: true, enrol })
     }
@@ -152,6 +268,126 @@ const AdminTab = ({
 
     return (
         <>
+            {/* Guest player modal */}
+            <Modal
+                show={guestModal.show}
+                onClose={() => {
+                    setGuestModal({ show: false, loading: false, error: null })
+                    setGuestName('')
+                    setSelectedGuestId(null)
+                }}
+                title="Invitar Jugador"
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setGuestModal({ show: false, loading: false, error: null })
+                                setGuestName('')
+                                setSelectedGuestId(null)
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={() => handleAddGuest(selectedGuestId)}
+                            loading={guestModal.loading}
+                            disabled={!guestName.trim() && !selectedGuestId}
+                        >
+                            Agregar
+                        </Button>
+                    </div>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {guestList.length > 0 && (
+                        <div>
+                            <label style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'block' }}>
+                                Jugadores existentes
+                            </label>
+                            <div style={{ 
+                                maxHeight: '200px', 
+                                overflowY: 'auto',
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '0.5rem' 
+                            }}>
+                                {guestList.map(player => (
+                                    <div
+                                        key={player.id}
+                                        onClick={() => {
+                                            setSelectedGuestId(player.id)
+                                            setGuestName(player.full_name)
+                                        }}
+                                        style={{
+                                            padding: '0.75rem',
+                                            borderRadius: '8px',
+                                            border: selectedGuestId === player.id 
+                                                ? '1px solid var(--primary)' 
+                                                : '1px solid var(--border)',
+                                            background: selectedGuestId === player.id 
+                                                ? 'rgba(0, 255, 136, 0.1)' 
+                                                : 'var(--bg)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}
+                                    >
+                                        <span style={{ color: 'white' }}>{player.full_name}</span>
+                                        {player.nickname && (
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                                                ({player.nickname})
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ 
+                                textAlign: 'center', 
+                                color: 'var(--text-dim)', 
+                                fontSize: '0.8rem',
+                                marginTop: '0.5rem',
+                                fontStyle: 'italic'
+                            }}>
+                                o crear nuevo jugador
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div>
+                        <label style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'block' }}>
+                            Nombre del nuevo jugador
+                        </label>
+                        <input
+                            type="text"
+                            value={guestName}
+                            onChange={(e) => {
+                                setGuestName(e.target.value)
+                                setSelectedGuestId(null)
+                            }}
+                            placeholder="Ej: Juan Pérez"
+                            style={{
+                                padding: '0.75rem',
+                                fontSize: '1rem',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg)',
+                                color: 'white',
+                                width: '100%'
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddGuest(selectedGuestId)}
+                        />
+                    </div>
+                    
+                    {guestModal.error && (
+                        <div style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
+                            {guestModal.error}
+                        </div>
+                    )}
+                </div>
+            </Modal>
+
             {/* Removal confirmation modal */}
             <ConfirmModal
                 show={removeConfirm.show}
@@ -189,9 +425,21 @@ const AdminTab = ({
             />
 
             {/* Attendance & Payments list header */}
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle size={20} /> Asistencia y Pagos
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                    <CheckCircle size={20} /> Asistencia y Pagos
+                </h3>
+                {canManage && !match.is_locked && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setGuestModal({ show: true, loading: false, error: null, selectedGuestId: null })}
+                        icon={User}
+                    >
+                        Invitar Jugador
+                    </Button>
+                )}
+            </div>
 
             <Card style={{ marginBottom: '3rem', padding: isMobile ? '0.5rem' : '1rem' }} hover={false}>
                 <div style={{ display: 'grid', gap: isMobile ? '0.4rem' : '0.8rem' }}>

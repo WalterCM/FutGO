@@ -20,12 +20,14 @@ export default function Users({ profile }) {
         searchTerm,
         setSearchTerm,
         updateUserName,
-        toggleRole
+        toggleRole,
+        deleteUser
     } = useUsers(profile)
 
     // Modal States
     const [editNameModal, setEditNameModal] = useState({ show: false, userId: null, currentName: '', newName: '' })
     const [roleConfirm, setRoleConfirm] = useState({ show: false, user: null, roleField: '', newValue: false, inputName: '' })
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, user: null })
 
     const handleEditName = (user) => {
         setEditNameModal({
@@ -51,6 +53,17 @@ export default function Users({ profile }) {
         const success = await toggleRole(userId, roleField, newValue)
         if (success) {
             setRoleConfirm({ show: false, user: null, roleField: '', newValue: false, inputName: '' })
+        }
+    }
+
+    const handleDeleteUser = (user) => {
+        setDeleteConfirm({ show: true, user })
+    }
+
+    const handleConfirmDelete = async () => {
+        const success = await deleteUser(deleteConfirm.user.id)
+        if (success) {
+            setDeleteConfirm({ show: false, user: null })
         }
     }
 
@@ -104,6 +117,7 @@ export default function Users({ profile }) {
                         profile={profile}
                         onEditName={handleEditName}
                         onToggleRole={handleToggleRoleClick}
+                        onDeleteUser={handleDeleteUser}
                         actionLoading={actionLoading}
                     />
                     {filteredUsers.length === 0 && (
@@ -121,6 +135,9 @@ export default function Users({ profile }) {
                 roleConfirm={roleConfirm}
                 setRoleConfirm={setRoleConfirm}
                 onToggleRole={handleConfirmToggleRole}
+                deleteConfirm={deleteConfirm}
+                setDeleteConfirm={setDeleteConfirm}
+                onDeleteUser={handleConfirmDelete}
                 actionLoading={actionLoading}
             />
 

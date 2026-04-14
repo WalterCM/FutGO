@@ -56,7 +56,9 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         updateMatch,
         randomizeTeams,
         lockMatch,
-        unlockMatch
+        unlockMatch,
+        refresh,
+        addGuestToMatch
     } = useMatchDetail(matchId, profile, onBack)
 
     // Local UI State
@@ -328,6 +330,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                         getOrdinal={getOrdinal}
                         viewerId={profile?.id}
                         viewerIsSuperAdmin={profile?.is_super_admin}
+                        onGuestAdded={refresh}
                     />
                 )}
 

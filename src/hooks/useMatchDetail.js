@@ -1369,6 +1369,16 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         randomizeTeams,
         lockMatch,
         unlockMatch,
-        refresh: () => fetchMatchDetails(true)
+        refresh: () => fetchMatchDetails(true),
+        addGuestToMatch: async (playerId) => {
+            const { error } = await supabase.from('enrollments').insert([{
+                match_id: match?.id,
+                player_id: playerId
+            }])
+            if (!error) {
+                await fetchMatchDetails(true)
+            }
+            return { error }
+        }
     }
 }

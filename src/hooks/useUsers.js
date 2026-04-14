@@ -105,6 +105,26 @@ export const useUsers = (profile) => {
         }
     }
 
+    const deleteUser = async (userId) => {
+        setActionLoading(userId + 'delete')
+        
+        // Use RPC function to delete guest user (bypasses RLS issues)
+        const { error } = await supabase.rpc('delete_guest_user', {
+            p_user_id: userId
+        })
+
+        if (error) {
+            showMsg('error', error.message)
+            setActionLoading(null)
+            return false
+        } else {
+            showMsg('success', 'Usuario eliminado')
+            setUsers(prev => prev.filter(u => u.id !== userId))
+            setActionLoading(null)
+            return true
+        }
+    }
+
     const filteredUsers = useMemo(() => {
         return users.filter(u =>
             u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,6 +142,7 @@ export const useUsers = (profile) => {
         updateUserName,
         adjustBalance,
         toggleRole,
+        deleteUser,
         refresh: fetchUsers
     }
 }
