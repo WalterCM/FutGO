@@ -23,7 +23,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import ProfileModal from './components/ProfileModal'
 import { NavLinks, MobileNavLinks } from './components/Navigation'
 import { useDashboardStats, NextMatchCard, StatsCard } from './components/Dashboard'
-import { Menu, X, LogOut, Calendar } from 'lucide-react'
+import { Menu, X, LogOut, Calendar, Activity, Star } from 'lucide-react'
 
 
 // Lazy load components for better performance
