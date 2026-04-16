@@ -69,7 +69,7 @@ export default function MatchCard({
                     {match.field?.name}
                 </h3>
                 <span style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.85rem',
                     color: match.is_canceled ? 'var(--danger)' : (isEnrolled ? '#10b981' : (isAtLimit ? '#f59e0b' : 'var(--primary)')),
                     fontWeight: 'bold',
                     textTransform: 'uppercase'

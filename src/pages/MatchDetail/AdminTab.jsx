@@ -514,8 +514,8 @@ const AdminTab = ({
                                         <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.1rem', flexWrap: 'wrap' }}>
                                             {tagLabel && (
                                                 <div style={{
-                                                    fontSize: '0.55rem',
-                                                    padding: '0.05rem 0.2rem',
+                                                    fontSize: '0.7rem',
+                                                    padding: '0.1rem 0.3rem',
                                                     borderRadius: '3px',
                                                     background: tagBg,
                                                     color: tagColor,
@@ -527,8 +527,8 @@ const AdminTab = ({
                                             )}
                                             {isNoShow && (
                                                 <div style={{
-                                                    fontSize: '0.55rem',
-                                                    padding: '0.05rem 0.2rem',
+                                                    fontSize: '0.7rem',
+                                                    padding: '0.1rem 0.3rem',
                                                     borderRadius: '3px',
                                                     background: 'rgba(239, 68, 68, 0.15)',
                                                     color: 'var(--danger)',
@@ -539,7 +539,7 @@ const AdminTab = ({
                                                 </div>
                                             )}
                                             {enrol.paid && !enrol.is_excluded && !isMobile && (
-                                                <div style={{ fontSize: '0.55rem', color: 'var(--primary)', opacity: 0.8 }}>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--primary)', opacity: 0.8 }}>
                                                     Pagó: {new Date(enrol.paid_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             )}
@@ -595,7 +595,7 @@ const AdminTab = ({
                                     ) : (
                                         enrol.is_present && !enrol.is_excluded && (
                                             <div style={{
-                                                fontSize: '0.65rem',
+                                                fontSize: '0.8rem',
                                                 color: 'var(--primary)',
                                                 padding: '0.15rem 0.5rem',
                                                 background: 'rgba(0, 255, 136, 0.1)',

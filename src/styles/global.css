@@ -5,11 +5,50 @@
   --bg-dark: #0a0e14;
   --bg-card: #161b22;
   --text-main: #f0f6fc;
-  --text-dim: #8b949e;
+  --text-dim: #a8b1bf;
   --accent: #238636;
   --danger: #f85149;
   --glass: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 600px) {
+  :root {
+    --text-dim: #c5cdd8;
+  }
+  
+  html {
+    font-size: 16px;
+  }
+  
+  body {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .premium-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+  }
+  
+  .grid-dashboard {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .mobile-menu-drawer {
+    width: 85%;
+    padding: 1.5rem;
+  }
+  
+  .mobile-menu-drawer nav a {
+    font-size: 1.1rem !important;
+    padding: 0.8rem 0 !important;
+  }
+  
+  .nav-mobile-toggle {
+    padding: 0.5rem;
+  }
 }
 
 * {
@@ -112,10 +151,16 @@ body,
 
 .nav-mobile-toggle {
   display: none;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
   color: var(--text-main);
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.nav-mobile-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .mobile-menu-overlay {
@@ -148,7 +193,9 @@ body,
   }
 
   .nav-mobile-toggle {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .header {

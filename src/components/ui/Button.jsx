@@ -60,7 +60,7 @@ const Button = ({
     const getSizeStyles = () => {
         switch (size) {
             case 'sm':
-                return { padding: '0.4rem 0.8rem', fontSize: '0.75rem', borderRadius: '8px' }
+                return { padding: '0.5rem 1rem', fontSize: '0.85rem', borderRadius: '8px' }
             case 'lg':
                 return { padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '14px' }
             default:

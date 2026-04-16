@@ -195,13 +195,13 @@ const MatchHeader = ({
 
                 {showPaymentInfo && (
                     <div className="payment-info-box">
-                        <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             <Shield size={12} /> Información de Pago (Yape/Plin)
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                             <div>
                                 <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'white', letterSpacing: '0.5px' }}>{match.creator.phone}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>A nombre de: <span style={{ color: 'var(--text-main)' }}>{match.creator.full_name}</span></div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>A nombre de: <span style={{ color: 'var(--text-main)' }}>{match.creator.full_name}</span></div>
                             </div>
                             <Button
                                 size="sm"
@@ -214,7 +214,7 @@ const MatchHeader = ({
                             </Button>
                         </div>
                         <div style={{ marginTop: '1rem', padding: '0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'flex', gap: '0.4rem', alignItems: 'flex-start', margin: 0, lineHeight: '1.4' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', display: 'flex', gap: '0.4rem', alignItems: 'flex-start', margin: 0, lineHeight: '1.5' }}>
                                 <span>💡</span> <span>Paga y envía el comprobante al organizador para asegurar tu lugar en la lista de titulares.</span>
                             </p>
                         </div>

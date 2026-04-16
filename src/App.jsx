@@ -16,7 +16,7 @@
  *    - Navigational links (Asistencias, Equipos, Fixture) are only active when a match is selected
  */
 
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import './styles/global.css'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -40,6 +40,10 @@ function MainContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+  const renderCount = useRef(0)
+  renderCount.current++
+  console.log('MainContent render:', renderCount.current, 'isMenuOpen:', isMenuOpen)
   const [profileModal, setProfileModal] = useState(false)
 
   const handleMatchClick = useCallback((m) => {
@@ -54,10 +58,22 @@ function MainContent() {
 
   // Close menu when location changes
   useEffect(() => {
-    if (isMenuOpen) {
-      setIsMenuOpen(false)
+    setIsMenuOpen(false)
+  }, [location])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!isMenuOpen) return
+    
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false)
+      }
     }
-  }, [location, isMenuOpen])
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isMenuOpen])
 
   if (loading) return <div className="flex-center" style={{ minHeight: '100vh' }}>Cargando...</div>
 
@@ -82,8 +98,8 @@ function MainContent() {
     <div className="app">
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button className="nav-mobile-toggle" onClick={() => setIsMenuOpen(true)}>
-            <Menu size={24} />
+          <button className="nav-mobile-toggle" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen) }} aria-label="Abrir menú">
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
           <Link to="/" className="logo" style={{ textDecoration: 'none' }}>⚽ FutGO</Link>
         </div>
@@ -123,7 +139,7 @@ function MainContent() {
         {isMenuOpen && (
           <>
             <div className="mobile-menu-overlay" onClick={() => setIsMenuOpen(false)} />
-            <div className="mobile-menu-drawer animate-slide-in">
+            <div className="mobile-menu-drawer animate-slide-in" ref={menuRef}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <span className="logo">⚽ FutGO</span>
                 <button onClick={() => setIsMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
@@ -138,7 +154,7 @@ function MainContent() {
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{user?.email}</div>
               </div>
 
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <MobileNavLinks profile={profile} />
               </nav>
 
