@@ -65,7 +65,25 @@ export const AuthProvider = ({ children }) => {
         const initializeAuth = async () => {
             // Use getUser instead of getSession to force a server-side check.
             // This prevents stale localStorage sessions from surviving DB resets.
-            const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+            let currentUser = null
+            let error = null
+            try {
+                const result = await supabase.auth.getUser()
+                currentUser = result.data?.user ?? null
+                error = result.error ?? null
+            } catch (e) {
+                if (e instanceof DOMException && e.name === 'AbortError') {
+                    // Supabase internal race condition (navigatorLock), safe to ignore
+                    console.debug('Auth initialization aborted (retrying on next event)')
+                } else {
+                    console.error('Unexpected auth error:', e)
+                }
+                if (isMounted) {
+                    setUser(null)
+                    setLoading(false)
+                }
+                return
+            }
 
             if (error) {
                 // If the user doesn't exist on the server, getSession might still 
@@ -103,11 +121,19 @@ export const AuthProvider = ({ children }) => {
                 return
             }
 
-            setUser(prev => {
-                if (currentUser?.id === prev?.id) return prev
-                if (currentUser?.id) fetchProfile(currentUser.id)
-                return currentUser
-            })
+            try {
+                setUser(prev => {
+                    if (currentUser?.id === prev?.id) return prev
+                    if (currentUser?.id) fetchProfile(currentUser.id)
+                    return currentUser
+                })
+            } catch (e) {
+                if (e instanceof DOMException && e.name === 'AbortError') {
+                    console.debug('Auth state change aborted (navigatorLock)')
+                    return
+                }
+                throw e
+            }
 
             if (!currentUser) {
                 setProfile(null)
