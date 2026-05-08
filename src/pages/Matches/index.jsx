@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, History } from 'lucide-react'
 import { useMatches } from '../../hooks/useMatches'
 
 // UI Components
@@ -15,6 +15,7 @@ import MatchCard from './MatchCard'
 export default function Matches({ profile, onMatchClick }) {
     const {
         matches,
+        pastMatches,
         fields,
         loading,
         actionLoading,
@@ -28,6 +29,7 @@ export default function Matches({ profile, onMatchClick }) {
 
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [showPast, setShowPast] = useState(false)
     const [newMatch, setNewMatch] = useState({
         field_id: '',
         date: '',
@@ -96,8 +98,9 @@ export default function Matches({ profile, onMatchClick }) {
                 />
             )}
 
+            {/* Upcoming matches */}
             <div className="grid-dashboard" style={{ padding: 0 }}>
-                {loading && matches.length === 0 ? (
+                {loading && matches.length === 0 && pastMatches.length === 0 ? (
                     <div className="flex-center" style={{ padding: '3rem', width: '100%' }}>
                         <Spinner />
                         <p style={{ marginLeft: '1rem' }}>Cargando partidos...</p>
@@ -124,6 +127,46 @@ export default function Matches({ profile, onMatchClick }) {
                     ))
                 )}
             </div>
+
+            {/* Past matches toggle */}
+            {pastMatches.length > 0 && (
+                <div style={{ marginTop: '2rem' }}>
+                    <button
+                        onClick={() => setShowPast(!showPast)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.6rem',
+                            background: 'none', border: 'none', color: 'var(--text-dim)',
+                            cursor: 'pointer', fontSize: '0.95rem', padding: '0.5rem 0',
+                            width: '100%', justifyContent: 'center',
+                            borderTop: '1px solid var(--border)', paddingTop: '1.5rem'
+                        }}
+                    >
+                        <History size={18} />
+                        {showPast ? 'Ocultar historial' : `Ver historial (${pastMatches.length} partidos)`}
+                        {showPast ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </button>
+
+                    {showPast && (
+                        <div className="grid-dashboard" style={{ padding: 0, marginTop: '1rem' }}>
+                            {pastMatches.map(match => (
+                                <MatchCard
+                                    key={match.id}
+                                    match={match}
+                                    profile={profile}
+                                    onMatchClick={onMatchClick}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDeleteClick}
+                                    onJoin={joinMatch}
+                                    onLeave={leaveMatch}
+                                    actionLoading={actionLoading}
+                                    confirmingLeaveId={confirmingLeaveId}
+                                    isPast
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <ConfirmModal
                 show={confirmModal.show}

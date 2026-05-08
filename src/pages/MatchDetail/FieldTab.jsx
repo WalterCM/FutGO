@@ -181,11 +181,19 @@ const FieldTab = ({
             <div style={{
                 opacity: hasPresent ? 1 : 0.5,
                 pointerEvents: hasPresent ? 'auto' : 'none',
-                marginBottom: '4rem'
+                paddingBottom: selectedPlayerId ? '5rem' : '4rem'
             }}>
                 {selectedPlayerId && (
-                    <div style={{ background: 'var(--primary)', color: 'black', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', textAlign: 'center', animation: 'slideIn 0.3s' }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Mover Jugador Seleccionado:</div>
+                    <div style={{
+                        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+                        background: 'var(--primary)', color: 'black',
+                        padding: '0.8rem 1rem',
+                        paddingBottom: 'calc(0.8rem + env(safe-area-inset-bottom, 0px))',
+                        textAlign: 'center',
+                        boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
+                        animation: 'slideIn 0.3s'
+                    }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Mover Jugador Seleccionado:</div>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                             {Array.from({ length: numTeams }, (_, i) => i + 1).map(id => (
                                 <button

@@ -12,7 +12,8 @@ export default function MatchCard({
     onJoin,
     onLeave,
     actionLoading,
-    confirmingLeaveId
+    confirmingLeaveId,
+    isPast = false
 }) {
     const enrolledCount = match.enrollments?.length || 0
     const playersPerTeam = match.field?.players_per_team || 5
@@ -29,7 +30,7 @@ export default function MatchCard({
     return (
         <div
             className="premium-card"
-            style={{ position: 'relative', cursor: 'pointer' }}
+            style={{ position: 'relative', cursor: 'pointer', opacity: isPast ? 0.65 : 1 }}
             onClick={() => onMatchClick(match)}
         >
             {canManage && (
@@ -74,7 +75,7 @@ export default function MatchCard({
                     fontWeight: 'bold',
                     textTransform: 'uppercase'
                 }}>
-                    {match.is_canceled ? 'Partido Cancelado ✕' : (isEnrolled ? 'Estás Inscrito ✅' : (isAtLimit ? 'Completos (Lista de Espera) 🕒' : 'Inscripciones Abiertas'))}
+                    {match.is_canceled ? 'Partido Cancelado ✕' : (isPast ? 'Finalizado' : (isEnrolled ? 'Estás Inscrito ✅' : (isAtLimit ? 'Completos (Lista de Espera) 🕒' : 'Inscripciones Abiertas')))}
                 </span>
             </div>
 
@@ -101,35 +102,37 @@ export default function MatchCard({
                 )}
             </div>
 
-            <div style={{ marginTop: 'auto' }}>
-                {isEnrolled ? (
-                    <Button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onLeave(match.id)
-                        }}
-                        disabled={actionLoading === match.id || match.is_locked}
-                        variant={confirmingLeaveId === match.id ? 'danger' : 'outline-danger'}
-                        style={{ width: '100%' }}
-                        loading={actionLoading === match.id}
-                    >
-                        {confirmingLeaveId === match.id ? '¿Estás seguro?' : <><LogOut size={18} style={{ marginRight: '0.5rem' }} /> Salir del Partido</>}
-                    </Button>
-                ) : (
-                    <Button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onJoin(match.id)
-                        }}
-                        disabled={!canJoinWaitlist || actionLoading === match.id || match.is_locked}
-                        variant="primary"
-                        style={{ width: '100%', opacity: (!canJoinWaitlist || match.is_locked) ? 0.5 : 1 }}
-                        loading={actionLoading === match.id}
-                    >
-                        {match.is_canceled ? 'Partido Cerrado' : (isAtLimit ? 'Unirme a Lista de Espera' : 'Unirme al Partido')}
-                    </Button>
-                )}
-            </div>
+            {!isPast && (
+                <div style={{ marginTop: 'auto' }}>
+                    {isEnrolled ? (
+                        <Button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onLeave(match.id)
+                            }}
+                            disabled={actionLoading === match.id || match.is_locked}
+                            variant={confirmingLeaveId === match.id ? 'danger' : 'outline-danger'}
+                            style={{ width: '100%' }}
+                            loading={actionLoading === match.id}
+                        >
+                            {confirmingLeaveId === match.id ? '¿Estás seguro?' : <><LogOut size={18} style={{ marginRight: '0.5rem' }} /> Salir del Partido</>}
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onJoin(match.id)
+                            }}
+                            disabled={!canJoinWaitlist || actionLoading === match.id || match.is_locked}
+                            variant="primary"
+                            style={{ width: '100%', opacity: (!canJoinWaitlist || match.is_locked) ? 0.5 : 1 }}
+                            loading={actionLoading === match.id}
+                        >
+                            {match.is_canceled ? 'Partido Cerrado' : (isAtLimit ? 'Unirme a Lista de Espera' : 'Unirme al Partido')}
+                        </Button>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

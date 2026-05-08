@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export const useMatches = (profile) => {
     const [matches, setMatches] = useState([])
+    const [pastMatches, setPastMatches] = useState([])
     const [fields, setFields] = useState([])
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState(null)
@@ -15,8 +16,10 @@ export const useMatches = (profile) => {
     }, [])
 
     const fetchMatches = useCallback(async () => {
-        setLoading(true)
-        const { data, error } = await supabase
+        const now = new Date()
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+        const { data: upcoming, error: upcomingError } = await supabase
             .from('matches')
             .select(`
                 *,
@@ -24,15 +27,33 @@ export const useMatches = (profile) => {
                 creator:profiles(full_name),
                 enrollments(*, player:profiles(*))
             `)
+            .gte('date', today)
             .order('date', { ascending: true })
             .order('time', { ascending: true })
 
-        if (error) {
-            showMsg('error', error.message)
+        if (upcomingError) {
+            showMsg('error', upcomingError.message)
         } else {
-            setMatches(data || [])
+            setMatches(upcoming || [])
         }
-        setLoading(false)
+
+        const { data: past, error: pastError } = await supabase
+            .from('matches')
+            .select(`
+                *,
+                field:fields(*),
+                creator:profiles(full_name),
+                enrollments(*, player:profiles(*))
+            `)
+            .lt('date', today)
+            .order('date', { ascending: false })
+            .order('time', { ascending: false })
+
+        if (pastError) {
+            showMsg('error', pastError.message)
+        } else {
+            setPastMatches(past || [])
+        }
     }, [showMsg])
 
     const fetchFields = useCallback(async () => {
@@ -42,8 +63,9 @@ export const useMatches = (profile) => {
     }, [])
 
     useEffect(() => {
-        fetchMatches()
-        fetchFields()
+        setLoading(true)
+        Promise.all([fetchMatches(), fetchFields()])
+            .finally(() => setLoading(false))
     }, [fetchMatches, fetchFields])
 
     const joinMatch = async (matchId) => {
@@ -128,6 +150,7 @@ export const useMatches = (profile) => {
 
     return {
         matches,
+        pastMatches,
         fields,
         loading,
         actionLoading,

@@ -15,10 +15,12 @@ export const useDashboardStats = (profileId) => {
 
     try {
       // 1. Fetch Next Match (Closest upcoming)
+      const now = new Date()
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
       const { data: nextMatch } = await supabase
         .from('matches')
         .select('*, field:fields(*)')
-        .gte('date', new Date().toISOString().split('T')[0])
+        .gte('date', today)
         .eq('is_canceled', false)
         .order('date', { ascending: true })
         .order('time', { ascending: true })

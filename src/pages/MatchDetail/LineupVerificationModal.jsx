@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, UserPlus, UserMinus, Shield, User, CheckCircle2 } from 'lucide-react'
+import { X, User, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import TeamBadge from './TeamBadge'
 import { getDisplayName } from '../../lib/utils'
@@ -20,8 +20,7 @@ const LineupVerificationModal = ({
 }) => {
     const [lineup1, setLineup1] = useState([])
     const [lineup2, setLineup2] = useState([])
-    const [availablePlayers, setAvailablePlayers] = useState([])
-    const [activeTeamSelect, setActiveTeamSelect] = useState(null)
+    const [unassigned, setUnassigned] = useState([])
 
     useEffect(() => {
         if (show && fixture) {
@@ -30,8 +29,7 @@ const LineupVerificationModal = ({
                 return { id, name: getDisplayName(e?.player, viewerId, matchCreatorId, viewerIsSuperAdmin), officialTeam: e?.team_assignment }
             }
 
-            // Team 1 Initial state
-            let t1;
+            let t1, t2
             if (currentLineup1) {
                 t1 = currentLineup1.map(getPlayerInfo)
             } else {
@@ -40,8 +38,6 @@ const LineupVerificationModal = ({
                     .map(e => ({ id: e.player_id, name: getDisplayName(e.player, viewerId, matchCreatorId, viewerIsSuperAdmin), officialTeam: fixture.team1Id }))
             }
 
-            // Team 2 Initial state
-            let t2;
             if (currentLineup2) {
                 t2 = currentLineup2.map(getPlayerInfo)
             } else {
@@ -50,44 +46,66 @@ const LineupVerificationModal = ({
                     .map(e => ({ id: e.player_id, name: getDisplayName(e.player, viewerId, matchCreatorId, viewerIsSuperAdmin), officialTeam: fixture.team2Id }))
             }
 
-            // Available players: everyone present/paid NOT in the current teams
             const currentLineupIds = [...t1, ...t2].map(p => p.id)
-            const available = enrollments
+            const bench = enrollments
                 .filter(e => e.is_present && e.paid && !currentLineupIds.includes(e.player_id))
                 .map(e => ({ id: e.player_id, name: getDisplayName(e.player, viewerId, matchCreatorId, viewerIsSuperAdmin), officialTeam: e.team_assignment }))
 
             setLineup1(t1)
             setLineup2(t2)
-            setAvailablePlayers(available)
+            setUnassigned(bench)
         }
-    }, [show, fixture, enrollments, currentLineup1, currentLineup2])
+    }, [show, fixture, enrollments, currentLineup1, currentLineup2, viewerId, viewerIsSuperAdmin, matchCreatorId])
 
     if (!show || !fixture) return null
 
-    const handleRemove = (playerId, teamNum) => {
-        if (teamNum === 1) {
+    const moveToTeam = (playerId, fromTeam, toTeam) => {
+        if (fromTeam === 1) {
             const player = lineup1.find(p => p.id === playerId)
             setLineup1(lineup1.filter(p => p.id !== playerId))
-            setAvailablePlayers([...availablePlayers, player])
+            setLineup2([...lineup2, player])
         } else {
             const player = lineup2.find(p => p.id === playerId)
             setLineup2(lineup2.filter(p => p.id !== playerId))
-            setAvailablePlayers([...availablePlayers, player])
+            setLineup1([...lineup1, player])
         }
     }
 
-    const handleAdd = (player) => {
-        if (activeTeamSelect === 1) {
+    const addToTeam = (player, team) => {
+        setUnassigned(unassigned.filter(p => p.id !== player.id))
+        if (team === 1) {
             setLineup1([...lineup1, player])
         } else {
             setLineup2([...lineup2, player])
         }
-        setAvailablePlayers(availablePlayers.filter(p => p.id !== player.id))
-        setActiveTeamSelect(null)
     }
 
     const isUneven = lineup1.length !== lineup2.length
     const isUnderCapacity = lineup1.length < playersPerTeam || lineup2.length < playersPerTeam
+
+    const playerCard = (player, teamNum) => {
+        const isLoan = player.officialTeam && player.officialTeam !== (teamNum === 1 ? fixture.team1Id : fixture.team2Id)
+        return (
+            <div key={player.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.6rem 0.8rem', background: isLoan ? 'rgba(var(--primary-rgb), 0.08)' : 'rgba(255,255,255,0.05)',
+                borderRadius: '8px', border: isLoan ? '1px dashed var(--primary)' : '1px solid transparent'
+            }}>
+                <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <User size={14} style={{ color: 'var(--text-dim)' }} />
+                    {player.name}
+                    {isLoan && <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>}
+                </span>
+                <button
+                    onClick={() => moveToTeam(player.id, teamNum, teamNum === 1 ? 2 : 1)}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', padding: '0.3rem' }}
+                    title={teamNum === 1 ? 'Prestar al otro equipo' : 'Traer al equipo'}
+                >
+                    {teamNum === 1 ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+                </button>
+            </div>
+        )
+    }
 
     return (
         <div style={{
@@ -101,85 +119,78 @@ const LineupVerificationModal = ({
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Verificar Alineaciones</h2>
+                        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Ajustar Alineaciones</h2>
                         <p style={{ margin: '0.3rem 0 0', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-                            Ajusta los equipos para este encuentro específico.
+                            Asigna jugadores a cada equipo. Toca → para prestar al otro equipo.
                         </p>
                     </div>
                     <Button variant="ghost" onClick={onClose} icon={X} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-                    {/* Team 1 */}
                     <div>
                         <div style={{ marginBottom: '1rem' }}>
                             <TeamBadge id={fixture.team1Id} teamConfigs={teamConfigs} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {lineup1.map(player => (
-                                <div key={player.id} className="lineup-item" style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.05)',
-                                    borderRadius: '8px', border: player.officialTeam !== fixture.team1Id ? '1px dashed var(--primary)' : '1px solid transparent'
-                                }}>
-                                    <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        {player.officialTeam !== fixture.team1Id && <Shield size={14} style={{ color: 'var(--primary)' }} title="Refuerzo" />}
-                                        {player.name}
-                                    </span>
-                                    <button onClick={() => handleRemove(player.id, 1)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', opacity: 0.6 }}>
-                                        <UserMinus size={16} />
-                                    </button>
+                            {lineup1.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                                    Sin jugadores
                                 </div>
-                            ))}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                fullWidth
-                                onClick={() => setActiveTeamSelect(1)}
-                                icon={UserPlus}
-                                style={{ border: '1px dashed var(--border)', marginTop: '0.5rem' }}
-                            >
-                                Añadir Refuerzo
-                            </Button>
+                            ) : lineup1.map(p => playerCard(p, 1))}
                         </div>
                     </div>
 
-                    {/* Team 2 */}
                     <div>
                         <div style={{ marginBottom: '1rem' }}>
                             <TeamBadge id={fixture.team2Id} teamConfigs={teamConfigs} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {lineup2.map(player => (
-                                <div key={player.id} className="lineup-item" style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.05)',
-                                    borderRadius: '8px', border: player.officialTeam !== fixture.team2Id ? '1px dashed var(--primary)' : '1px solid transparent'
-                                }}>
-                                    <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        {player.officialTeam !== fixture.team2Id && <Shield size={14} style={{ color: 'var(--primary)' }} title="Refuerzo" />}
-                                        {player.name}
-                                    </span>
-                                    <button onClick={() => handleRemove(player.id, 2)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', opacity: 0.6 }}>
-                                        <UserMinus size={16} />
-                                    </button>
+                            {lineup2.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                                    Sin jugadores
                                 </div>
-                            ))}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                fullWidth
-                                onClick={() => setActiveTeamSelect(2)}
-                                icon={UserPlus}
-                                style={{ border: '1px dashed var(--border)', marginTop: '0.5rem' }}
-                            >
-                                Añadir Refuerzo
-                            </Button>
+                            ) : lineup2.map(p => playerCard(p, 2))}
                         </div>
                     </div>
                 </div>
 
-                {/* Status Alerts */}
+                {unassigned.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h4 style={{ margin: '0 0 0.8rem', fontSize: '0.9rem', color: 'var(--text-dim)' }}>
+                            Sin equipo ({unassigned.length})
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {unassigned.map(player => (
+                                <div key={player.id} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)',
+                                    borderRadius: '8px', border: '1px dashed var(--border)'
+                                }}>
+                                    <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <User size={14} style={{ color: 'var(--text-dim)' }} />
+                                        {player.name}
+                                    </span>
+                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                        <button
+                                            onClick={() => addToTeam(player, 1)}
+                                            style={{ background: 'rgba(var(--primary-rgb), 0.15)', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}
+                                        >
+                                            Eq 1
+                                        </button>
+                                        <button
+                                            onClick={() => addToTeam(player, 2)}
+                                            style={{ background: 'rgba(var(--primary-rgb), 0.15)', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}
+                                        >
+                                            Eq 2
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {(isUneven || isUnderCapacity) && (
                     <div style={{
                         padding: '1rem', background: 'rgba(245, 158, 11, 0.1)',
@@ -207,53 +218,6 @@ const LineupVerificationModal = ({
                     </Button>
                 </div>
             </div>
-
-            {/* Selection Overlay */}
-            {activeTeamSelect && (
-                <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1300,
-                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-                }}>
-                    <div className="premium-card" style={{ width: '100%', maxWidth: '400px', padding: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: 0 }}>Seleccionar Refuerzo</h3>
-                            <Button variant="ghost" onClick={() => setActiveTeamSelect(null)} icon={X} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '50vh', overflowY: 'auto' }}>
-                            {availablePlayers.length === 0 ? (
-                                <p style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-dim)' }}>No hay jugadores disponibles.</p>
-                            ) : availablePlayers.map(player => (
-                                <button
-                                    key={player.id}
-                                    onClick={() => handleAdd(player)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.8rem',
-                                        padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
-                                        border: '1px solid var(--border)', borderRadius: '8px',
-                                        color: 'white', cursor: 'pointer', textAlign: 'left',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                                >
-                                    <div style={{
-                                        width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-dark)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        <User size={16} color="var(--primary)" />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: '500' }}>{player.name}</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                                            {player.officialTeam ? `Equipo ${player.officialTeam}` : 'Sin equipo'}
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

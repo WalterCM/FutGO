@@ -48,6 +48,7 @@ const GameResultForm = ({
     matchCreatorId
 }) => {
     const [recordingForTeam, setRecordingForTeam] = useState(null)
+    const [showOwnGoals, setShowOwnGoals] = useState(false)
 
     const handleAddGoal = (playerId, teamId) => {
         const playerEnrol = enrollments.find(e => e.player_id === playerId)
@@ -264,45 +265,86 @@ const GameResultForm = ({
                                         <Trophy size={20} color="var(--primary)" />
                                         <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Registrar Gol</h3>
                                     </div>
-                                    <Button variant="ghost" onClick={() => setRecordingForTeam(null)} icon={X} />
+                                    <Button variant="ghost" onClick={() => { setRecordingForTeam(null); setShowOwnGoals(false) }} icon={X} />
                                 </div>
 
                                 <div style={{ display: 'grid', gap: '1.5rem' }}>
-                                    {/* Iterar sobre los dos equipos, poniendo el que "metió" el gol primero */}
-                                    {[recordingForTeam, recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id].map((teamId) => (
-                                        <div key={teamId}>
-                                            <div style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <TeamBadge id={teamId} teamConfigs={teamConfigs} />
-                                                {teamId !== recordingForTeam && (
+                                    {/* Scoring team's players */}
+                                    <div>
+                                        <div style={{ marginBottom: '0.8rem' }}>
+                                            <TeamBadge id={recordingForTeam} teamConfigs={teamConfigs} />
+                                        </div>
+                                        <div style={{ display: 'grid', gap: '0.4rem' }}>
+                                            {getParticipantsForTeam(recordingForTeam).map(enrol => (
+                                                <button
+                                                    key={enrol.id}
+                                                    onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
+                                                    style={{
+                                                        padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
+                                                        border: '1px solid var(--border)', borderRadius: '8px',
+                                                        color: 'white', cursor: 'pointer', textAlign: 'left',
+                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                >
+                                                    <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player, viewerId, matchCreatorId, viewerIsSuperAdmin)}</span>
+                                                    {enrol.team_assignment !== recordingForTeam && (
+                                                        <span style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Own goals toggle + section */}
+                                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                                        <label style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                            cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-dim)',
+                                            justifyContent: 'center', padding: '0.3rem'
+                                        }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={showOwnGoals}
+                                                onChange={(e) => setShowOwnGoals(e.target.checked)}
+                                                style={{ accentColor: 'var(--primary)' }}
+                                            />
+                                            Incluir autogoles
+                                        </label>
+
+                                        {showOwnGoals && (
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <div style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <TeamBadge id={recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id} teamConfigs={teamConfigs} />
                                                     <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: 'bold', textTransform: 'uppercase' }}>
                                                         Autogol
                                                     </span>
-                                                )}
+                                                </div>
+                                                <div style={{ display: 'grid', gap: '0.4rem' }}>
+                                                    {getParticipantsForTeam(recordingForTeam === gameData.team1Id ? gameData.team2Id : gameData.team1Id).map(enrol => (
+                                                        <button
+                                                            key={enrol.id}
+                                                            onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
+                                                            style={{
+                                                                padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
+                                                                border: '1px solid var(--border)', borderRadius: '8px',
+                                                                color: 'white', cursor: 'pointer', textAlign: 'left',
+                                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                        >
+                                                            <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player, viewerId, matchCreatorId, viewerIsSuperAdmin)}</span>
+                                                            <span style={{ fontSize: '0.6rem', color: 'var(--danger)', fontWeight: 'bold' }}>AUTOGOL</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div style={{ display: 'grid', gap: '0.4rem' }}>
-                                                {getParticipantsForTeam(teamId).map(enrol => (
-                                                    <button
-                                                        key={enrol.id}
-                                                        onClick={() => handleAddGoal(enrol.player_id, recordingForTeam)}
-                                                        style={{
-                                                            padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)',
-                                                            border: '1px solid var(--border)', borderRadius: '8px',
-                                                            color: 'white', cursor: 'pointer', textAlign: 'left',
-                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                                    >
-                                                        <span style={{ fontSize: '0.9rem' }}>{getDisplayName(enrol.player, viewerId, matchCreatorId, viewerIsSuperAdmin)}</span>
-                                                        {enrol.team_assignment !== teamId && (
-                                                            <span style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 'bold' }}>REFUERZO</span>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

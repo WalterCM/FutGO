@@ -170,10 +170,6 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             team2_players: null
         })
         setShowForm(true)
-        setTimeout(() => {
-            const formElement = document.getElementById('game-result-form')
-            if (formElement) formElement.scrollIntoView({ behavior: 'smooth' })
-        }, 100)
     }
 
     const handleOpenLineup = () => {
@@ -398,7 +394,10 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                 )}
 
                 {activeTab === 'results' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div style={{
+                        display: 'flex', flexDirection: 'column', gap: '2rem',
+                        paddingBottom: showForm ? '75vh' : '0'
+                    }}>
                         <FixtureTimeline
                             matchId={matchId}
                             phases={match?.phases}
@@ -417,7 +416,13 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                             games={games}
                         />
 
-                        <div id="game-result-form">
+                        <div id="game-result-form" style={showForm ? {
+                            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+                            background: 'var(--bg-card)',
+                            borderTop: '1px solid var(--border)',
+                            maxHeight: '70vh', overflowY: 'auto',
+                            boxShadow: '0 -4px 20px rgba(0,0,0,0.3)'
+                        } : {}}>
                             <GameResultForm
                                 showForm={showForm}
                                 setShowForm={setShowForm}
