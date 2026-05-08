@@ -42,6 +42,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
         movePlayer,
         addGameResult,
         deleteGameResult,
+        updateGameGoals,
         updateMatchMode,
         generateFixtures,
         updateFixtures,
@@ -70,6 +71,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
     // Form States
     const [showForm, setShowForm] = useState(false)
     const [gameData, setGameData] = useState({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
+    const [editGame, setEditGame] = useState(null)
 
     // Field Tab Selection/Drag State
     const [selectedPlayerId, setSelectedPlayerId] = useState(null)
@@ -126,6 +128,13 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current)
         }
     }, [])
+
+    useEffect(() => {
+        if (!showForm && editGame) {
+            setEditGame(null)
+            setGameData({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
+        }
+    }, [showForm])
 
     const getTeamPlayers = useCallback((teamId) => {
         // Only players marked as "Presente" are shown in the formation view
@@ -213,6 +222,34 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
             setShowForm(false)
             setGameData({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
         }
+    }
+
+    const handleEditGame = (game) => {
+        setGameData({
+            team1Id: game.team1_id,
+            team2Id: game.team2_id,
+            goals: game.goals || [],
+            fixtureId: game.fixture_id,
+            team1_players: game.team1_players,
+            team2_players: game.team2_players
+        })
+        setEditGame(game)
+        setShowForm(true)
+    }
+
+    const handleSaveEdit = async () => {
+        const success = await updateGameGoals(editGame.id, gameData.goals, gameData.team1Id, gameData.team2Id)
+        if (success) {
+            setEditGame(null)
+            setShowForm(false)
+            setGameData({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
+        }
+    }
+
+    const handleCancelForm = () => {
+        setEditGame(null)
+        setShowForm(false)
+        setGameData({ team1Id: 1, team2Id: 2, goals: [], team1_players: null, team2_players: null })
     }
 
     const handleCancelMatchRequest = () => {
@@ -344,16 +381,14 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                                 Finalizar Encuentro y Cerrar ELO
                             </Button>
                         ) : (
-                            profile.is_super_admin && (
-                                <Button
-                                    variant="outline-danger"
-                                    onClick={unlockMatch}
-                                    loading={actionLoading === 'unlock'}
-                                    style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
-                                >
-                                    ⚠️ Desbloquear Partido (Revertir ELO)
-                                </Button>
-                            )
+                            <Button
+                                variant="outline-danger"
+                                onClick={unlockMatch}
+                                loading={actionLoading === 'unlock'}
+                                style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
+                            >
+                                ⚠️ Desbloquear Partido (Revertir ELO)
+                            </Button>
                         )}
                     </div>
                 )}
@@ -429,6 +464,8 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                                 gameData={gameData}
                                 setGameData={setGameData}
                                 onAddGame={handleSaveGame}
+                                onSaveEdit={handleSaveEdit}
+                                editGame={editGame}
                                 games={games}
                                 teamConfigs={teamConfigs}
                                 numTeams={numTeams}
@@ -453,6 +490,7 @@ export default function MatchDetail({ profile: authProfile, onBack }) {
                             teamConfigs={teamConfigs}
                             canManage={canManage}
                             onDeleteGame={handleDeleteGameRequest}
+                            onEditGame={handleEditGame}
                         />
                     </div>
                 )}

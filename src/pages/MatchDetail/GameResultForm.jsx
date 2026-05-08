@@ -45,7 +45,9 @@ const GameResultForm = ({
     onOpenLineup,
     viewerId,
     viewerIsSuperAdmin,
-    matchCreatorId
+    matchCreatorId,
+    editGame,
+    onSaveEdit
 }) => {
     const [recordingForTeam, setRecordingForTeam] = useState(null)
     const [showOwnGoals, setShowOwnGoals] = useState(false)
@@ -102,9 +104,9 @@ const GameResultForm = ({
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                    <Trophy size={20} /> {matchMode === 'free' ? 'Partidos Jugados' : 'Registro de Resultado'}
+                    <Trophy size={20} /> {editGame ? 'Editando Resultado' : (matchMode === 'free' ? 'Partidos Jugados' : 'Registro de Resultado')}
                 </h3>
-                {canManage && matchMode === 'free' && (
+                {canManage && matchMode === 'free' && !editGame && (
                     <Button
                         size="sm"
                         onClick={() => setShowForm(!showForm)}
@@ -379,12 +381,12 @@ const GameResultForm = ({
                     <Button
                         variant="primary"
                         fullWidth
-                        onClick={onAddGame}
+                        onClick={editGame ? onSaveEdit : onAddGame}
                         style={{ marginTop: '2rem' }}
-                        loading={actionLoading === 'game-form'}
-                        disabled={isLocked}
+                        loading={actionLoading === 'game-form' || actionLoading === 'update-goals'}
+                        disabled={isLocked && !editGame}
                     >
-                        Guardar Resultado
+                        {editGame ? 'Guardar Cambios' : 'Guardar Resultado'}
                     </Button>
                 </Card>
             )

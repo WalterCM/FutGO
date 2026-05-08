@@ -327,8 +327,6 @@ export const useMatchDetail = (matchId, profile, onBack) => {
                 const nextFixtures = (match.fixtures || []).map(f =>
                     f.id === fixtureId ? { ...f, status: 'pending', score1: null, score2: null } : f
                 )
-                // If it was Winner Stays, we might want to remove the auto-generated next match too
-                // But for now, let's just reset the current one.
                 await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', match?.id)
             }
 
@@ -336,6 +334,38 @@ export const useMatchDetail = (matchId, profile, onBack) => {
             fetchMatchDetails(true)
         } catch (error) {
             showMsg('error', error.message)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const updateGameGoals = async (gameId, goals, team1Id, team2Id) => {
+        setActionLoading('update-goals')
+        try {
+            const score1 = goals.filter(g => g.team_id === team1Id).length
+            const score2 = goals.filter(g => g.team_id === team2Id).length
+
+            const { error } = await supabase
+                .from('games')
+                .update({ goals, score1, score2 })
+                .eq('id', gameId)
+
+            if (error) throw error
+
+            const game = games.find(g => g.id === gameId)
+            if (game?.fixture_id && match.fixtures) {
+                const nextFixtures = (match.fixtures || []).map(f =>
+                    f.id === game.fixture_id ? { ...f, score1, score2 } : f
+                )
+                await supabase.from('matches').update({ fixtures: nextFixtures }).eq('id', match?.id)
+            }
+
+            showMsg('success', 'Goles actualizados')
+            fetchMatchDetails(true)
+            return true
+        } catch (error) {
+            showMsg('error', error.message)
+            return false
         } finally {
             setActionLoading(null)
         }
@@ -1353,6 +1383,7 @@ export const useMatchDetail = (matchId, profile, onBack) => {
         movePlayer,
         addGameResult,
         deleteGameResult,
+        updateGameGoals,
         updateMatchMode,
         generateFixtures,
         updateFixtures,
